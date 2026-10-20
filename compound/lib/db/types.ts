@@ -23,6 +23,7 @@ export interface UsersTable {
   image: string | null;
   timezone: ColumnType<string, string | undefined, string>;
   created_at: CreatedAt;
+  onboarded_at: Timestamp | null; // null until onboarding is finished
 }
 
 export interface UserGoalsTable {

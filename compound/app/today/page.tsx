@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { SignOutButton } from "@/components/auth-buttons";
-import { requireUser } from "@/lib/auth/dal";
+import { requireOnboardedUser } from "@/lib/auth/dal";
 
 // Placeholder until step 6: proves sign-in works end to end.
 export default function TodayPage() {
@@ -19,7 +19,7 @@ export default function TodayPage() {
 }
 
 async function Greeting() {
-  const user = await requireUser();
+  const user = await requireOnboardedUser();
 
   return (
     <p className="mt-4 opacity-70">

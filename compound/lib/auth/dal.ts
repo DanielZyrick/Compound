@@ -38,3 +38,10 @@ export async function requireUser() {
   if (!user) redirect("/login");
   return user;
 }
+
+/** Like requireUser(), but also sends users who haven't onboarded to /onboarding. */
+export async function requireOnboardedUser() {
+  const user = await requireUser();
+  if (!user.onboarded_at) redirect("/onboarding");
+  return user;
+}
