@@ -35,7 +35,7 @@ export async function completeOnboarding(
     if (!updated) return;
 
     await trx
-      .insertInto("user_goals")
+      .insertInto("focus_areas")
       .values(
         goals.map((g) => ({
           user_id: user.id,

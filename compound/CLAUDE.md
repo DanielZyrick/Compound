@@ -21,8 +21,8 @@ This is my portfolio project. I am the developer; you are my pair programmer.
 
 ## Database tables
 - users (id, email, name, timezone, created_at)
-- user_goals (id, user_id, goal, created_at) — chosen during onboarding:
-  career, business, faith, health, or custom
+- focus_areas (id, user_id, goal, custom_label, created_at) — chosen during onboarding:
+  career, business, faith, health, or custom (was user_goals; renamed in migration 003)
 - habits (id, user_id, name, schedule, created_at, archived_at)
 - habit_checkins (id, habit_id, date, created_at) — unique (habit_id, date)
 - tracks (id, user_id, title, goal, type: skill | reading | thinking, total_days,

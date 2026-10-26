@@ -26,7 +26,7 @@ export interface UsersTable {
   onboarded_at: Timestamp | null; // null until onboarding is finished
 }
 
-export interface UserGoalsTable {
+export interface FocusAreasTable {
   id: Generated<string>;
   user_id: string;
   goal: Goal;
@@ -52,7 +52,7 @@ export interface HabitCheckinsTable {
 
 export interface Database {
   users: UsersTable;
-  user_goals: UserGoalsTable;
+  focus_areas: FocusAreasTable;
   habits: HabitsTable;
   habit_checkins: HabitCheckinsTable;
 }
@@ -62,8 +62,8 @@ export type User = Selectable<UsersTable>;
 export type NewUser = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 
-export type UserGoal = Selectable<UserGoalsTable>;
-export type NewUserGoal = Insertable<UserGoalsTable>;
+export type FocusArea = Selectable<FocusAreasTable>;
+export type NewFocusArea = Insertable<FocusAreasTable>;
 
 export type Habit = Selectable<HabitsTable>;
 export type NewHabit = Insertable<HabitsTable>;
