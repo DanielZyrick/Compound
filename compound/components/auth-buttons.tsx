@@ -1,4 +1,5 @@
 import { signIn, signOut } from "@/auth";
+import { Button } from "@/components/ui/button";
 
 // Both buttons are plain forms that call a server action, so they work
 // without any client-side JavaScript.
@@ -11,12 +12,9 @@ export function SignInWithGitHub() {
         await signIn("github", { redirectTo: "/today" });
       }}
     >
-      <button
-        type="submit"
-        className="w-full rounded-lg bg-foreground px-4 py-3 font-medium text-background hover:opacity-90"
-      >
+      <Button type="submit" className="h-11 w-full text-base">
         Sign in with GitHub
-      </button>
+      </Button>
     </form>
   );
 }
@@ -29,9 +27,9 @@ export function SignOutButton() {
         await signOut({ redirectTo: "/" });
       }}
     >
-      <button type="submit" className="text-sm underline underline-offset-4 hover:opacity-70">
+      <Button type="submit" variant="ghost">
         Sign out
-      </button>
+      </Button>
     </form>
   );
 }
