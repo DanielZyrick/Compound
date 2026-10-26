@@ -1,23 +1,45 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { SignInWithGitHub } from "@/components/auth-buttons";
+import { FloatingTile } from "@/components/landing/floating";
+import { LogoMark } from "@/components/logo";
 import { getCurrentUser } from "@/lib/auth/dal";
+import { loginErrorMessage } from "@/lib/auth/login-errors";
 
-// The heading and button are static and load instantly. Only the part that
+// The card and button are static and load instantly. Only the part that
 // reads the request (session and ?error=) waits, inside <Suspense>.
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Sign in to Compound</h1>
-        <p className="mt-1 text-sm opacity-70">Small daily steps, compounding growth.</p>
+    <main className="flex flex-1 items-center justify-center bg-muted bg-dots px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="rounded-[28px] border bg-card p-8 text-center shadow-card">
+          <FloatingTile className="mx-auto">
+            <LogoMark className="size-8" />
+          </FloatingTile>
+
+          <h1 className="mt-6 text-2xl font-semibold tracking-tight">Welcome to Compound</h1>
+          <p className="mt-2 text-muted-foreground">Small daily steps, compounding growth.</p>
+
+          <Suspense fallback={null}>
+            <LoginNotice searchParams={searchParams} />
+          </Suspense>
+
+          <div className="mt-8">
+            <SignInWithGitHub />
+          </div>
+          <p className="mt-4 text-xs text-subtle">New here? Signing in creates your account.</p>
+        </div>
+
+        <Link
+          href="/"
+          className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Back to home
+        </Link>
       </div>
-
-      <Suspense fallback={null}>
-        <LoginNotice searchParams={searchParams} />
-      </Suspense>
-
-      <SignInWithGitHub />
     </main>
   );
 }
@@ -25,13 +47,15 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 async function LoginNotice({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   if (await getCurrentUser()) redirect("/today");
 
-  // Auth.js sends sign-in failures here as /login?error=...
-  const { error } = await searchParams;
-  if (!error) return null;
+  const message = loginErrorMessage((await searchParams).error);
+  if (!message) return null;
 
   return (
-    <p role="alert" className="rounded-lg border border-red-500/40 p-3 text-sm text-red-600">
-      Sign-in didn&apos;t work. Make sure your GitHub account has a verified email, then try again.
+    <p
+      role="alert"
+      className="mt-6 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-left text-sm text-destructive"
+    >
+      {message}
     </p>
   );
 }
