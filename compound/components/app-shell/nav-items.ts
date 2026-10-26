@@ -1,0 +1,33 @@
+import {
+  ChartColumn,
+  GraduationCap,
+  House,
+  ListChecks,
+  Target,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
+
+export interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** false until the page exists: shown greyed out with a "Soon" badge. */
+  ready: boolean;
+}
+
+// One list for both the desktop sidebar and the phone tab bar.
+export const NAV_ITEMS: NavItem[] = [
+  { href: "/today", label: "Today", icon: House, ready: true },
+  { href: "/habits", label: "Habits", icon: ListChecks, ready: false },
+  { href: "/tracks", label: "Learn", icon: GraduationCap, ready: false },
+  { href: "/goals", label: "Goals", icon: Target, ready: false },
+  { href: "/money", label: "Money", icon: Wallet, ready: false },
+  { href: "/progress", label: "Progress", icon: ChartColumn, ready: false },
+];
+
+/** True on the item's own page and on any page below it (/tracks/123). */
+export function isActive(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
