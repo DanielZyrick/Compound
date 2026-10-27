@@ -1,25 +1,57 @@
 import { Suspense } from "react";
 import { requireOnboardedUser } from "@/lib/auth/dal";
+import { formatLongDate, todayIn } from "@/lib/dates/calendar";
+import { getTodayHabits } from "@/lib/habits/queries";
+import { HabitChecklist } from "./habit-checklist";
 
-// Placeholder until the habits step: proves sign-in works end to end.
 export default function TodayPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-8 md:py-10">
-      <h1 className="text-2xl font-semibold">Today</h1>
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-8 md:py-10">
+      <h1 className="text-2xl font-semibold tracking-tight">Today</h1>
 
-      <Suspense fallback={<p className="mt-4 text-muted-foreground">Loading…</p>}>
-        <Greeting />
+      <Suspense fallback={<TodaySkeleton />}>
+        <TodayContent />
       </Suspense>
     </main>
   );
 }
 
-async function Greeting() {
+async function TodayContent() {
   const user = await requireOnboardedUser();
+  // The date in the user's timezone decides which habits are due and which
+  // check-ins count as today.
+  const today = todayIn(user.timezone);
+  const { habits, activeCount } = await getTodayHabits(user.id, today);
 
   return (
-    <p className="mt-4 text-muted-foreground">
-      Hi, {user.name ?? user.email}. Your habits for today will show up here.
-    </p>
+    <>
+      <p className="mt-1 text-muted-foreground">{formatLongDate(today)}</p>
+
+      <div className="mt-8">
+        {habits.length > 0 ? (
+          <HabitChecklist habits={habits} />
+        ) : (
+          <div className="rounded-2xl border border-dashed p-8 text-center">
+            <p className="font-medium">
+              {activeCount > 0 ? "No habits scheduled today." : "You don't have any habits yet."}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {activeCount > 0
+                ? "Enjoy the rest day. Your streaks are safe."
+                : "Habits you add will show up here."}
+            </p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function TodaySkeleton() {
+  return (
+    <div aria-hidden className="animate-pulse">
+      <div className="mt-2 h-5 w-48 rounded bg-muted" />
+      <div className="mt-8 h-48 rounded-2xl bg-muted" />
+    </div>
   );
 }

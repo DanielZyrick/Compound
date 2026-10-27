@@ -8,7 +8,7 @@ type CreatedAt = ColumnType<Date, Date | string | undefined, never>;
 
 // date columns: always a "YYYY-MM-DD" string (see create-db.ts), never a Date,
 // so a calendar day can't shift when converted between timezones.
-type CalendarDate = string;
+export type CalendarDate = string;
 
 export const GOALS = ["career", "business", "faith", "health", "custom"] as const;
 export type Goal = (typeof GOALS)[number];
