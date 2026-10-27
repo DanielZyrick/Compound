@@ -17,6 +17,11 @@ export function useBrowserTimezone() {
   );
 }
 
+// Styled to match the shadcn Input. A native select keeps 400+ timezones
+// searchable by typing and works well on phones.
+const SELECT_CLASS =
+  "h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50";
+
 type Props = {
   value: string | null; // null until the browser timezone is known
   onChange: (timezone: string) => void;
@@ -25,7 +30,7 @@ type Props = {
 export function TimezoneSelect({ value, onChange }: Props) {
   if (!value) {
     return (
-      <select disabled className="rounded-lg border border-foreground/20 bg-transparent px-3 py-2">
+      <select disabled className={SELECT_CLASS}>
         <option>Detecting your timezone…</option>
       </select>
     );
@@ -40,8 +45,8 @@ export function TimezoneSelect({ value, onChange }: Props) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      aria-label="Timezone"
-      className="rounded-lg border border-foreground/20 bg-transparent px-3 py-2"
+      id="timezone"
+      className={SELECT_CLASS}
     >
       {options.map((zone) => (
         <option key={zone} value={zone}>

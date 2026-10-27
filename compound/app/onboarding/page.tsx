@@ -1,19 +1,22 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { Logo } from "@/components/logo";
 import { requireUser } from "@/lib/auth/dal";
 import { OnboardingForm } from "./onboarding-form";
 
 export default function OnboardingPage() {
   return (
-    <main className="mx-auto w-full max-w-xl flex-1 px-4 py-10">
-      <h1 className="text-3xl font-semibold">Welcome to Compound</h1>
-      <p className="mt-2 mb-10 opacity-70">
-        Small daily steps, compounding growth. Let&apos;s set up your first steps.
-      </p>
-
-      <Suspense fallback={<p className="opacity-50">Loading…</p>}>
-        <OnboardingGate />
-      </Suspense>
+    <main className="flex flex-1 justify-center bg-muted bg-dots px-4 py-10 sm:py-16">
+      <div className="w-full max-w-xl">
+        <div className="mb-6 flex justify-center">
+          <Logo />
+        </div>
+        <div className="rounded-[28px] border bg-card p-6 shadow-card sm:p-10">
+          <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+            <OnboardingGate />
+          </Suspense>
+        </div>
+      </div>
     </main>
   );
 }

@@ -21,6 +21,10 @@ async function main() {
   const url = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL_UNPOOLED is not set. See .env.example.");
 
+  // Always show which database is about to change. The host identifies the
+  // Neon branch, and never includes the password.
+  console.log(`Database: ${new URL(url).hostname}`);
+
   const db = createDb(url);
   const migrator = new Migrator({
     db,

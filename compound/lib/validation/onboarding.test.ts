@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { onboardingSchema, type OnboardingInput } from "./onboarding";
 
 const valid: OnboardingInput = {
-  goals: [{ goal: "health" }, { goal: "custom", customLabel: "Learn guitar" }],
+  focus: {
+    goal: "health",
+    description: "Run a 5K without stopping by the end of the year.",
+  },
   habits: [{ name: "Walk 20 minutes", schedule: [0, 1, 2, 3, 4, 5, 6] }],
   timezone: "Asia/Manila",
 };
@@ -10,7 +13,9 @@ const valid: OnboardingInput = {
 /** The error messages for an input, or [] if it's valid. */
 function errorsFor(input: unknown) {
   const result = onboardingSchema.safeParse(input);
-  return result.success ? [] : result.error.issues.map((issue) => issue.message);
+  return result.success
+    ? []
+    : result.error.issues.map((issue) => issue.message);
 }
 
 describe("onboardingSchema", () => {
@@ -18,44 +23,84 @@ describe("onboardingSchema", () => {
     expect(errorsFor(valid)).toEqual([]);
   });
 
-  it("trims names and sorts and de-duplicates schedule days", () => {
+  it("trims text and sorts and de-duplicates schedule days", () => {
     const data = onboardingSchema.parse({
       ...valid,
-      goals: [{ goal: "custom", customLabel: "  Learn guitar  " }],
+      focus: {
+        goal: "custom",
+        customLabel: "  Learn guitar  ",
+        description: "  Play three full songs by summer.  ",
+      },
       habits: [{ name: "  Pray  ", schedule: [5, 1, 3, 1] }],
     });
-    expect(data.goals[0]).toEqual({ goal: "custom", customLabel: "Learn guitar" });
+    expect(data.focus).toEqual({
+      goal: "custom",
+      customLabel: "Learn guitar",
+      description: "Play three full songs by summer.",
+    });
     expect(data.habits[0]).toEqual({ name: "Pray", schedule: [1, 3, 5] });
   });
 
-  describe("goals", () => {
-    it("requires at least one goal", () => {
-      expect(errorsFor({ ...valid, goals: [] })).toContain("Choose at least one goal.");
+  describe("focus", () => {
+    it("requires a focus type", () => {
+      const input = {
+        ...valid,
+        focus: { description: valid.focus.description },
+      };
+      expect(errorsFor(input)).toContain("Choose what you want to work on.");
     });
 
-    it("requires a label for a custom goal", () => {
-      const input = { ...valid, goals: [{ goal: "custom", customLabel: "   " }] };
-      expect(errorsFor(input)).toContain("Give your custom goal a name.");
+    it("rejects an unknown focus type", () => {
+      const input = { ...valid, focus: { ...valid.focus, goal: "money" } };
+      expect(errorsFor(input)).toContain("Choose what you want to work on.");
     });
 
-    it("rejects an unknown goal", () => {
-      expect(errorsFor({ ...valid, goals: [{ goal: "money" }] })).not.toEqual([]);
+    it("requires a name for a custom focus", () => {
+      const input = {
+        ...valid,
+        focus: {
+          goal: "custom",
+          customLabel: "   ",
+          description: valid.focus.description,
+        },
+      };
+      expect(errorsFor(input)).toContain("Give your custom focus a name.");
     });
 
-    it("rejects the same goal twice", () => {
-      const input = { ...valid, goals: [{ goal: "faith" }, { goal: "faith" }] };
-      expect(errorsFor(input)).toContain("Each goal can only be chosen once.");
+    it("requires a description of at least 20 characters, after trimming", () => {
+      const input = {
+        ...valid,
+        focus: { goal: "health", description: "  Get fit.            " },
+      };
+      expect(errorsFor(input)[0]).toMatch(/at least 20 characters/);
+    });
+
+    it("rejects a description over 500 characters", () => {
+      const input = {
+        ...valid,
+        focus: { goal: "health", description: "a".repeat(501) },
+      };
+      expect(errorsFor(input)).toContain(
+        "Keep your description under 500 characters.",
+      );
     });
   });
 
   describe("habits", () => {
     it("requires at least one habit", () => {
-      expect(errorsFor({ ...valid, habits: [] })).toContain("Add at least one habit.");
+      expect(errorsFor({ ...valid, habits: [] })).toContain(
+        "Add at least one habit.",
+      );
     });
 
     it("allows at most 5 habits", () => {
-      const habits = ["A", "B", "C", "D", "E", "F"].map((name) => ({ name, schedule: [1] }));
-      expect(errorsFor({ ...valid, habits })).toContain("Add at most 5 habits.");
+      const habits = ["A", "B", "C", "D", "E", "F"].map((name) => ({
+        name,
+        schedule: [1],
+      }));
+      expect(errorsFor({ ...valid, habits })).toContain(
+        "Add at most 5 habits.",
+      );
     });
 
     it("requires a name", () => {
@@ -75,7 +120,9 @@ describe("onboardingSchema", () => {
 
     it("requires at least one scheduled day", () => {
       const input = { ...valid, habits: [{ name: "Pray", schedule: [] }] };
-      expect(errorsFor(input)).toContain("Pick at least one day for each habit.");
+      expect(errorsFor(input)).toContain(
+        "Pick at least one day for each habit.",
+      );
     });
 
     it.each([[7], [-1], [1.5]])("rejects the weekday %s", (day) => {
@@ -85,12 +132,17 @@ describe("onboardingSchema", () => {
   });
 
   describe("timezone", () => {
-    it.each(["America/New_York", "Europe/London", "UTC"])("accepts %s", (timezone) => {
-      expect(errorsFor({ ...valid, timezone })).toEqual([]);
-    });
+    it.each(["America/New_York", "Europe/London", "UTC"])(
+      "accepts %s",
+      (timezone) => {
+        expect(errorsFor({ ...valid, timezone })).toEqual([]);
+      },
+    );
 
     it.each(["Mars/Olympus_Mons", "", "GMT+99"])("rejects %j", (timezone) => {
-      expect(errorsFor({ ...valid, timezone })).toContain("Choose a valid timezone.");
+      expect(errorsFor({ ...valid, timezone })).toContain(
+        "Choose a valid timezone.",
+      );
     });
   });
 });

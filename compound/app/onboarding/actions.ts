@@ -19,7 +19,7 @@ export async function completeOnboarding(
     // Show each problem once, in the order the form presents them.
     return { errors: [...new Set(parsed.error.issues.map((issue) => issue.message))] };
   }
-  const { goals, habits, timezone } = parsed.data;
+  const { focus, habits, timezone } = parsed.data;
 
   // All or nothing: if any insert fails, none of it is saved.
   await db.transaction().execute(async (trx) => {
@@ -36,13 +36,12 @@ export async function completeOnboarding(
 
     await trx
       .insertInto("focus_areas")
-      .values(
-        goals.map((g) => ({
-          user_id: user.id,
-          goal: g.goal,
-          custom_label: g.goal === "custom" ? g.customLabel : null,
-        })),
-      )
+      .values({
+        user_id: user.id,
+        goal: focus.goal,
+        custom_label: focus.goal === "custom" ? focus.customLabel : null,
+        description: focus.description,
+      })
       .execute();
 
     await trx

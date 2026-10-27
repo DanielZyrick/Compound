@@ -1,6 +1,7 @@
 import type { Weekday } from "@/lib/db/types";
+import { cn } from "@/lib/utils";
 
-const DAYS: { value: Weekday; short: string; name: string }[] = [
+export const DAYS: { value: Weekday; short: string; name: string }[] = [
   { value: 0, short: "S", name: "Sunday" },
   { value: 1, short: "M", name: "Monday" },
   { value: 2, short: "T", name: "Tuesday" },
@@ -32,9 +33,10 @@ export function WeekdayPicker({ value, onChange }: Props) {
             aria-label={day.name}
             aria-pressed={on}
             onClick={() => toggle(day.value)}
-            className={`size-9 rounded-full text-sm font-medium transition ${
-              on ? "bg-foreground text-background" : "border border-foreground/20 opacity-60"
-            }`}
+            className={cn(
+              "size-9 rounded-full text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              on ? "bg-primary text-primary-foreground" : "border text-muted-foreground hover:bg-muted",
+            )}
           >
             {day.short}
           </button>

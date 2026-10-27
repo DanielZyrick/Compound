@@ -31,6 +31,7 @@ export interface FocusAreasTable {
   user_id: string;
   goal: Goal;
   custom_label: string | null; // required when goal = 'custom', otherwise null
+  description: string | null; // what the user wants to achieve; null on rows from before migration 004
   created_at: CreatedAt;
 }
 

@@ -1,3 +1,6 @@
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { WeekdayPicker } from "@/components/weekday-picker";
 import type { Weekday } from "@/lib/db/types";
 
@@ -11,28 +14,29 @@ type Props = {
 
 export function HabitList({ habits, onUpdate, onRemove }: Props) {
   return (
-    <ul className="flex flex-col gap-4">
+    <ul className="flex flex-col gap-3">
       {habits.map((habit) => (
-        <li key={habit.key} className="flex flex-col gap-2 rounded-lg border border-foreground/15 p-3">
+        <li key={habit.key} className="flex flex-col gap-3 rounded-xl border p-3">
           <div className="flex gap-2">
-            <input
-              type="text"
+            <Input
               value={habit.name}
               onChange={(e) => onUpdate(habit.key, { name: e.target.value })}
               placeholder="Habit name, e.g. Read 10 pages"
               maxLength={60}
               aria-label="Habit name"
-              className="min-w-0 flex-1 rounded-lg border border-foreground/20 bg-transparent px-3 py-2"
+              className="h-10"
             />
             {habits.length > 1 && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => onRemove(habit.key)}
                 aria-label={`Remove ${habit.name || "habit"}`}
-                className="px-2 text-sm opacity-60 hover:opacity-100"
+                className="size-10 text-muted-foreground"
               >
-                Remove
-              </button>
+                <X />
+              </Button>
             )}
           </div>
           <WeekdayPicker
