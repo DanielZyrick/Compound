@@ -19,7 +19,7 @@ export interface NavItem {
 // One list for both the desktop sidebar and the phone tab bar.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/today", label: "Today", icon: House, ready: true },
-  { href: "/habits", label: "Habits", icon: ListChecks, ready: false },
+  { href: "/habits", label: "Habits", icon: ListChecks, ready: true },
   { href: "/tracks", label: "Learn", icon: GraduationCap, ready: false },
   { href: "/goals", label: "Goals", icon: Target, ready: false },
   { href: "/money", label: "Money", icon: Wallet, ready: false },

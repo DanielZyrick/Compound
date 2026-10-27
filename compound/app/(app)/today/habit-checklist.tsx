@@ -3,7 +3,7 @@
 import { startTransition, useOptimistic, useState } from "react";
 import { Check, Flame } from "lucide-react";
 import { describeSchedule } from "@/lib/dates/schedule";
-import type { TodayHabit } from "@/lib/habits/queries";
+import type { HabitSummary } from "@/lib/habits/queries";
 import { cn } from "@/lib/utils";
 import { setCheckin } from "./actions";
 
@@ -12,7 +12,7 @@ type Toggle = { id: string; done: boolean };
 // Checking a habit updates the screen immediately (optimistic), then the
 // server saves it and re-renders the page. If saving fails, React drops the
 // optimistic change and the row goes back to how it was.
-export function HabitChecklist({ habits }: { habits: TodayHabit[] }) {
+export function HabitChecklist({ habits }: { habits: HabitSummary[] }) {
   const [shown, applyToggle] = useOptimistic(habits, (state, { id, done }: Toggle) =>
     state.map((h) =>
       h.id === id && h.doneToday !== done
@@ -22,7 +22,7 @@ export function HabitChecklist({ habits }: { habits: TodayHabit[] }) {
   );
   const [failed, setFailed] = useState(false);
 
-  function toggle(habit: TodayHabit) {
+  function toggle(habit: HabitSummary) {
     const done = !habit.doneToday;
     setFailed(false);
     startTransition(async () => {
@@ -73,7 +73,7 @@ export function HabitChecklist({ habits }: { habits: TodayHabit[] }) {
   );
 }
 
-function HabitRow({ habit, onToggle }: { habit: TodayHabit; onToggle: () => void }) {
+function HabitRow({ habit, onToggle }: { habit: HabitSummary; onToggle: () => void }) {
   const { name, schedule, doneToday, streak } = habit;
 
   return (

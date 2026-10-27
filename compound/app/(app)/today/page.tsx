@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatLongDate, todayIn } from "@/lib/dates/calendar";
 import { getTodayHabits } from "@/lib/habits/queries";
@@ -40,6 +42,9 @@ async function TodayContent() {
                 ? "Enjoy the rest day. Your streaks are safe."
                 : "Habits you add will show up here."}
             </p>
+            <Link href="/habits" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
+              {activeCount > 0 ? "Manage habits" : "Add a habit"}
+            </Link>
           </div>
         )}
       </div>
