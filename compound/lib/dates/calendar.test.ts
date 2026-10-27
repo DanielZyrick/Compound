@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, formatLongDate, todayIn, weekdayOf } from "./calendar";
+import { addDays, daysBetween, formatLongDate, todayIn, weekdayOf } from "./calendar";
 
 describe("todayIn", () => {
   // 2026-10-27 16:30 UTC: already the 28th in Manila (UTC+8), still the 27th in New York.
@@ -48,5 +48,17 @@ describe("weekdayOf", () => {
 describe("formatLongDate", () => {
   it("formats without shifting the day", () => {
     expect(formatLongDate("2026-10-27")).toBe("Tuesday, October 27");
+  });
+});
+
+describe("daysBetween", () => {
+  it.each([
+    ["2026-10-27", "2026-10-27", 0],
+    ["2026-10-27", "2026-10-28", 1],
+    ["2026-10-28", "2026-10-27", -1],
+    ["2026-12-30", "2027-01-02", 3],
+    ["2026-10-31", "2026-11-02", 2], // across a daylight saving change
+  ])("%s → %s = %i", (from, to, expected) => {
+    expect(daysBetween(from, to)).toBe(expected);
   });
 });

@@ -1,0 +1,90 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { ArrowLeft, Check } from "lucide-react";
+import { z } from "zod";
+import { requireOnboardedUser } from "@/lib/auth/dal";
+import { todayIn } from "@/lib/dates/calendar";
+import { getTrack } from "@/lib/tracks/queries";
+import { cn } from "@/lib/utils";
+import { TrackBadges } from "../track-badges";
+
+export default function TrackPage({ params }: PageProps<"/tracks/[id]">) {
+  return (
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-8 md:py-10">
+      <Link href="/tracks" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-4" />
+        Tracks
+      </Link>
+
+      <Suspense fallback={<div aria-hidden className="mt-6 h-96 animate-pulse rounded-2xl bg-muted" />}>
+        <TrackPlan params={params} />
+      </Suspense>
+    </main>
+  );
+}
+
+async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) {
+  const { id } = await params;
+  // Anything that isn't a UUID can't be a track; don't send it to the database.
+  if (!z.uuid().safeParse(id).success) notFound();
+
+  const user = await requireOnboardedUser();
+  const track = await getTrack(user.id, id, todayIn(user.timezone));
+  if (!track) notFound();
+
+  return (
+    <>
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight">{track.title}</h1>
+      <p className="mt-1 text-muted-foreground">
+        Day {track.currentDay} of {track.total_days}
+        {track.habit_name && <> · Habit: {track.habit_name}</>}
+      </p>
+      <div className="mt-3">
+        <TrackBadges type={track.type} level={track.level} planSource={track.plan_source} />
+      </div>
+      {track.plan_source === "demo" && (
+        <p className="mt-4 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+          This is an example plan, made without AI because no API key is set. Tracks created after
+          AI is connected get a plan written for your topic and goal.
+        </p>
+      )}
+
+      <ol className="mt-8 flex flex-col gap-2">
+        {track.days.map((day) => {
+          const isToday = day.day_number === track.currentDay;
+          const isPast = day.day_number < track.currentDay;
+          return (
+            <li
+              key={day.day_number}
+              aria-current={isToday ? "step" : undefined}
+              className={cn(
+                "flex gap-4 rounded-xl border p-4",
+                isToday && "border-primary bg-primary/5",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid size-8 shrink-0 place-items-center rounded-full text-sm font-medium tabular-nums",
+                  isToday ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground",
+                )}
+              >
+                {isPast ? <Check className="size-4" /> : day.day_number}
+              </span>
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {day.title}
+                  {isToday && <span className="ml-2 text-xs font-normal text-primary">Today</span>}
+                </p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{day.summary}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Daily lessons and exercises are coming in the next update.
+      </p>
+    </>
+  );
+}

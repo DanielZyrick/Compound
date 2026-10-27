@@ -41,3 +41,8 @@ export function formatLongDate(date: CalendarDate): string {
     timeZone: "UTC",
   }).format(toUtcDate(date));
 }
+
+/** Whole days from `from` to `to` (negative if `to` is earlier). */
+export function daysBetween(from: CalendarDate, to: CalendarDate): number {
+  return Math.round((toUtcDate(to).getTime() - toUtcDate(from).getTime()) / 86_400_000);
+}
