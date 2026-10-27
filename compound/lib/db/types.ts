@@ -51,11 +51,55 @@ export interface HabitCheckinsTable {
   created_at: CreatedAt;
 }
 
+export const TRACK_TYPES = ["skill", "reading", "thinking"] as const;
+export type TrackType = (typeof TRACK_TYPES)[number];
+export const TRACK_LEVELS = ["beginner", "intermediate", "advanced"] as const;
+export type TrackLevel = (typeof TRACK_LEVELS)[number];
+export type TrackStatus = "active" | "completed" | "archived";
+
+export interface TracksTable {
+  id: Generated<string>;
+  user_id: string;
+  title: string;
+  topic: string; // what the user asked to learn, in their words
+  type: TrackType;
+  level: TrackLevel;
+  total_days: number;
+  start_date: CalendarDate;
+  habit_id: string | null; // the habit a finished lesson checks off
+  status: ColumnType<TrackStatus, TrackStatus | undefined, TrackStatus>;
+  plan_source: "ai" | "demo"; // demo: the built-in example plan, used without an API key
+  created_at: CreatedAt;
+}
+
+export interface TrackDaysTable {
+  id: Generated<string>;
+  track_id: string;
+  day_number: number; // 1 ... total_days
+  title: string;
+  summary: string;
+}
+
+export interface AiCallsTable {
+  id: Generated<string>;
+  user_id: string;
+  day: CalendarDate; // the user's local date, for the daily limit
+  purpose: string;
+  model: string;
+  ok: boolean;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
   habits: HabitsTable;
   habit_checkins: HabitCheckinsTable;
+  tracks: TracksTable;
+  track_days: TrackDaysTable;
+  ai_calls: AiCallsTable;
 }
 
 // Row types for use in the rest of the app.
@@ -72,3 +116,6 @@ export type HabitUpdate = Updateable<HabitsTable>;
 
 export type HabitCheckin = Selectable<HabitCheckinsTable>;
 export type NewHabitCheckin = Insertable<HabitCheckinsTable>;
+
+export type Track = Selectable<TracksTable>;
+export type TrackDay = Selectable<TrackDaysTable>;
