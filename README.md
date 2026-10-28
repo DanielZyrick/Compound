@@ -2,19 +2,35 @@
 
 **Small daily steps, compounding growth.**
 
-Compound is a web app for getting 1% better every day. You track daily habits, follow short AI-generated learning tracks, and break big goals into steps you can take today.
+Compound is a web app for getting 1% better every day. You track daily habits, follow short AI-generated learning tracks, break big goals into steps you can take today, and write down every peso you spend.
 
 **Live:** [compound-nine-chi.vercel.app](https://compound-nine-chi.vercel.app)
 
-> Work in progress. This is my portfolio project, built in small, deployable steps.
+> This is my portfolio project, built in small, deployable steps.
+
+![The Today page: today's lesson, goal steps and habits](docs/screenshots/today.png)
 
 ## Modules
 
 | Module | What it does | Status |
 | --- | --- | --- |
 | **Learning & Habits** | Daily habits with streaks. AI learning tracks (skills, reading plans, thinking exercises) with lessons, exercises and feedback. A principle of the day. | Done |
-| **Goals** | A plan, deadline and progress for each goal, with built-in buffer time. When you fall behind, the plan adjusts itself. | Planned |
-| **Money** | Income and expenses, linked to your goals. | Planned |
+| **Goals** | The AI drafts a plan of milestones and steps, which you can edit. Each goal keeps buffer days before its deadline. When you fall behind, the remaining dates move and the status changes from on track to behind or at risk. Goals that need attention get a dot in the nav. | Done |
+| **Money** | Record expenses and income in a few taps. Monthly totals, spending by category, and your own categories. Income can go toward a goal's savings target. | Done |
+
+## Screenshots
+
+| A goal that's slipping | Money for the month |
+| --- | --- |
+| ![A goal page with its savings, progress and adjusted dates](docs/screenshots/goal.png) | ![The Money page with the add form and monthly totals](docs/screenshots/money.png) |
+| **Progress** | **Landing page** |
+| ![Habit history over the last 30 days](docs/screenshots/progress.png) | ![The landing page](docs/screenshots/landing.png) |
+
+<p>
+  <img src="docs/screenshots/today-phone.png" alt="Today on a phone" width="260">
+  &nbsp;
+  <img src="docs/screenshots/money-phone.png" alt="Money on a phone" width="260">
+</p>
 
 ## Tech stack
 
@@ -25,7 +41,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **[Zod](https://zod.dev)** to validate all form input and AI output
 - **[Tailwind CSS 4](https://tailwindcss.com)** and **[shadcn/ui](https://ui.shadcn.com)** on Base UI
 - **Claude API**, called from the server only
-- **[Vitest](https://vitest.dev)** for tests
+- **[Vitest](https://vitest.dev)** for unit tests and **[Playwright](https://playwright.dev)** for end-to-end tests
 - Deployed on **Vercel**
 
 ## How it's built
@@ -35,6 +51,9 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **Typed database.** The table types are in [`lib/db/types.ts`](compound/lib/db/types.ts), so Kysely catches mistakes in queries at compile time. Constraints such as allowed values and unique check-ins are enforced in Postgres as well.
 - **Streaks are calculated, never stored.** They're always derived from the check-in history, so they can't drift out of sync.
 - **AI is treated as untrusted input.** Every AI response must be JSON that passes a Zod schema. Generated content is cached so it's never regenerated. Model names come from environment variables, and the AI never writes scripture text.
+- **Demo mode.** Without an API key (or with `AI_DEMO_MODE=1`), the app uses clearly labelled example content instead of calling Claude, so it runs end to end for free.
+- **Goal schedules are pure functions.** [`lib/goals/schedule.ts`](compound/lib/goals/schedule.ts) works out the status, adjusted dates and buffer use from the plan and the steps you've ticked. Nothing about the schedule is stored, and it's covered by unit tests. The pace comes from the original plan, so extending a deadline really gives you more room.
+- **Money in integer cents.** Amounts are parsed and stored as whole cents, never floats, so totals don't pick up rounding errors. They're formatted with `Intl` in the currency you choose in Settings.
 
 ## Running it locally
 
@@ -109,7 +128,7 @@ rm .env.migrate-main
 
 ### End-to-end tests
 
-The Playwright tests in `e2e/` sign in as a dedicated test user, walk through onboarding, habits, a lesson, a reading and settings, then delete the test user. They:
+The 16 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits, a lesson, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal) and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
 
 - **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
 - force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;
@@ -138,6 +157,7 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | GitHub OAuth app |
 | `ANTHROPIC_API_KEY` | Claude API (server only) |
 | `MODEL_FAST`, `MODEL_SMART` | Claude model names: fast for feedback, smart for planning |
+| `AI_DEMO_MODE` | Optional. `1` uses example content instead of calling Claude |
 | `E2E_DB_HOST` | End-to-end tests only: the dev database host they're allowed to use |
 
 `.env.local` is gitignored. Only `.env.example` is committed, with empty values.
@@ -145,22 +165,30 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 ## Project structure
 
 ```
+docs/screenshots/   images for this README
 compound/
   app/
-    (app)/          signed-in pages that share the sidebar layout (/today, …)
+    (app)/          signed-in pages: today, habits, tracks, goals, money, progress, settings
     onboarding/     first-run setup: focus areas, first habits, timezone
     login/          GitHub sign-in and error messages
     page.tsx        landing page (fully static)
   components/
-    app-shell/      sidebar, phone tab bar, account menu
+    app-shell/      sidebar, phone tab bar, account menu, nav attention dot
     landing/        landing page sections
+    money/          category icons
     ui/             shadcn/ui components
   db/
     migrations/     Kysely migrations, listed in index.ts
     migrate.ts      migration runner (npm run db:migrate)
+  e2e/              Playwright tests and their helpers
   lib/
+    ai/             Claude client, demo mode, daily limits, call logging
     auth/           data access layer, server actions, login errors
     db/             Kysely client and table types
+    goals/          plan prompt, schedule engine, queries
+    habits/         streaks and check-ins
+    money/          amounts in cents, categories, monthly summaries
+    tracks/, lessons/, reading/, principles/, progress/
     validation/     Zod schemas
   auth.ts           Auth.js setup
   proxy.ts          redirects signed-out visitors to /login
@@ -173,9 +201,11 @@ compound/
 3. ✅ AI learning tracks: plans, daily lessons, exercises and feedback
 4. ✅ Reading plans, reflections, principle of the day, progress page
 5. ✅ Polish: error pages, settings, mobile pass, end-to-end tests
-6. Goals module: plans, buffers, self-adjusting schedules, reminders
-7. Money module: income and expenses linked to goals
+6. ✅ Goals module: AI plans, buffers, self-adjusting schedules, in-app reminders
+7. ✅ Money module: expenses and income, categories, savings toward goals
 8. Demo video and write-up
+
+Later: monthly budgets, email reminders.
 
 ---
 
