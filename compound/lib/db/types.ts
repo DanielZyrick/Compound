@@ -78,6 +78,30 @@ export interface TrackDaysTable {
   day_number: number; // 1 ... total_days
   title: string;
   summary: string;
+  completed_at: Timestamp | null; // when the learner finished this day's lesson
+}
+
+export interface LessonsTable {
+  id: Generated<string>;
+  track_day_id: string;
+  // JSON written once as a string; read as unknown and validated with Zod
+  // (lib/lessons/schema.ts) before use.
+  content: ColumnType<unknown, string, never>;
+  source: "ai" | "demo";
+  created_at: CreatedAt;
+}
+
+export interface AttemptsTable {
+  id: Generated<string>;
+  lesson_id: string;
+  user_id: string;
+  exercise_index: number;
+  answer: string;
+  is_correct: boolean | null; // null when not graded (demo mode)
+  feedback: string | null;
+  better_version: string | null;
+  source: "auto" | "ai" | "demo"; // auto: multiple choice, graded by the server
+  created_at: CreatedAt;
 }
 
 export interface AiCallsTable {
@@ -100,6 +124,8 @@ export interface Database {
   tracks: TracksTable;
   track_days: TrackDaysTable;
   ai_calls: AiCallsTable;
+  lessons: LessonsTable;
+  attempts: AttemptsTable;
 }
 
 // Row types for use in the rest of the app.

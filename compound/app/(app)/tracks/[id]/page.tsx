@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Lock } from "lucide-react";
 import { z } from "zod";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
+import { isDayOpen } from "@/lib/lessons/rules";
 import { getTrack } from "@/lib/tracks/queries";
 import { cn } from "@/lib/utils";
 import { TrackBadges } from "../track-badges";
@@ -53,38 +54,50 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
       <ol className="mt-8 flex flex-col gap-2">
         {track.days.map((day) => {
           const isToday = day.day_number === track.currentDay;
-          const isPast = day.day_number < track.currentDay;
-          return (
-            <li
-              key={day.day_number}
-              aria-current={isToday ? "step" : undefined}
-              className={cn(
-                "flex gap-4 rounded-xl border p-4",
-                isToday && "border-primary bg-primary/5",
-              )}
-            >
+          const open = isDayOpen(day.day_number, track.currentDay);
+          const done = day.completed_at !== null;
+          const content = (
+            <>
               <span
                 className={cn(
                   "grid size-8 shrink-0 place-items-center rounded-full text-sm font-medium tabular-nums",
-                  isToday ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground",
+                  done && "bg-success text-white",
+                  !done && isToday && "bg-primary text-primary-foreground",
+                  !done && !isToday && "bg-secondary text-muted-foreground",
                 )}
               >
-                {isPast ? <Check className="size-4" /> : day.day_number}
+                {done ? <Check className="size-4" aria-label="Done" /> : open ? day.day_number : <Lock className="size-3.5" aria-label="Locked" />}
               </span>
-              <div className="min-w-0">
-                <p className="font-medium">
+              <span className="min-w-0">
+                <span className="block font-medium">
                   {day.title}
                   {isToday && <span className="ml-2 text-xs font-normal text-primary">Today</span>}
-                </p>
-                <p className="mt-0.5 text-sm text-muted-foreground">{day.summary}</p>
-              </div>
+                </span>
+                <span className="mt-0.5 block text-sm text-muted-foreground">{day.summary}</span>
+              </span>
+            </>
+          );
+          const className = cn(
+            "flex gap-4 rounded-xl border p-4",
+            isToday && "border-primary bg-primary/5",
+            !open && "opacity-60",
+          );
+          return (
+            <li key={day.day_number} aria-current={isToday ? "step" : undefined}>
+              {open ? (
+                <Link
+                  href={`/tracks/${track.id}/day/${day.day_number}`}
+                  className={cn(className, "outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50")}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div className={className}>{content}</div>
+              )}
             </li>
           );
         })}
       </ol>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Daily lessons and exercises are coming in the next update.
-      </p>
     </>
   );
 }

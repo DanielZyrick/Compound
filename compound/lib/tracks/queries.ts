@@ -43,7 +43,7 @@ export async function getTrack(userId: string, trackId: string, today: CalendarD
 
   const days = await db
     .selectFrom("track_days")
-    .select(["day_number", "title", "summary"])
+    .select(["day_number", "title", "summary", "completed_at"])
     .where("track_id", "=", trackId)
     .orderBy("day_number")
     .execute();

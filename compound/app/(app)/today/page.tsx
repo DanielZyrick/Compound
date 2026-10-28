@@ -4,7 +4,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatLongDate, todayIn } from "@/lib/dates/calendar";
 import { getTodayHabits } from "@/lib/habits/queries";
+import { getTodayLessons } from "@/lib/lessons/queries";
 import { HabitChecklist } from "./habit-checklist";
+import { TodayLessons } from "./today-lessons";
 
 export default function TodayPage() {
   return (
@@ -23,13 +25,17 @@ async function TodayContent() {
   // The date in the user's timezone decides which habits are due and which
   // check-ins count as today.
   const today = todayIn(user.timezone);
-  const { habits, activeCount } = await getTodayHabits(user.id, today);
+  const [{ habits, activeCount }, lessons] = await Promise.all([
+    getTodayHabits(user.id, today),
+    getTodayLessons(user.id, today),
+  ]);
 
   return (
     <>
       <p className="mt-1 text-muted-foreground">{formatLongDate(today)}</p>
 
-      <div className="mt-8">
+      <div className="mt-8 flex flex-col gap-6">
+        {lessons.length > 0 && <TodayLessons lessons={lessons} />}
         {habits.length > 0 ? (
           <HabitChecklist habits={habits} />
         ) : (
