@@ -5,7 +5,9 @@ import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatLongDate, todayIn } from "@/lib/dates/calendar";
 import { getTodayHabits } from "@/lib/habits/queries";
 import { getTodayLessons } from "@/lib/lessons/queries";
+import { getPrinciple } from "@/lib/principles/queries";
 import { HabitChecklist } from "./habit-checklist";
+import { PrincipleCard } from "./principle-card";
 import { TodayLessons } from "./today-lessons";
 
 export default function TodayPage() {
@@ -25,9 +27,10 @@ async function TodayContent() {
   // The date in the user's timezone decides which habits are due and which
   // check-ins count as today.
   const today = todayIn(user.timezone);
-  const [{ habits, activeCount }, lessons] = await Promise.all([
+  const [{ habits, activeCount }, lessons, principle] = await Promise.all([
     getTodayHabits(user.id, today),
     getTodayLessons(user.id, today),
+    getPrinciple(user.id, today), // only reads; the card writes it once if missing
   ]);
 
   return (
@@ -53,6 +56,7 @@ async function TodayContent() {
             </Link>
           </div>
         )}
+        <PrincipleCard initial={principle} />
       </div>
     </>
   );

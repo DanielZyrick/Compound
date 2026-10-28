@@ -116,6 +116,18 @@ export interface AiCallsTable {
   created_at: CreatedAt;
 }
 
+export interface DailyPrinciplesTable {
+  id: Generated<string>;
+  user_id: string;
+  date: CalendarDate; // the user's local date
+  // JSON written once as a string; read as unknown and validated with Zod
+  // (lib/principles/schema.ts) before use.
+  content: ColumnType<unknown, string, never>;
+  source: "ai" | "demo";
+  reflection: string | null;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -126,6 +138,7 @@ export interface Database {
   ai_calls: AiCallsTable;
   lessons: LessonsTable;
   attempts: AttemptsTable;
+  daily_principles: DailyPrinciplesTable;
 }
 
 // Row types for use in the rest of the app.
