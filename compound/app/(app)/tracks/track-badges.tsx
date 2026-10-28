@@ -14,13 +14,13 @@ export function TrackBadges({
   planSource,
 }: {
   type: TrackType;
-  level: TrackLevel;
-  planSource: "ai" | "demo";
+  level: TrackLevel | null; // reading tracks have no level
+  planSource: "ai" | "demo" | "fixed";
 }) {
   return (
     <span className="flex flex-wrap gap-1.5">
       <Badge variant="secondary">{TYPE_LABELS[type]}</Badge>
-      <Badge variant="secondary">{LEVEL_LABELS[level]}</Badge>
+      {level && <Badge variant="secondary">{LEVEL_LABELS[level]}</Badge>}
       {planSource === "demo" && (
         <Badge variant="outline" title="Made without AI because no API key is set">
           Example plan

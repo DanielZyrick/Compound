@@ -10,8 +10,9 @@ import { db } from "@/lib/db";
 import { demoFeedback, demoLesson } from "@/lib/lessons/demo";
 import { FEEDBACK_SYSTEM_PROMPT, feedbackPrompt, LESSON_SYSTEM_PROMPT, lessonPrompt } from "@/lib/lessons/prompts";
 import { getOwnedLesson, parseLesson } from "@/lib/lessons/queries";
-import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE, shouldCheckHabit } from "@/lib/lessons/rules";
+import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE } from "@/lib/lessons/rules";
 import { feedbackSchema, lessonSchema } from "@/lib/lessons/schema";
+import { completeTrackDay } from "@/lib/tracks/complete";
 import { currentTrackDay } from "@/lib/tracks/progress";
 
 type Result = { errors: string[] };
@@ -35,7 +36,8 @@ export async function startLesson(input: unknown): Promise<Result> {
     .where("id", "=", trackId)
     .where("user_id", "=", user.id)
     .executeTakeFirst();
-  if (!track || track.type === "reading") return { errors: [SOMETHING_WRONG] };
+  // Reading tracks have no AI lessons; skill and thinking tracks always have a level.
+  if (!track || track.type === "reading" || !track.level) return { errors: [SOMETHING_WRONG] };
 
   const today = todayIn(user.timezone);
   if (!isDayOpen(dayNumber, currentTrackDay(track.start_date, today, track.total_days))) {
@@ -154,7 +156,7 @@ export async function submitOpenAnswer(input: unknown): Promise<Result> {
 
   const lesson = await getOwnedLesson(user.id, lessonId);
   const exercise = lesson?.content.exercises[exerciseIndex];
-  if (!lesson || !exercise || exercise.type !== "open" || lesson.type === "reading") {
+  if (!lesson || !exercise || exercise.type !== "open" || lesson.type === "reading" || !lesson.level) {
     return { errors: [SOMETHING_WRONG] };
   }
 
@@ -251,39 +253,65 @@ export async function completeLesson(input: unknown): Promise<Result> {
   }
 
   const today = todayIn(user.timezone);
+  await db.transaction().execute((trx) =>
+    completeTrackDay(trx, { trackId, dayId: row.dayId, habitId: row.habit_id, today }),
+  );
+
+  refresh();
+  return { errors: [] };
+}
+
+const reflectionSchema = z.object({
+  trackId: z.uuid(),
+  dayNumber: z.int().min(1),
+  text: z
+    .string()
+    .trim()
+    .min(10, { error: "Write a little more (at least a sentence)." })
+    .max(5000, { error: "Keep your reflection under 5,000 characters." }),
+});
+
+/**
+ * Saves the reflection for a reading-track day (editing replaces it). The
+ * first save completes the day and ticks the track's habit, like finishing a
+ * lesson. No AI is involved.
+ */
+export async function saveReadingReflection(input: unknown): Promise<Result> {
+  const user = await requireOnboardedUser();
+  const parsed = reflectionSchema.safeParse(input);
+  if (!parsed.success) return { errors: [...new Set(parsed.error.issues.map((i) => i.message))] };
+  const { trackId, dayNumber, text } = parsed.data;
+
+  const row = await db
+    .selectFrom("track_days")
+    .innerJoin("tracks", "tracks.id", "track_days.track_id")
+    .select([
+      "track_days.id as dayId",
+      "track_days.completed_at",
+      "tracks.type",
+      "tracks.habit_id",
+      "tracks.start_date",
+      "tracks.total_days",
+    ])
+    .where("tracks.id", "=", trackId)
+    .where("tracks.user_id", "=", user.id)
+    .where("track_days.day_number", "=", dayNumber)
+    .executeTakeFirst();
+  if (!row || row.type !== "reading") return { errors: [SOMETHING_WRONG] };
+
+  const today = todayIn(user.timezone);
+  if (!isDayOpen(dayNumber, currentTrackDay(row.start_date, today, row.total_days))) {
+    return { errors: ["This day isn't open yet."] };
+  }
+
   await db.transaction().execute(async (trx) => {
     await trx
-      .updateTable("track_days")
-      .set({ completed_at: new Date() })
-      .where("id", "=", row.dayId)
-      .where("completed_at", "is", null)
+      .insertInto("reflections")
+      .values({ user_id: user.id, track_day_id: row.dayId, text })
+      .onConflict((oc) => oc.column("track_day_id").doUpdateSet({ text, updated_at: new Date() }))
       .execute();
-
-    if (row.habit_id) {
-      const habit = await trx
-        .selectFrom("habits")
-        .select(["archived_at", "schedule"])
-        .where("id", "=", row.habit_id)
-        .executeTakeFirst();
-      const check = habit ? { archived: habit.archived_at !== null, schedule: habit.schedule } : null;
-      if (shouldCheckHabit(check, today)) {
-        await trx
-          .insertInto("habit_checkins")
-          .values({ habit_id: row.habit_id, date: today })
-          .onConflict((oc) => oc.columns(["habit_id", "date"]).doNothing())
-          .execute();
-      }
-    }
-
-    // The whole track is done when no day is left unfinished.
-    const remaining = await trx
-      .selectFrom("track_days")
-      .select("id")
-      .where("track_id", "=", trackId)
-      .where("completed_at", "is", null)
-      .executeTakeFirst();
-    if (!remaining) {
-      await trx.updateTable("tracks").set({ status: "completed" }).where("id", "=", trackId).execute();
+    if (!row.completed_at) {
+      await completeTrackDay(trx, { trackId, dayId: row.dayId, habitId: row.habit_id, today });
     }
   });
 

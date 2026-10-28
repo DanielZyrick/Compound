@@ -9,6 +9,8 @@ type Props<T extends string | number> = {
   value: T | null;
   onChange: (value: T) => void;
   columns?: 2 | 3;
+  /** One card per row on phones; for options with longer text. */
+  stackOnMobile?: boolean;
 };
 
 /**
@@ -22,11 +24,19 @@ export function OptionGroup<T extends string | number>({
   value,
   onChange,
   columns = 3,
+  stackOnMobile = false,
 }: Props<T>) {
   return (
     <fieldset>
       <legend className="mb-2 text-sm font-medium">{legend}</legend>
-      <div className={cn("grid gap-2", columns === 2 ? "grid-cols-2" : "grid-cols-3")}>
+      <div
+        className={cn(
+          "grid gap-2",
+          stackOnMobile
+            ? columns === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-3"
+            : columns === 2 ? "grid-cols-2" : "grid-cols-3",
+        )}
+      >
         {options.map((option) => (
           <label
             key={option.value}

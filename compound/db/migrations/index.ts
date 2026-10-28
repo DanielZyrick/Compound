@@ -6,6 +6,7 @@ import * as m004 from "./004_focus_area_description";
 import * as m005 from "./005_tracks_and_ai_calls";
 import * as m006 from "./006_lessons";
 import * as m007 from "./007_daily_principles";
+import * as m008 from "./008_reading_tracks";
 
 // Every migration, listed by name. Kysely runs them in name order and records
 // which ones are done in the kysely_migration table.
@@ -18,4 +19,5 @@ export const migrations: Record<string, Migration> = {
   "005_tracks_and_ai_calls": m005,
   "006_lessons": m006,
   "007_daily_principles": m007,
+  "008_reading_tracks": m008,
 };

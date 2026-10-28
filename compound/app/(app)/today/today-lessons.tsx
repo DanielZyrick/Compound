@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ChevronRight, CircleCheck, GraduationCap } from "lucide-react";
+import { BookOpen, ChevronRight, CircleCheck, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TodayLesson = {
   trackId: string;
   trackTitle: string;
+  reading: boolean;
   dayNumber: number;
   totalDays: number;
   dayTitle: string;
@@ -17,7 +18,7 @@ export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
   return (
     <section className="rounded-2xl border p-5 shadow-card">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-semibold">Today&apos;s lessons</h2>
+        <h2 className="font-semibold">Today&apos;s learning</h2>
         <p className="text-sm text-muted-foreground tabular-nums">
           {doneCount} of {lessons.length} done
         </p>
@@ -36,11 +37,17 @@ export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
                   lesson.done ? "bg-success text-white" : "bg-primary/10 text-primary",
                 )}
               >
-                {lesson.done ? <CircleCheck className="size-4" /> : <GraduationCap className="size-4" />}
+                {lesson.done ? (
+                  <CircleCheck className="size-4" />
+                ) : lesson.reading ? (
+                  <BookOpen className="size-4" />
+                ) : (
+                  <GraduationCap className="size-4" />
+                )}
               </span>
               <span className="min-w-0 flex-1">
                 <span className={cn("block truncate font-medium", lesson.done && "text-muted-foreground")}>
-                  {lesson.dayTitle}
+                  {lesson.reading ? `Read ${lesson.dayTitle}` : lesson.dayTitle}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {lesson.trackTitle} · Day {lesson.dayNumber} of {lesson.totalDays}

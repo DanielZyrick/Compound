@@ -79,16 +79,15 @@ export async function getOwnedLesson(userId: string, lessonId: string) {
 }
 
 /**
- * For the Today page: each active track's lesson for today, with whether it's
- * done. Reading tracks are left out (they don't have lessons).
+ * For the Today page: each active track's step for today (a lesson, or a
+ * reading for reading tracks), with whether it's done.
  */
 export async function getTodayLessons(userId: string, today: CalendarDate) {
   const tracks = await db
     .selectFrom("tracks")
-    .select(["id", "title", "total_days", "start_date"])
+    .select(["id", "title", "type", "total_days", "start_date"])
     .where("user_id", "=", userId)
     .where("status", "=", "active")
-    .where("type", "!=", "reading")
     .orderBy("created_at")
     .execute();
   if (tracks.length === 0) return [];
@@ -107,6 +106,7 @@ export async function getTodayLessons(userId: string, today: CalendarDate) {
       {
         trackId: track.id,
         trackTitle: track.title,
+        reading: track.type === "reading",
         dayNumber,
         totalDays: track.total_days,
         dayTitle: day.title,
@@ -114,4 +114,15 @@ export async function getTodayLessons(userId: string, today: CalendarDate) {
       },
     ];
   });
+}
+
+/** The user's reflection for a reading-track day, or null. */
+export async function getReflection(userId: string, trackDayId: string): Promise<string | null> {
+  const row = await db
+    .selectFrom("reflections")
+    .select("text")
+    .where("user_id", "=", userId)
+    .where("track_day_id", "=", trackDayId)
+    .executeTakeFirst();
+  return row?.text ?? null;
 }

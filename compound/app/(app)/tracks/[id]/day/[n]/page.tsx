@@ -2,17 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { ArrowLeft, Clock, Lock } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, ExternalLink, Lock } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/ai/config";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatLongDate, todayIn } from "@/lib/dates/calendar";
-import { getLessonPage, type LessonAttempt } from "@/lib/lessons/queries";
+import { getLessonPage, getReflection, type LessonAttempt } from "@/lib/lessons/queries";
 import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE, unlockDate } from "@/lib/lessons/rules";
 import type { LessonContent } from "@/lib/lessons/schema";
+import { BIBLE_VERSION, bibleGatewayUrl, reflectionPrompt } from "@/lib/reading/plans";
 import { CompleteLesson } from "./complete-lesson";
 import { MultipleChoiceExercise, OpenExercise } from "./exercises";
+import { ReadingReflection } from "./reading-reflection";
 import { StartLesson } from "./start-lesson";
 
 const paramsSchema = z.object({ id: z.uuid(), n: z.coerce.number().int().min(1).max(365) });
@@ -38,6 +41,10 @@ async function Lesson({ params }: Pick<PageProps<"/tracks/[id]/day/[n]">, "param
   await connection(); // demo mode reads the environment at request time
 
   const open = isDayOpen(dayNumber, page.currentDay);
+  const nextOpenDay =
+    dayNumber < page.total_days && isDayOpen(dayNumber + 1, page.currentDay) ? dayNumber + 1 : null;
+  const reading = page.type === "reading";
+  const reflection = reading && open ? await getReflection(user.id, page.dayId) : null;
 
   return (
     <>
@@ -69,9 +76,23 @@ async function Lesson({ params }: Pick<PageProps<"/tracks/[id]/day/[n]">, "param
           <div className="rounded-2xl border border-dashed p-8 text-center">
             <Lock className="mx-auto size-5 text-muted-foreground" />
             <p className="mt-2 font-medium">
-              This lesson opens on {formatLongDate(unlockDate(page.start_date, dayNumber))}.
+              This {reading ? "reading" : "lesson"} opens on{" "}
+              {formatLongDate(unlockDate(page.start_date, dayNumber))}.
             </p>
             <p className="mt-1 text-sm text-muted-foreground">One small step a day.</p>
+          </div>
+        ) : reading ? (
+          <div className="flex flex-col gap-6">
+            <ReadingPassage passage={page.title} />
+            <ReadingReflection
+              trackId={trackId}
+              dayNumber={dayNumber}
+              prompt={reflectionPrompt(dayNumber)}
+              saved={reflection}
+              completed={page.completed_at !== null}
+              hasHabit={page.habit_id !== null}
+              nextOpenDay={nextOpenDay}
+            />
           </div>
         ) : !page.lesson || !page.lessonId ? (
           <StartLesson trackId={trackId} dayNumber={dayNumber} demoMode={isDemoMode()} />
@@ -84,14 +105,35 @@ async function Lesson({ params }: Pick<PageProps<"/tracks/[id]/day/[n]">, "param
               completed={page.completed_at !== null}
               ready={canComplete(page.lesson.exercises.length, page.attempts.map((a) => a.exercise_index))}
               hasHabit={page.habit_id !== null}
-              nextOpenDay={
-                dayNumber < page.total_days && isDayOpen(dayNumber + 1, page.currentDay) ? dayNumber + 1 : null
-              }
+              nextOpenDay={nextOpenDay}
             />
           </div>
         )}
       </div>
     </>
+  );
+}
+
+/** The day's passage, read in a real translation. Scripture text is never shown or written here. */
+function ReadingPassage({ passage }: { passage: string }) {
+  return (
+    <section className="rounded-2xl border bg-muted/40 p-6 text-center">
+      <BookOpen className="mx-auto size-6 text-primary" />
+      <p className="mt-2 text-sm text-muted-foreground">Today&apos;s reading</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight">{passage}</p>
+      <a
+        href={bibleGatewayUrl(passage)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={buttonVariants({ className: "mt-4 h-10 px-5" })}
+      >
+        Read {passage}
+        <ExternalLink />
+      </a>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Opens Bible Gateway ({BIBLE_VERSION}) in a new tab. Come back here to reflect.
+      </p>
+    </section>
   );
 }
 

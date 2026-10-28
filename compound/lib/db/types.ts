@@ -63,12 +63,15 @@ export interface TracksTable {
   title: string;
   topic: string; // what the user asked to learn, in their words
   type: TrackType;
-  level: TrackLevel;
+  level: TrackLevel | null; // null for reading tracks
+  reading_plan: string | null; // reading tracks: the fixed plan's id (lib/reading/plans.ts)
   total_days: number;
   start_date: CalendarDate;
   habit_id: string | null; // the habit a finished lesson checks off
   status: ColumnType<TrackStatus, TrackStatus | undefined, TrackStatus>;
-  plan_source: "ai" | "demo"; // demo: the built-in example plan, used without an API key
+  // ai: written by Claude; demo: the built-in example (no API key);
+  // fixed: a reading plan from the code.
+  plan_source: "ai" | "demo" | "fixed";
   created_at: CreatedAt;
 }
 
@@ -128,6 +131,16 @@ export interface DailyPrinciplesTable {
   created_at: CreatedAt;
 }
 
+export interface ReflectionsTable {
+  id: Generated<string>;
+  user_id: string;
+  track_day_id: string; // one reflection per day
+  text: string;
+  created_at: CreatedAt;
+  // Defaults to now() on insert; set explicitly when the reflection is edited.
+  updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -139,6 +152,7 @@ export interface Database {
   lessons: LessonsTable;
   attempts: AttemptsTable;
   daily_principles: DailyPrinciplesTable;
+  reflections: ReflectionsTable;
 }
 
 // Row types for use in the rest of the app.
