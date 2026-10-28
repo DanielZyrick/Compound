@@ -46,7 +46,7 @@ export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className={cn("block truncate font-medium", lesson.done && "text-muted-foreground")}>
+                <span className={cn("line-clamp-2 block font-medium break-words", lesson.done && "text-muted-foreground")}>
                   {lesson.reading ? `Read ${lesson.dayTitle}` : lesson.dayTitle}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">

@@ -91,7 +91,7 @@ export function HabitsManager({ active, archived }: Props) {
           <ul className="mt-3 flex flex-col gap-2">
             {archived.map((habit) => (
               <li key={habit.id} className="flex items-center justify-between gap-3 rounded-xl border px-4 py-2">
-                <span className="truncate text-muted-foreground">{habit.name}</span>
+                <span className="line-clamp-2 break-words text-muted-foreground">{habit.name}</span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -126,7 +126,7 @@ function HabitCard({
   return (
     <div className="flex items-center gap-3 rounded-xl border p-4">
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{name}</p>
+        <p className="line-clamp-2 font-medium break-words">{name}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">
           {describeSchedule(schedule)} · {totalCheckins} {totalCheckins === 1 ? "check-in" : "check-ins"}
         </p>

@@ -8,6 +8,7 @@ import { todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
 import type { TrackLevel, TrackType } from "@/lib/db/types";
 import { findReadingPlan } from "@/lib/reading/plans";
+import { shorten } from "@/lib/text";
 import { demoPlan, PLAN_SYSTEM_PROMPT, planPrompt, trackPlanSchema } from "@/lib/tracks/plan";
 import { MAX_ACTIVE_HABITS } from "@/lib/validation/habits";
 import { MAX_ACTIVE_TRACKS, newTrackSchema } from "@/lib/validation/tracks";
@@ -128,7 +129,7 @@ async function saveTrack(
     let habitId: string | null = null;
     if (draft.habitName) {
       // Reuse an active habit with the same name instead of adding a duplicate.
-      const name = draft.habitName.slice(0, 60);
+      const name = shorten(draft.habitName, 60); // habit names are at most 60 characters
       const existing = activeHabits.find((h) => h.name.toLowerCase() === name.toLowerCase());
       habitId =
         existing?.id ??

@@ -96,7 +96,7 @@ function HabitRow({ habit, onToggle }: { habit: HabitSummary; onToggle: () => vo
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            "block truncate font-medium transition-colors",
+            "line-clamp-2 block font-medium break-words transition-colors",
             doneToday && "text-muted-foreground line-through",
           )}
         >

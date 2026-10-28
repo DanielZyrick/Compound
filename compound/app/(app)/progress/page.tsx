@@ -48,7 +48,7 @@ async function ProgressContent() {
                 <li key={habit.id} className="rounded-xl border p-4">
                   <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{habit.name}</p>
+                      <p className="line-clamp-2 font-medium break-words">{habit.name}</p>
                       <p className="text-xs text-muted-foreground">{describeSchedule(habit.schedule)}</p>
                     </div>
                     <div className="flex shrink-0 gap-4 text-sm tabular-nums">
