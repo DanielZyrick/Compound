@@ -15,7 +15,7 @@ export async function saveTransaction(input: unknown): Promise<MoneyActionResult
   const user = await requireOnboardedUser();
   const parsed = transactionSchema.safeParse(input);
   if (!parsed.success) return { errors: [...new Set(parsed.error.issues.map((i) => i.message))] };
-  const { id, kind, amount, categoryId, note, occurredOn } = parsed.data;
+  const { id, kind, amount, categoryId, note, occurredOn, goalId } = parsed.data;
 
   const dateProblem = occurredOnError(todayIn(user.timezone), occurredOn);
   if (dateProblem) return { errors: [dateProblem] };
@@ -32,7 +32,29 @@ export async function saveTransaction(input: unknown): Promise<MoneyActionResult
   // isn't offered for new ones.
   if (!category || (category.archived_at && !id)) return { errors: ["Choose a category."] };
 
-  const values = { kind, amount_cents: amount, category_id: categoryId, note, occurred_on: occurredOn };
+  // Only income can go toward a goal, and only the user's own goal with a
+  // savings target. Completed goals are allowed so old entries stay
+  // editable; archived ones aren't. Expenses never carry a goal.
+  if (goalId && kind === "income") {
+    const goal = await db
+      .selectFrom("goals")
+      .select("id")
+      .where("id", "=", goalId)
+      .where("user_id", "=", user.id)
+      .where("status", "!=", "archived")
+      .where("target_cents", "is not", null)
+      .executeTakeFirst();
+    if (!goal) return { errors: ["Choose one of your goals with a savings target."] };
+  }
+
+  const values = {
+    kind,
+    amount_cents: amount,
+    category_id: categoryId,
+    note,
+    occurred_on: occurredOn,
+    goal_id: kind === "income" ? (goalId ?? null) : null,
+  };
   if (id) {
     const updated = await db
       .updateTable("transactions")

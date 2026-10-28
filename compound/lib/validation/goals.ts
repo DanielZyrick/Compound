@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { daysBetween } from "@/lib/dates/calendar";
 import type { CalendarDate } from "@/lib/db/types";
+import { parseAmount } from "@/lib/money/amount";
 
 export const MAX_ACTIVE_GOALS = 5;
 export const MIN_GOAL_DAYS = 3;
@@ -22,7 +23,30 @@ export const newGoalSchema = z.object({
   bufferPercent: z
     .number()
     .refine((n) => (BUFFER_PERCENT_OPTIONS as readonly number[]).includes(n), { error: "Choose a buffer." }),
+  target: savingsTarget().optional(),
 });
+
+/**
+ * An optional savings target typed as money ("50,000"). Empty means no
+ * target (null); anything else must be a valid amount, or it's an error, not
+ * silently "no target".
+ */
+export function savingsTarget() {
+  return z
+    .string()
+    .trim()
+    .transform((text, ctx) => {
+      if (text === "") return null;
+      const cents = parseAmount(text);
+      if (cents === null) {
+        ctx.issues.push({ code: "custom", message: "Enter a target like 50,000.", input: text });
+        return z.NEVER;
+      }
+      return cents;
+    });
+}
+
+export const setGoalTargetSchema = z.object({ goalId: z.uuid(), target: savingsTarget() });
 
 export type NewGoalInput = z.input<typeof newGoalSchema>;
 

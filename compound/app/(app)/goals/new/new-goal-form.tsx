@@ -23,11 +23,12 @@ export function NewGoalForm({ today, demoMode }: { today: CalendarDate; demoMode
   const [why, setWhy] = useState("");
   const [deadline, setDeadline] = useState("");
   const [bufferPercent, setBufferPercent] = useState<number>(DEFAULT_BUFFER_PERCENT);
+  const [target, setTarget] = useState("");
   // Errors stay hidden until the first submit, then update as the user types.
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [state, submit, pending] = useActionState(createGoal, { errors: [] });
 
-  const input = { title, why, deadline, bufferPercent };
+  const input = { title, why, deadline, bufferPercent, target };
   const parsed = newGoalSchema.safeParse(input);
   const dateProblem = parsed.success ? deadlineError(today, deadline) : null;
   const clientErrors = parsed.success
@@ -106,6 +107,18 @@ export function NewGoalForm({ today, demoMode }: { today: CalendarDate; demoMode
             "Time kept free before the deadline for things that go wrong. 15% is a good default."
           )}
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="goal-target">Savings target (optional)</Label>
+        <Input
+          id="goal-target"
+          inputMode="decimal"
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          placeholder="e.g. 50,000, for goals that need money"
+          className="h-10 sm:max-w-56"
+        />
       </div>
 
       {errors.length > 0 && (

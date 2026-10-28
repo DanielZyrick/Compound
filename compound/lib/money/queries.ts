@@ -45,6 +45,8 @@ export type TransactionItem = {
   categoryIcon: string;
   note: string | null;
   occurredOn: CalendarDate;
+  goalId: string | null;
+  goalTitle: string | null;
 };
 
 /** A month's transactions (newest first) and its totals. */
@@ -53,6 +55,7 @@ export async function getMonth(userId: string, month: Month) {
   const rows = await db
     .selectFrom("transactions")
     .innerJoin("money_categories", "money_categories.id", "transactions.category_id")
+    .leftJoin("goals", "goals.id", "transactions.goal_id")
     .select([
       "transactions.id",
       "transactions.kind",
@@ -62,6 +65,8 @@ export async function getMonth(userId: string, month: Month) {
       "transactions.occurred_on",
       "money_categories.name as category_name",
       "money_categories.icon as category_icon",
+      "transactions.goal_id",
+      "goals.title as goal_title",
     ])
     .where("transactions.user_id", "=", userId)
     .where("transactions.occurred_on", ">=", start)
@@ -79,6 +84,8 @@ export async function getMonth(userId: string, month: Month) {
     categoryIcon: r.category_icon,
     note: r.note,
     occurredOn: r.occurred_on,
+    goalId: r.goal_id,
+    goalTitle: r.goal_title,
   }));
   return { items, summary: summarize(items) };
 }

@@ -15,7 +15,7 @@ import {
   renameStepSchema,
   toggleStepSchema,
 } from "@/lib/validation/goal-steps";
-import { MAX_GOAL_DAYS } from "@/lib/validation/goals";
+import { MAX_GOAL_DAYS, setGoalTargetSchema } from "@/lib/validation/goals";
 
 // Actions for the goal page and the Today card. Each checks that the goal
 // belongs to the signed-in user before changing anything.
@@ -163,4 +163,23 @@ export async function archiveGoal(input: unknown): Promise<GoalActionResult> {
   // show its cached copy of the list (still including this goal).
   revalidatePath("/goals");
   redirect("/goals");
+}
+
+/** Sets, changes or (with an empty field) removes a goal's savings target. */
+export async function setGoalTarget(input: unknown): Promise<GoalActionResult> {
+  const user = await requireOnboardedUser();
+  const parsed = setGoalTargetSchema.safeParse(input);
+  if (!parsed.success) return { errors: messages(parsed.error.issues) };
+
+  const updated = await db
+    .updateTable("goals")
+    .set({ target_cents: parsed.data.target })
+    .where("id", "=", parsed.data.goalId)
+    .where("user_id", "=", user.id)
+    .where("status", "!=", "archived")
+    .executeTakeFirst();
+  if (updated.numUpdatedRows === BigInt(0)) return { errors: [SOMETHING_WRONG] };
+
+  refresh();
+  return { errors: [] };
 }

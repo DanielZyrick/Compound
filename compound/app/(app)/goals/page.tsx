@@ -6,6 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatShortDate, todayIn } from "@/lib/dates/calendar";
 import { getGoals } from "@/lib/goals/queries";
+import { formatMoney } from "@/lib/money/amount";
 import { daysLeftLabel, GoalStatusBadge } from "./goal-status";
 
 export const metadata: Metadata = { title: "Goals" };
@@ -84,6 +85,12 @@ async function GoalList() {
                 </div>
                 <span className="text-sm tabular-nums">{percent}%</span>
               </div>
+              {goal.targetCents !== null && (
+                <p className="mt-2 text-sm">
+                  <span className="text-muted-foreground">Saved: </span>
+                  {formatMoney(goal.savedCents, user.currency)} of {formatMoney(goal.targetCents, user.currency)}
+                </p>
+              )}
               {goal.nextStep && (
                 <p className="mt-3 text-sm">
                   <span className="text-muted-foreground">Next step: </span>

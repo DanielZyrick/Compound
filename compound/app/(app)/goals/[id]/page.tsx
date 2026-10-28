@@ -12,6 +12,7 @@ import { getGoal, type GoalWithSchedule } from "@/lib/goals/queries";
 import { cn } from "@/lib/utils";
 import { daysLeftLabel, GoalStatusBadge } from "../goal-status";
 import { ArchiveGoal, ExtendDeadline } from "./goal-controls";
+import { SavingsCard } from "./savings-card";
 import { StepList } from "./step-list";
 
 export const metadata: Metadata = { title: "Goal" };
@@ -74,6 +75,15 @@ async function GoalDetail({ params }: Pick<PageProps<"/goals/[id]">, "params">) 
       </header>
 
       <StatusBanner goal={goal} year={year} />
+
+      {editable && (
+        <SavingsCard
+          goalId={goal.id}
+          targetCents={goal.targetCents}
+          savedCents={goal.savedCents}
+          currency={user.currency}
+        />
+      )}
 
       <section>
         <h2 className="text-lg font-semibold">Plan</h2>

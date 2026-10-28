@@ -6,7 +6,8 @@ import { TimezoneSelect } from "@/components/timezone-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateDisplayName, updateTimezone, type SettingsResult } from "./actions";
+import { CURRENCIES } from "@/lib/money/amount";
+import { updateCurrency, updateDisplayName, updateTimezone, type SettingsResult } from "./actions";
 
 /** Shared save state: errors, a short "Saved" confirmation, and pending. */
 function useSave(action: (input: unknown) => Promise<SettingsResult>) {
@@ -107,4 +108,55 @@ function Feedback({ errors, saved }: { errors: string[]; saved: boolean }) {
       Saved
     </p>
   ) : null;
+}
+
+const CURRENCY_NAMES: Record<string, string> = {
+  PHP: "Philippine peso (₱)",
+  USD: "US dollar ($)",
+  EUR: "Euro (€)",
+  GBP: "British pound (£)",
+  SGD: "Singapore dollar (S$)",
+  AUD: "Australian dollar (A$)",
+  CAD: "Canadian dollar (C$)",
+};
+
+export function CurrencyForm({ initial }: { initial: string }) {
+  const [currency, setCurrency] = useState(initial);
+  const { errors, saved, pending, save, clearSaved } = useSave(updateCurrency);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        save({ currency });
+      }}
+      className="flex flex-col gap-2"
+    >
+      <Label htmlFor="currency">Currency</Label>
+      <div className="flex gap-2">
+        <select
+          id="currency"
+          value={currency}
+          onChange={(e) => {
+            setCurrency(e.target.value);
+            clearSaved();
+          }}
+          className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {CURRENCIES.map((code) => (
+            <option key={code} value={code}>
+              {CURRENCY_NAMES[code] ?? code}
+            </option>
+          ))}
+        </select>
+        <Button type="submit" variant="outline" disabled={pending || currency === initial} className="h-10">
+          {pending ? "Saving…" : "Save"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        The currency you record in. Amounts you&apos;ve already saved aren&apos;t converted.
+      </p>
+      <Feedback errors={errors} saved={saved} />
+    </form>
+  );
 }

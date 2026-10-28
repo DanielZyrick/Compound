@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
-import { displayNameSchema, timezoneSettingSchema } from "@/lib/validation/settings";
+import { currencySettingSchema, displayNameSchema, timezoneSettingSchema } from "@/lib/validation/settings";
 
 export type SettingsResult = { errors: string[] };
 
@@ -32,6 +32,20 @@ export async function updateTimezone(input: unknown): Promise<SettingsResult> {
   if (!parsed.success) return { errors: messages(parsed.error.issues) };
 
   await db.updateTable("users").set({ timezone: parsed.data.timezone }).where("id", "=", user.id).execute();
+  refresh();
+  return { errors: [] };
+}
+
+/**
+ * Changes the currency amounts are shown in. Amounts aren't converted: it's
+ * the currency the user records in, chosen once.
+ */
+export async function updateCurrency(input: unknown): Promise<SettingsResult> {
+  const user = await requireOnboardedUser();
+  const parsed = currencySettingSchema.safeParse(input);
+  if (!parsed.success) return { errors: messages(parsed.error.issues) };
+
+  await db.updateTable("users").set({ currency: parsed.data.currency }).where("id", "=", user.id).execute();
   refresh();
   return { errors: [] };
 }

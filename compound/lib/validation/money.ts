@@ -23,6 +23,8 @@ export const transactionSchema = z.object({
     .max(200, { error: "Keep the note under 200 characters." })
     .transform((note) => (note === "" ? null : note)),
   occurredOn: z.iso.date({ error: "Choose a date." }),
+  // Income put toward a goal with a savings target.
+  goalId: z.uuid().nullable().optional(),
 });
 
 export type TransactionInput = z.input<typeof transactionSchema>;

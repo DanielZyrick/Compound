@@ -8,17 +8,18 @@ import { formatMoney } from "@/lib/money/amount";
 import type { MoneyCategory, TransactionItem } from "@/lib/money/queries";
 import { dayLabel, groupByDay } from "@/lib/money/summary";
 import { cn } from "@/lib/utils";
-import { TransactionForm } from "./transaction-form";
+import { TransactionForm, type SavingsGoal } from "./transaction-form";
 
 type Props = {
   items: TransactionItem[];
   categories: MoneyCategory[];
   currency: string;
   today: CalendarDate;
+  savingsGoals: SavingsGoal[];
 };
 
 /** Every transaction of the month, by day. Tap one to edit or delete it. */
-export function TransactionList({ items, categories, currency, today }: Props) {
+export function TransactionList({ items, categories, currency, today, savingsGoals }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
   const groups = groupByDay(items);
   const year = today.slice(0, 4);
@@ -48,6 +49,7 @@ export function TransactionList({ items, categories, currency, today }: Props) {
                       categories={categories}
                       currency={currency}
                       today={today}
+                      savingsGoals={savingsGoals}
                       existing={item}
                       autoFocus
                       onDone={() => setEditing(null)}
@@ -66,6 +68,9 @@ export function TransactionList({ items, categories, currency, today }: Props) {
                     <span className="min-w-0 flex-1">
                       <span className="block font-medium">{item.categoryName}</span>
                       {item.note && <span className="block truncate text-sm text-muted-foreground">{item.note}</span>}
+                      {item.goalTitle && (
+                        <span className="block truncate text-xs text-primary">Saved toward {item.goalTitle}</span>
+                      )}
                     </span>
                     <span
                       className={cn("shrink-0 font-medium tabular-nums", item.kind === "income" && "text-success")}

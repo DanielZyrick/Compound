@@ -19,12 +19,17 @@ type Existing = {
   categoryId: string;
   note: string | null;
   occurredOn: CalendarDate;
+  goalId: string | null;
 };
+
+export type SavingsGoal = { id: string; title: string };
 
 type Props = {
   categories: MoneyCategory[];
   currency: string;
   today: CalendarDate;
+  /** Goals with a savings target that income can go toward. */
+  savingsGoals: SavingsGoal[];
   /** Editing an existing transaction; leave out to add new ones. */
   existing?: Existing;
   initialKind?: MoneyKind;
@@ -36,12 +41,22 @@ type Props = {
  * Add or edit a transaction. When adding, the form clears after each save
  * (keeping the date and kind) so several expenses can be logged in a row.
  */
-export function TransactionForm({ categories, currency, today, existing, initialKind, autoFocus, onDone }: Props) {
+export function TransactionForm({
+  categories,
+  currency,
+  today,
+  savingsGoals,
+  existing,
+  initialKind,
+  autoFocus,
+  onDone,
+}: Props) {
   const [kind, setKind] = useState<MoneyKind>(existing?.kind ?? initialKind ?? "expense");
   const [amount, setAmount] = useState(existing ? centsToInput(existing.amountCents) : "");
   const [categoryId, setCategoryId] = useState<string | null>(existing?.categoryId ?? null);
   const [note, setNote] = useState(existing?.note ?? "");
   const [date, setDate] = useState<CalendarDate>(existing?.occurredOn ?? today);
+  const [goalId, setGoalId] = useState<string>(existing?.goalId ?? "");
   const [errors, setErrors] = useState<string[]>([]);
   const [saved, setSaved] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -63,7 +78,15 @@ export function TransactionForm({ categories, currency, today, existing, initial
     setSaved(null);
     if (!categoryId) return setErrors(["Choose a category."]);
     startTransition(async () => {
-      const result = await saveTransaction({ id: existing?.id, kind, amount, categoryId, note, occurredOn: date });
+      const result = await saveTransaction({
+        id: existing?.id,
+        kind,
+        amount,
+        categoryId,
+        note,
+        occurredOn: date,
+        goalId: kind === "income" && goalId ? goalId : null,
+      });
       if (result.errors.length > 0) return setErrors(result.errors);
       if (existing) return onDone?.();
       // Ready for the next one: keep the kind and date, clear the rest.
@@ -72,6 +95,7 @@ export function TransactionForm({ categories, currency, today, existing, initial
       setAmount("");
       setNote("");
       setCategoryId(null);
+      setGoalId("");
       amountRef.current?.focus();
     });
   }
@@ -168,6 +192,25 @@ export function TransactionForm({ categories, currency, today, existing, initial
           />
         </div>
       </div>
+
+      {kind === "income" && savingsGoals.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={`${idPrefix}-goal`}>Put toward a goal (optional)</Label>
+          <select
+            id={`${idPrefix}-goal`}
+            value={goalId}
+            onChange={(e) => setGoalId(e.target.value)}
+            className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value="">No goal</option>
+            {savingsGoals.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {errors.length > 0 && (
         <p role="alert" className="text-sm text-destructive">

@@ -24,6 +24,9 @@ export type GoalWithSchedule = {
   bufferDays: number;
   status: GoalStatus;
   planSource: "ai" | "demo";
+  /** Optional savings target and what's been put toward it, in cents. */
+  targetCents: number | null;
+  savedCents: number;
   milestones: GoalMilestone[];
   schedule: Schedule;
   /** The first unfinished step, in plan order. */
@@ -31,13 +34,13 @@ export type GoalWithSchedule = {
 };
 
 /**
- * Loads goals with their milestones and steps, and calculates each goal's
- * schedule as of `today`. Three queries in total, however many goals.
+ * Loads goals with their milestones, steps and savings, and calculates each
+ * goal's schedule as of `today`. Four queries in total, however many goals.
  */
 async function loadGoals(userId: string, today: CalendarDate, goalId?: string): Promise<GoalWithSchedule[]> {
   let query = db
     .selectFrom("goals")
-    .select(["id", "title", "why", "start_date", "deadline", "buffer_days", "status", "plan_source"])
+    .select(["id", "title", "why", "start_date", "deadline", "buffer_days", "status", "plan_source", "target_cents"])
     .where("user_id", "=", userId)
     .where("status", "!=", "archived")
     .orderBy("deadline");
@@ -45,12 +48,23 @@ async function loadGoals(userId: string, today: CalendarDate, goalId?: string): 
   const goals = await query.execute();
   if (goals.length === 0) return [];
 
-  const milestones = await db
-    .selectFrom("goal_milestones")
-    .select(["id", "goal_id", "position", "title", "description", "weight", "planned_due"])
-    .where("goal_id", "in", goals.map((g) => g.id))
-    .orderBy("position")
-    .execute();
+  const [milestones, savings] = await Promise.all([
+    db
+      .selectFrom("goal_milestones")
+      .select(["id", "goal_id", "position", "title", "description", "weight", "planned_due"])
+      .where("goal_id", "in", goals.map((g) => g.id))
+      .orderBy("position")
+      .execute(),
+    // Money put toward each goal: income transactions linked to it.
+    db
+      .selectFrom("transactions")
+      .select(["goal_id", (eb) => eb.fn.sum<string>("amount_cents").as("saved")])
+      .where("user_id", "=", userId)
+      .where("goal_id", "in", goals.map((g) => g.id))
+      .groupBy("goal_id")
+      .execute(),
+  ]);
+  const savedByGoal = new Map(savings.map((r) => [r.goal_id, Number(r.saved)]));
   const steps = milestones.length
     ? await db
         .selectFrom("goal_steps")
@@ -101,6 +115,8 @@ async function loadGoals(userId: string, today: CalendarDate, goalId?: string): 
       bufferDays: goal.buffer_days,
       status: goal.status,
       planSource: goal.plan_source,
+      targetCents: goal.target_cents,
+      savedCents: savedByGoal.get(goal.id) ?? 0,
       milestones: own,
       schedule,
       nextStep: next && nextMilestone ? { ...next, milestone: nextMilestone.title } : null,
@@ -133,3 +149,15 @@ export const goalsNeedAttention = cache(async (userId: string, today: CalendarDa
   const goals = await loadGoals(userId, today);
   return goals.some((g) => g.status === "active" && (g.schedule.status === "behind" || g.schedule.status === "at_risk"));
 });
+
+/** Active goals with a savings target, for "put toward a goal" on income. */
+export function getSavingsGoals(userId: string) {
+  return db
+    .selectFrom("goals")
+    .select(["id", "title"])
+    .where("user_id", "=", userId)
+    .where("status", "=", "active")
+    .where("target_cents", "is not", null)
+    .orderBy("deadline")
+    .execute();
+}

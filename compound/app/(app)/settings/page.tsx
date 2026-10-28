@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { signOutAction } from "@/lib/auth/actions";
-import { DisplayNameForm, TimezoneForm } from "./settings-forms";
+import { CurrencyForm, DisplayNameForm, TimezoneForm } from "./settings-forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -46,6 +46,10 @@ async function SettingsContent() {
 
       <Section title="Time">
         <TimezoneForm initial={user.timezone} />
+      </Section>
+
+      <Section title="Money">
+        <CurrencyForm initial={user.currency} />
       </Section>
 
       <Section title="Session">

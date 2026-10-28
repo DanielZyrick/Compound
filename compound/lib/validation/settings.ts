@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CURRENCIES } from "@/lib/money/amount";
 import { timezoneSchema } from "./onboarding";
 
 export const displayNameSchema = z.object({
@@ -10,3 +11,5 @@ export const displayNameSchema = z.object({
 });
 
 export const timezoneSettingSchema = z.object({ timezone: timezoneSchema });
+
+export const currencySettingSchema = z.object({ currency: z.enum(CURRENCIES, { error: "Choose a currency." }) });

@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { formatMoney } from "@/lib/money/amount";
+import { getSavingsGoals } from "@/lib/goals/queries";
 import { getCategories, getMonth } from "@/lib/money/queries";
 import { formatMonth, monthOf, shiftMonth } from "@/lib/money/summary";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,11 @@ async function MoneyContent({ searchParams }: Pick<PageProps<"/money">, "searchP
   const month = asked && asked <= thisMonth ? asked : thisMonth;
   const kind = params.add === "income" ? "income" : "expense";
 
-  const [categories, { items, summary }] = await Promise.all([getCategories(user.id), getMonth(user.id, month)]);
+  const [categories, { items, summary }, savingsGoals] = await Promise.all([
+    getCategories(user.id),
+    getMonth(user.id, month),
+    getSavingsGoals(user.id),
+  ]);
   const currency = user.currency;
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   // Categories that only appear on old transactions (archived) still need a name.
@@ -57,6 +62,7 @@ async function MoneyContent({ searchParams }: Pick<PageProps<"/money">, "searchP
           currency={currency}
           today={today}
           initialKind={kind}
+          savingsGoals={savingsGoals}
           autoFocus={params.add !== undefined}
         />
       </section>
@@ -125,7 +131,13 @@ async function MoneyContent({ searchParams }: Pick<PageProps<"/money">, "searchP
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Transactions</h2>
-        <TransactionList items={items} categories={categories} currency={currency} today={today} />
+        <TransactionList
+          items={items}
+          categories={categories}
+          currency={currency}
+          today={today}
+          savingsGoals={savingsGoals}
+        />
       </section>
     </div>
   );
