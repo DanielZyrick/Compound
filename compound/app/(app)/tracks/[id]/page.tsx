@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -9,6 +10,8 @@ import { isDayOpen } from "@/lib/lessons/rules";
 import { getTrack } from "@/lib/tracks/queries";
 import { cn } from "@/lib/utils";
 import { TrackBadges } from "../track-badges";
+
+export const metadata: Metadata = { title: "Learning track" };
 
 export default function TrackPage({ params }: PageProps<"/tracks/[id]">) {
   return (

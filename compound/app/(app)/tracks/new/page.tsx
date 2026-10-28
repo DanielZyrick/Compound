@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -5,6 +6,8 @@ import { ArrowLeft } from "lucide-react";
 import { isDemoMode } from "@/lib/ai/config";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { NewTrackForm } from "./new-track-form";
+
+export const metadata: Metadata = { title: "New track" };
 
 export default function NewTrackPage() {
   return (

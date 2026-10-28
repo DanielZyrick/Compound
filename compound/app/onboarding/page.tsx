@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { requireUser } from "@/lib/auth/dal";
 import { OnboardingForm } from "./onboarding-form";
+
+export const metadata: Metadata = { title: "Welcome" };
 
 export default function OnboardingPage() {
   return (

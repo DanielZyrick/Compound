@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { getHabitsOverview } from "@/lib/habits/queries";
 import { HabitsManager } from "./habits-manager";
+
+export const metadata: Metadata = { title: "Habits" };
 
 export default function HabitsPage() {
   return (

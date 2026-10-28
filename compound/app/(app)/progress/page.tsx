@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Flame, Trophy } from "lucide-react";
@@ -6,6 +7,8 @@ import { requireOnboardedUser } from "@/lib/auth/dal";
 import { describeSchedule } from "@/lib/dates/schedule";
 import { getProgress, type Progress } from "@/lib/progress/queries";
 import { CheckinGrid, GridLegend } from "./checkin-grid";
+
+export const metadata: Metadata = { title: "Progress" };
 
 export default function ProgressPage() {
   return (

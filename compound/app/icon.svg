@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- The Compound mark: three dots growing up and to the right. -->
+  <style>
+    .ink { fill: #0b0b0f; }
+    @media (prefers-color-scheme: dark) { .ink { fill: #ffffff; } }
+  </style>
+  <circle class="ink" cx="4.5" cy="19" r="2.5" />
+  <circle class="ink" cx="10.5" cy="13.5" r="3.5" />
+  <circle cx="18" cy="6.5" r="5" fill="#1f6bff" />
+</svg>

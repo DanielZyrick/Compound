@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -17,6 +18,8 @@ import { CompleteLesson } from "./complete-lesson";
 import { MultipleChoiceExercise, OpenExercise } from "./exercises";
 import { ReadingReflection } from "./reading-reflection";
 import { StartLesson } from "./start-lesson";
+
+export const metadata: Metadata = { title: "Lesson" };
 
 const paramsSchema = z.object({ id: z.uuid(), n: z.coerce.number().int().min(1).max(365) });
 

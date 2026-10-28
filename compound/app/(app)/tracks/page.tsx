@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Plus } from "lucide-react";
@@ -6,6 +7,8 @@ import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { getTracks } from "@/lib/tracks/queries";
 import { TrackBadges } from "./track-badges";
+
+export const metadata: Metadata = { title: "Learn" };
 
 export default function TracksPage() {
   return (

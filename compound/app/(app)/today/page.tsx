@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { getPrinciple } from "@/lib/principles/queries";
 import { HabitChecklist } from "./habit-checklist";
 import { PrincipleCard } from "./principle-card";
 import { TodayLessons } from "./today-lessons";
+
+export const metadata: Metadata = { title: "Today" };
 
 export default function TodayPage() {
   return (

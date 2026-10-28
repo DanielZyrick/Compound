@@ -10,8 +10,9 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: "Compound",
-  description: "Small daily steps, compounding growth.",
+  // Pages set their own name, e.g. "Habits" becomes "Habits · Compound".
+  title: { default: "Compound", template: "%s · Compound" },
+  description: "Small daily steps, compounding growth: habits, daily lessons and goals in one place.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

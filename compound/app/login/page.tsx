@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -7,6 +8,8 @@ import { FloatingTile } from "@/components/landing/floating";
 import { LogoMark } from "@/components/logo";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { loginErrorMessage } from "@/lib/auth/login-errors";
+
+export const metadata: Metadata = { title: "Sign in" };
 
 // The card and button are static and load instantly. Only the part that
 // reads the request (session and ?error=) waits, inside <Suspense>.
