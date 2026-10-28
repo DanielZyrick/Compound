@@ -17,7 +17,7 @@ import { FocusStep, type FocusDraft } from "./focus-step";
 import type { HabitDraft } from "./habit-list";
 import { HabitsStep } from "./habits-step";
 import { ReviewStep } from "./review-step";
-import { useBrowserTimezone } from "./timezone-select";
+import { useBrowserTimezone } from "@/components/timezone-select";
 
 const EVERY_DAY: Weekday[] = [0, 1, 2, 3, 4, 5, 6];
 

@@ -1,9 +1,9 @@
+import { TimezoneSelect } from "@/components/timezone-select";
 import { Label } from "@/components/ui/label";
 import { describeSchedule } from "@/lib/dates/schedule";
 import { GOAL_LABELS } from "@/lib/onboarding/goals";
 import type { FocusDraft } from "./focus-step";
 import type { HabitDraft } from "./habit-list";
-import { TimezoneSelect } from "./timezone-select";
 
 type Props = {
   focus: FocusDraft;

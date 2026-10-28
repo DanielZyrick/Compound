@@ -1,9 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { startTransition } from "react";
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,12 +58,9 @@ export function UserMenuDropdown({ name, email, image, compact = false }: Props)
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem render={<Link href="/settings" />}>
             <Settings />
             Settings
-            <Badge variant="outline" className="ml-auto">
-              Soon
-            </Badge>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
