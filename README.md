@@ -12,7 +12,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 
 | Module | What it does | Status |
 | --- | --- | --- |
-| **Learning & Habits** | Daily habits with streaks. AI learning tracks (skills, reading plans, thinking exercises) with lessons, exercises and feedback. A principle of the day. | Sign-in, onboarding and the app shell are done. Habits are next. |
+| **Learning & Habits** | Daily habits with streaks. AI learning tracks (skills, reading plans, thinking exercises) with lessons, exercises and feedback. A principle of the day. | Done |
 | **Goals** | A plan, deadline and progress for each goal, with built-in buffer time. When you fall behind, the plan adjusts itself. | Planned |
 | **Money** | Income and expenses, linked to your goals. | Planned |
 
@@ -92,7 +92,8 @@ Run these from the `compound/` folder.
 | --- | --- |
 | `npm run dev` | Start the dev server |
 | `npm run build` / `npm start` | Production build and server |
-| `npm test` / `npm run test:watch` | Run the Vitest tests |
+| `npm test` / `npm run test:watch` | Run the Vitest unit tests |
+| `npm run test:e2e` | Build, then run the Playwright end-to-end tests (desktop and phone) |
 | `npm run typecheck` | Type-check with `tsc` |
 | `npm run lint` | Run ESLint |
 | `npm run db:migrate` | Apply pending migrations |
@@ -105,6 +106,14 @@ Run these from the `compound/` folder.
 npx tsx --env-file=.env.migrate-main db/migrate.ts up
 rm .env.migrate-main
 ```
+
+### End-to-end tests
+
+The Playwright tests in `e2e/` sign in as a dedicated test user, walk through onboarding, habits, a lesson, a reading and settings, then delete the test user. They:
+
+- **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
+- force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;
+- use your installed **Microsoft Edge**, so no browser download is needed.
 
 Running `npm start` locally also needs `AUTH_TRUST_HOST=true`. Vercel sets it automatically, and `npm run dev` doesn't need it.
 
@@ -129,6 +138,7 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | GitHub OAuth app |
 | `ANTHROPIC_API_KEY` | Claude API (server only) |
 | `MODEL_FAST`, `MODEL_SMART` | Claude model names: fast for feedback, smart for planning |
+| `E2E_DB_HOST` | End-to-end tests only: the dev database host they're allowed to use |
 
 `.env.local` is gitignored. Only `.env.example` is committed, with empty values.
 
@@ -159,12 +169,13 @@ compound/
 ## Roadmap
 
 1. ✅ Setup, database, GitHub sign-in, onboarding, app shell
-2. Habits, check-ins, streaks, and the Today page
-3. AI learning tracks: plans, daily lessons, exercises and feedback
-4. Reading plans, reflections, principle of the day, progress page
-5. Goals module: plans, buffers, self-adjusting schedules, reminders
-6. Money module: income and expenses linked to goals
-7. Polish, demo video, write-up
+2. ✅ Habits, check-ins, streaks, and the Today page
+3. ✅ AI learning tracks: plans, daily lessons, exercises and feedback
+4. ✅ Reading plans, reflections, principle of the day, progress page
+5. ✅ Polish: error pages, settings, mobile pass, end-to-end tests
+6. Goals module: plans, buffers, self-adjusting schedules, reminders
+7. Money module: income and expenses linked to goals
+8. Demo video and write-up
 
 ---
 

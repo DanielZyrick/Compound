@@ -19,11 +19,13 @@ export function modelFor(tier: ModelTier): string {
 }
 
 /**
- * Demo mode: no API key is configured, so AI features use built-in example
- * output instead of calling Claude. Lets the app run (and be shown) for free.
+ * Demo mode: AI features use built-in example output instead of calling
+ * Claude. It's on when no API key is configured (so the app runs, and can be
+ * shown, for free) or when AI_DEMO_MODE=1 (the end-to-end tests set this so
+ * they never spend API credits).
  */
 export function isDemoMode(): boolean {
-  return !process.env.ANTHROPIC_API_KEY;
+  return process.env.AI_DEMO_MODE === "1" || !process.env.ANTHROPIC_API_KEY;
 }
 
 let client: Anthropic | undefined;
