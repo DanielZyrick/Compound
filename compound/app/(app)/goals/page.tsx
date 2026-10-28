@@ -58,34 +58,39 @@ async function GoalList() {
         const { schedule } = goal;
         const percent = Math.round(schedule.progress * 100);
         return (
-          <li key={goal.id} className="rounded-xl border p-4">
-            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-              <p className="line-clamp-2 font-medium break-words">{goal.title}</p>
-              <GoalStatusBadge status={schedule.status} />
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Due {formatShortDate(goal.deadline, today.slice(0, 4))}
-              {schedule.status !== "completed" && <> · {daysLeftLabel(schedule.daysLeft)}</>}
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <div
-                role="progressbar"
-                aria-label={`${goal.title}: progress`}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={percent}
-                className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"
-              >
-                <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
+          <li key={goal.id}>
+            <Link
+              href={`/goals/${goal.id}`}
+              className="block rounded-xl border p-4 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <p className="line-clamp-2 font-medium break-words">{goal.title}</p>
+                <GoalStatusBadge status={schedule.status} />
               </div>
-              <span className="text-sm tabular-nums">{percent}%</span>
-            </div>
-            {goal.nextStep && (
-              <p className="mt-3 text-sm">
-                <span className="text-muted-foreground">Next step: </span>
-                {goal.nextStep.title}
+              <p className="mt-1 text-sm text-muted-foreground">
+                Due {formatShortDate(goal.deadline, today.slice(0, 4))}
+                {schedule.status !== "completed" && <> · {daysLeftLabel(schedule.daysLeft)}</>}
               </p>
-            )}
+              <div className="mt-3 flex items-center gap-3">
+                <div
+                  role="progressbar"
+                  aria-label={`${goal.title}: progress`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={percent}
+                  className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"
+                >
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
+                </div>
+                <span className="text-sm tabular-nums">{percent}%</span>
+              </div>
+              {goal.nextStep && (
+                <p className="mt-3 text-sm">
+                  <span className="text-muted-foreground">Next step: </span>
+                  {goal.nextStep.title}
+                </p>
+              )}
+            </Link>
           </li>
         );
       })}

@@ -13,20 +13,29 @@ type Variant = "sidebar" | "tabs";
  * usePathname suspends on routes with unknown dynamic params, so render this
  * inside <Suspense> with <NavLinksView pathname={null} /> as the fallback.
  */
-export function NavLinks({ variant }: { variant: Variant }) {
+export function NavLinks({ variant, attention = [] }: { variant: Variant; attention?: string[] }) {
   const pathname = usePathname();
-  return <NavLinksView variant={variant} pathname={pathname} />;
+  return <NavLinksView variant={variant} pathname={pathname} attention={attention} />;
 }
 
-export function NavLinksView({ variant, pathname }: { variant: Variant; pathname: string | null }) {
+export function NavLinksView({
+  variant,
+  pathname,
+  attention = [],
+}: {
+  variant: Variant;
+  pathname: string | null;
+  /** Links that need the user's attention, e.g. "/goals" when a goal is behind. */
+  attention?: string[];
+}) {
   return (
     <ul className={variant === "sidebar" ? "space-y-1" : "grid grid-cols-6"}>
       {NAV_ITEMS.map((item) => (
         <li key={item.href}>
           {variant === "sidebar" ? (
-            <SidebarLink item={item} active={isActive(pathname, item.href)} />
+            <SidebarLink item={item} active={isActive(pathname, item.href)} alert={attention.includes(item.href)} />
           ) : (
-            <TabLink item={item} active={isActive(pathname, item.href)} />
+            <TabLink item={item} active={isActive(pathname, item.href)} alert={attention.includes(item.href)} />
           )}
         </li>
       ))}
@@ -34,7 +43,7 @@ export function NavLinksView({ variant, pathname }: { variant: Variant; pathname
   );
 }
 
-function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
+function SidebarLink({ item, active, alert }: { item: NavItem; active: boolean; alert: boolean }) {
   const { href, label, icon: Icon, ready } = item;
   const base = "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm";
 
@@ -63,11 +72,12 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
     >
       <Icon className="size-4" />
       {label}
+      {alert && <AttentionDot className="ml-auto" />}
     </Link>
   );
 }
 
-function TabLink({ item, active }: { item: NavItem; active: boolean }) {
+function TabLink({ item, active, alert }: { item: NavItem; active: boolean; alert: boolean }) {
   const { href, label, icon: Icon, ready } = item;
   const base = "flex flex-col items-center gap-1 py-2 text-[11px]";
 
@@ -86,8 +96,21 @@ function TabLink({ item, active }: { item: NavItem; active: boolean }) {
       aria-current={active ? "page" : undefined}
       className={cn(base, active ? "font-medium text-primary" : "text-muted-foreground")}
     >
-      <Icon className="size-5" />
+      <span className="relative">
+        <Icon className="size-5" />
+        {alert && <AttentionDot className="absolute -top-0.5 -right-1" />}
+      </span>
       {label}
     </Link>
+  );
+}
+
+/** A small amber dot with a text label for screen readers, so it isn't colour alone. */
+function AttentionDot({ className }: { className?: string }) {
+  return (
+    <>
+      <span aria-hidden title="Needs attention" className={cn("size-2 rounded-full bg-chart-3 ring-2 ring-background", className)} />
+      <span className="sr-only"> (needs attention)</span>
+    </>
   );
 }

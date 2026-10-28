@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { db } from "@/lib/db";
 import type { CalendarDate, GoalStatus } from "@/lib/db/types";
 import { guideSchema, type Guide } from "./plan";
@@ -123,3 +124,12 @@ export async function getGoal(userId: string, goalId: string, today: CalendarDat
   }
   return { ...goal, guide: parsed.success ? (parsed.data as Guide) : null };
 }
+
+/**
+ * Whether any active goal is behind or at risk: shows a dot on Goals in the
+ * nav. Cached per request, since the sidebar and the phone tab bar both ask.
+ */
+export const goalsNeedAttention = cache(async (userId: string, today: CalendarDate): Promise<boolean> => {
+  const goals = await loadGoals(userId, today);
+  return goals.some((g) => g.status === "active" && (g.schedule.status === "behind" || g.schedule.status === "at_risk"));
+});

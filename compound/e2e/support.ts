@@ -1,7 +1,9 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { encode } from "next-auth/jwt";
 import { createDb } from "../lib/db/create-db";
+import { addDays, todayIn } from "../lib/dates/calendar";
 import type { Weekday } from "../lib/db/types";
+import { plannedDueDates } from "../lib/goals/schedule";
 
 // Shared helpers for the end-to-end tests. Every test works with one
 // dedicated test user, which is deleted and recreated as needed, so tests
@@ -100,4 +102,42 @@ export async function signInFreshUser(context: BrowserContext, { onboarded = tru
   const baseURL = `http://localhost:3100`;
   await context.addCookies([{ name: salt, value, url: baseURL, httpOnly: true, sameSite: "Lax" }]);
   return user;
+}
+
+/**
+ * Inserts a goal for the test user without the AI, e.g. one that started
+ * weeks ago so it's already at risk. Offsets are days from the user's today.
+ */
+export async function seedGoal(
+  userId: string,
+  {
+    title,
+    startOffset,
+    deadlineOffset,
+    bufferDays,
+    milestones,
+  }: { title: string; startOffset: number; deadlineOffset: number; bufferDays: number; milestones: { title: string; steps: string[] }[] },
+) {
+  const today = todayIn(TEST_TIMEZONE);
+  const start = addDays(today, startOffset);
+  const deadline = addDays(today, deadlineOffset);
+  const dues = plannedDueDates(start, addDays(deadline, -bufferDays), milestones.map(() => 1));
+
+  const goal = await db
+    .insertInto("goals")
+    .values({ user_id: userId, title, why: "A test goal.", start_date: start, deadline, buffer_days: bufferDays, plan_source: "demo", guide: null })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  for (const [i, m] of milestones.entries()) {
+    const row = await db
+      .insertInto("goal_milestones")
+      .values({ goal_id: goal.id, position: i + 1, title: m.title, weight: 1, planned_due: dues[i] })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto("goal_steps")
+      .values(m.steps.map((s, j) => ({ milestone_id: row.id, position: j + 1, title: s })))
+      .execute();
+  }
+  return { id: goal.id, today };
 }

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright's generated reports and results (also gitignored).
+    "playwright-report/**",
+    "test-results/**",
+    "blob-report/**",
   ]),
 ]);
 

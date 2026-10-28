@@ -77,7 +77,11 @@ export type Schedule = {
 /** Progress, status and adjusted milestone dates for a goal, as of `today`. */
 export function scheduleGoal({ startDate, deadline, bufferDays, today, milestones }: ScheduleInput): Schedule {
   const workEnd = workEndFor(deadline, bufferDays);
-  const planDays = daysBetween(startDate, workEnd) + 1;
+  // The pace comes from the ORIGINAL plan (the last planned due date never
+  // changes), so moving the deadline later doesn't also slow the pace down:
+  // the extra time becomes room to catch up.
+  const originalEnd = milestones.reduce((latest, m) => (m.plannedDue > latest ? m.plannedDue : latest), startDate);
+  const planDays = daysBetween(startDate, milestones.length > 0 ? originalEnd : workEnd) + 1;
 
   // A milestone with no steps counts as not started.
   const parts = milestones.map((m) => ({

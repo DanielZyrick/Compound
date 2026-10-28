@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { NavLinks, NavLinksView } from "./nav-links";
+import { NavLinksView } from "./nav-links";
+import { NavWithAttention } from "./nav-with-attention";
 import { UserMenu, UserMenuSkeleton } from "./user-menu";
 
 /** Desktop navigation (md and up). Phones get <MobileHeader> and <MobileNav>. */
@@ -14,7 +15,7 @@ export function Sidebar() {
 
       <nav aria-label="Main" className="mt-6 flex-1">
         <Suspense fallback={<NavLinksView variant="sidebar" pathname={null} />}>
-          <NavLinks variant="sidebar" />
+          <NavWithAttention variant="sidebar" />
         </Suspense>
       </nav>
 

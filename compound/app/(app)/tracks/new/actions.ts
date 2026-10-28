@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AiError } from "@/lib/ai/errors";
 import { runAiTask } from "@/lib/ai/run";
@@ -117,6 +118,8 @@ export async function createTrack(
   }
 
   const trackId = await saveTrack(user, draft, activeHabits);
+  revalidatePath("/tracks");
+  revalidatePath("/today");
   redirect(`/tracks/${trackId}`);
 }
 

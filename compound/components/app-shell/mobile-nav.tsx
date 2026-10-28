@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { NavLinks, NavLinksView } from "./nav-links";
+import { NavLinksView } from "./nav-links";
+import { NavWithAttention } from "./nav-with-attention";
 import { UserMenu, UserMenuSkeleton } from "./user-menu";
 
 /** Phone top bar: logo and the account menu. Hidden from md up. */
@@ -26,7 +27,7 @@ export function MobileNav() {
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
       <Suspense fallback={<NavLinksView variant="tabs" pathname={null} />}>
-        <NavLinks variant="tabs" />
+        <NavWithAttention variant="tabs" />
       </Suspense>
     </nav>
   );

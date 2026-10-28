@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AiError } from "@/lib/ai/errors";
 import { runAiTask } from "@/lib/ai/run";
@@ -68,7 +69,7 @@ export async function createGoal(_previous: CreateGoalState, input: unknown): Pr
 
   const dueDates = plannedDueDates(today, workEnd, plan.milestones.map((m) => m.weight));
 
-  await db.transaction().execute(async (trx) => {
+  const goalId = await db.transaction().execute(async (trx) => {
     const goal = await trx
       .insertInto("goals")
       .values({
@@ -84,25 +85,40 @@ export async function createGoal(_previous: CreateGoalState, input: unknown): Pr
       .returning("id")
       .executeTakeFirstOrThrow();
 
-    for (const [index, milestone] of plan.milestones.entries()) {
-      const row = await trx
-        .insertInto("goal_milestones")
-        .values({
+    // One insert for all milestones and one for all steps, rather than one per
+    // row: each round trip to the database adds noticeable latency.
+    const milestoneRows = await trx
+      .insertInto("goal_milestones")
+      .values(
+        plan.milestones.map((milestone, index) => ({
           goal_id: goal.id,
           position: index + 1,
           title: milestone.title,
           description: milestone.description,
           weight: milestone.weight,
           planned_due: dueDates[index],
-        })
-        .returning("id")
-        .executeTakeFirstOrThrow();
-      await trx
-        .insertInto("goal_steps")
-        .values(milestone.steps.map((step, i) => ({ milestone_id: row.id, position: i + 1, title: step })))
-        .execute();
-    }
+        })),
+      )
+      .returning(["id", "position"])
+      .execute();
+    // Match steps to milestones by position (RETURNING doesn't promise an order).
+    const idByPosition = new Map(milestoneRows.map((m) => [m.position, m.id]));
+    await trx
+      .insertInto("goal_steps")
+      .values(
+        plan.milestones.flatMap((milestone, index) =>
+          milestone.steps.map((step, i) => ({
+            milestone_id: idByPosition.get(index + 1)!,
+            position: i + 1,
+            title: step,
+          })),
+        ),
+      )
+      .execute();
+    return goal.id;
   });
 
-  redirect("/goals");
+  revalidatePath("/goals");
+  revalidatePath("/today");
+  redirect(`/goals/${goalId}`);
 }

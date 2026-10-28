@@ -82,6 +82,17 @@ describe("scheduleGoal", () => {
     expect(s.bufferUsed).toBe(BUFFER);
   });
 
+  it("gets out of risk when the deadline is extended (the pace doesn't change)", () => {
+    const atRisk = goal("2026-11-15", [1, 0]);
+    expect(scheduleGoal(atRisk).status).toBe("at_risk");
+    const projected = scheduleGoal(atRisk).projectedEnd!;
+
+    // Same plan (same planned dates), deadline moved three weeks later.
+    const extended = scheduleGoal({ ...atRisk, deadline: "2026-12-11" });
+    expect(extended.projectedEnd).toBe(projected); // same work, same pace
+    expect(extended.status).toBe("on_track");
+  });
+
   it("keeps planned dates when ahead of schedule", () => {
     const s = scheduleGoal(goal("2026-11-02", [4, 2]));
     expect(s.status).toBe("on_track");
