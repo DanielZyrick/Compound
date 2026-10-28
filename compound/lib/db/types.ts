@@ -24,6 +24,7 @@ export interface UsersTable {
   timezone: ColumnType<string, string | undefined, string>;
   created_at: CreatedAt;
   onboarded_at: Timestamp | null; // null until onboarding is finished
+  currency: ColumnType<string, string | undefined, string>; // ISO code, e.g. "PHP"
 }
 
 export interface FocusAreasTable {
@@ -158,6 +159,7 @@ export interface GoalsTable {
   guide: ColumnType<unknown, string | null, string | null>;
   created_at: CreatedAt;
   completed_at: Timestamp | null;
+  target_cents: number | null; // optional savings target, in cents
 }
 
 export interface GoalMilestonesTable {
@@ -179,6 +181,31 @@ export interface GoalStepsTable {
   created_at: CreatedAt;
 }
 
+export type MoneyKind = "expense" | "income";
+
+export interface MoneyCategoriesTable {
+  id: Generated<string>;
+  user_id: string;
+  kind: MoneyKind;
+  name: string;
+  icon: string; // a key from lib/money/categories.ts
+  position: number;
+  archived_at: Timestamp | null;
+  created_at: CreatedAt;
+}
+
+export interface TransactionsTable {
+  id: Generated<string>;
+  user_id: string;
+  kind: MoneyKind;
+  amount_cents: number; // whole cents, always positive; kind says which way
+  category_id: string;
+  note: string | null;
+  occurred_on: CalendarDate; // the user's local date
+  goal_id: string | null; // money saved toward a goal
+  created_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -194,6 +221,8 @@ export interface Database {
   goals: GoalsTable;
   goal_milestones: GoalMilestonesTable;
   goal_steps: GoalStepsTable;
+  money_categories: MoneyCategoriesTable;
+  transactions: TransactionsTable;
 }
 
 // Row types for use in the rest of the app.
