@@ -141,6 +141,44 @@ export interface ReflectionsTable {
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
+export type GoalStatus = "active" | "completed" | "archived";
+
+export interface GoalsTable {
+  id: Generated<string>;
+  user_id: string;
+  title: string;
+  why: string; // the user's reason, in their own words
+  start_date: CalendarDate;
+  deadline: CalendarDate;
+  buffer_days: number; // days before the deadline kept free for setbacks
+  status: ColumnType<GoalStatus, GoalStatus | undefined, GoalStatus>;
+  plan_source: "ai" | "demo";
+  // JSON written as a string; read as unknown and validated with Zod
+  // (lib/goals/plan.ts) before use.
+  guide: ColumnType<unknown, string | null, string | null>;
+  created_at: CreatedAt;
+  completed_at: Timestamp | null;
+}
+
+export interface GoalMilestonesTable {
+  id: Generated<string>;
+  goal_id: string;
+  position: number; // 1, 2, 3 ... in plan order
+  title: string;
+  description: string | null;
+  weight: ColumnType<number, number | undefined, number>; // relative effort, 1–5
+  planned_due: CalendarDate; // from the original plan; adjusted dates are calculated
+}
+
+export interface GoalStepsTable {
+  id: Generated<string>;
+  milestone_id: string;
+  position: number;
+  title: string;
+  done_on: CalendarDate | null; // the user's local date when ticked off
+  created_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -153,6 +191,9 @@ export interface Database {
   attempts: AttemptsTable;
   daily_principles: DailyPrinciplesTable;
   reflections: ReflectionsTable;
+  goals: GoalsTable;
+  goal_milestones: GoalMilestonesTable;
+  goal_steps: GoalStepsTable;
 }
 
 // Row types for use in the rest of the app.
