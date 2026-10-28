@@ -65,6 +65,54 @@ test("record expenses and income, then edit and delete them", async ({ page, con
   await expect(page.getByText("Nothing recorded this month yet.")).toBeVisible();
 });
 
+test("add, rename, archive and restore a category", async ({ page, context }) => {
+  await signInFreshUser(context);
+
+  // Add "Coffee" from the Money page's link.
+  await open(page, "/money");
+  await page.getByRole("link", { name: "Manage categories" }).click();
+  await expect(page).toHaveURL(/\/money\/categories/);
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Add an expense category" }).click();
+  await page.getByLabel("Category name").fill("Coffee");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Rename Coffee" })).toBeVisible();
+
+  // A duplicate name is explained.
+  await page.getByRole("button", { name: "Add an expense category" }).click();
+  await page.getByLabel("Category name").fill("food");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(alerts(page)).toContainText('You already have a category called "food"');
+  await page.getByRole("button", { name: "Cancel" }).click();
+
+  // The add form offers it.
+  await open(page, "/money");
+  await add(page, "120", "Coffee");
+
+  // Rename it; the transaction follows.
+  await open(page, "/money/categories");
+  await expect(page.getByText("1 transaction", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Rename Coffee" }).click();
+  await page.getByLabel("Category name").fill("Coffee & tea");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("button", { name: "Rename Coffee & tea" })).toBeVisible();
+
+  // Archive it: no longer offered, but the old transaction keeps it.
+  await page.getByRole("button", { name: "Archive Coffee & tea" }).click();
+  await expect(page.getByText("Archived (1)")).toBeVisible();
+  await open(page, "/money");
+  await expect(page.locator("#quick-add").getByRole("button", { name: "Coffee & tea", exact: true })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Edit Coffee & tea ₱120.00" })).toBeVisible();
+
+  // Restore it.
+  await open(page, "/money/categories");
+  await page.getByText("Archived (1)").click();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.getByRole("button", { name: "Archive Coffee & tea" })).toBeVisible();
+  await open(page, "/money");
+  await expect(page.locator("#quick-add").getByRole("button", { name: "Coffee & tea", exact: true })).toBeVisible();
+});
+
 test("save toward a goal, and change the currency", async ({ page, context }) => {
   const user = await signInFreshUser(context);
   const { id: goalId } = await seedGoal(user.id, {

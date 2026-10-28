@@ -101,3 +101,34 @@ export async function spentOn(userId: string, date: CalendarDate): Promise<numbe
     .executeTakeFirstOrThrow();
   return Number(row.total ?? 0);
 }
+
+export type ManagedCategory = MoneyCategory & { archived: boolean; uses: number };
+
+/** Every category (archived too) with how many transactions use it, for the categories page. */
+export async function getAllCategories(userId: string): Promise<ManagedCategory[]> {
+  await getCategories(userId); // makes sure the defaults exist
+  const rows = await db
+    .selectFrom("money_categories")
+    .leftJoin("transactions", "transactions.category_id", "money_categories.id")
+    .select((eb) => [
+      "money_categories.id",
+      "money_categories.kind",
+      "money_categories.name",
+      "money_categories.icon",
+      "money_categories.archived_at",
+      eb.fn.count<string>("transactions.id").as("uses"),
+    ])
+    .where("money_categories.user_id", "=", userId)
+    .groupBy("money_categories.id")
+    .orderBy("money_categories.kind")
+    .orderBy("money_categories.position")
+    .execute();
+  return rows.map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    name: r.name,
+    icon: r.icon,
+    archived: r.archived_at !== null,
+    uses: Number(r.uses),
+  }));
+}

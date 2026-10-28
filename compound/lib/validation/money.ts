@@ -2,6 +2,7 @@ import { z } from "zod";
 import { daysBetween } from "@/lib/dates/calendar";
 import type { CalendarDate } from "@/lib/db/types";
 import { parseAmount } from "@/lib/money/amount";
+import { CATEGORY_ICONS } from "@/lib/money/categories";
 
 /**
  * A transaction from the quick-add form or an edit. The amount arrives as
@@ -37,3 +38,25 @@ export function occurredOnError(today: CalendarDate, date: CalendarDate): string
 }
 
 export const deleteTransactionSchema = z.object({ id: z.uuid() });
+
+export const MAX_CATEGORIES_PER_KIND = 30;
+
+const categoryName = z
+  .string()
+  .trim()
+  .min(1, { error: "Give the category a name." })
+  .max(30, { error: "Keep category names under 30 characters." });
+
+export const newCategorySchema = z.object({
+  kind: z.enum(["expense", "income"]),
+  name: categoryName,
+  icon: z.enum(CATEGORY_ICONS, { error: "Choose an icon." }),
+});
+
+export const updateCategorySchema = z.object({
+  id: z.uuid(),
+  name: categoryName,
+  icon: z.enum(CATEGORY_ICONS, { error: "Choose an icon." }),
+});
+
+export const archiveCategorySchema = z.object({ id: z.uuid(), archived: z.boolean() });

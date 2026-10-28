@@ -55,7 +55,12 @@ async function MoneyContent({ searchParams }: Pick<PageProps<"/money">, "searchP
   return (
     <div className="mt-8 flex flex-col gap-8">
       <section id="quick-add" className="scroll-mt-20 rounded-2xl border p-5 shadow-card">
-        <h2 className="mb-4 font-semibold">Add</h2>
+        <div className="mb-4 flex items-baseline justify-between gap-3">
+          <h2 className="font-semibold">Add</h2>
+          <Link href="/money/categories" className="text-sm text-primary hover:underline">
+            Manage categories
+          </Link>
+        </div>
         <TransactionForm
           key={kind}
           categories={categories}
