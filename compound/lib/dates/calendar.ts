@@ -46,3 +46,14 @@ export function formatLongDate(date: CalendarDate): string {
 export function daysBetween(from: CalendarDate, to: CalendarDate): number {
   return Math.round((toUtcDate(to).getTime() - toUtcDate(from).getTime()) / 86_400_000);
 }
+
+/** A compact form of a date, e.g. "Dec 8" (or "Dec 8, 2027" outside `currentYear`). */
+export function formatShortDate(date: CalendarDate, currentYear?: string): string {
+  const sameYear = currentYear === undefined || date.slice(0, 4) === currentYear;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+    timeZone: "UTC",
+  }).format(toUtcDate(date));
+}

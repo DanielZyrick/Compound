@@ -21,7 +21,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/today", label: "Today", icon: House, ready: true },
   { href: "/habits", label: "Habits", icon: ListChecks, ready: true },
   { href: "/tracks", label: "Learn", icon: GraduationCap, ready: true },
-  { href: "/goals", label: "Goals", icon: Target, ready: false },
+  { href: "/goals", label: "Goals", icon: Target, ready: true },
   { href: "/money", label: "Money", icon: Wallet, ready: false },
   { href: "/progress", label: "Progress", icon: ChartColumn, ready: true },
 ];
