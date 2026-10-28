@@ -23,7 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/tracks", label: "Learn", icon: GraduationCap, ready: true },
   { href: "/goals", label: "Goals", icon: Target, ready: false },
   { href: "/money", label: "Money", icon: Wallet, ready: false },
-  { href: "/progress", label: "Progress", icon: ChartColumn, ready: false },
+  { href: "/progress", label: "Progress", icon: ChartColumn, ready: true },
 ];
 
 /** True on the item's own page and on any page below it (/tracks/123). */

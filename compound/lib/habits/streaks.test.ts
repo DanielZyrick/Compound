@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Weekday } from "@/lib/db/types";
-import { currentStreak } from "./streaks";
+import { bestStreak, currentStreak } from "./streaks";
 
 const EVERY_DAY: Weekday[] = [0, 1, 2, 3, 4, 5, 6];
 const MON_WED_FRI: Weekday[] = [1, 3, 5];
@@ -59,5 +59,36 @@ describe("currentStreak", () => {
   it("does not depend on check-in order or duplicates", () => {
     const checkins = ["2026-10-27", "2026-10-25", "2026-10-26", "2026-10-26"];
     expect(currentStreak({ schedule: EVERY_DAY, checkins, today: "2026-10-27" })).toBe(3);
+  });
+});
+
+describe("bestStreak", () => {
+  it("is 0 with no check-ins", () => {
+    expect(bestStreak({ schedule: EVERY_DAY, checkins: [] })).toBe(0);
+  });
+
+  it("finds the longest run, not the latest one", () => {
+    // 3 in a row (19–21), a gap, then 2 in a row (25–26).
+    const checkins = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-25", "2026-10-26"];
+    expect(bestStreak({ schedule: EVERY_DAY, checkins })).toBe(3);
+  });
+
+  it("skips unscheduled days within a run", () => {
+    // Mon/Wed/Fri across two weeks, nothing missed.
+    const checkins = ["2026-10-19", "2026-10-21", "2026-10-23", "2026-10-26", "2026-10-28"];
+    expect(bestStreak({ schedule: MON_WED_FRI, checkins })).toBe(5);
+  });
+
+  it("ignores check-ins on unscheduled days and duplicates", () => {
+    const checkins = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-21"];
+    expect(bestStreak({ schedule: MON_WED_FRI, checkins })).toBe(2);
+  });
+
+  it("is never smaller than the current streak", () => {
+    const checkins = ["2026-10-25", "2026-10-26", "2026-10-27"];
+    const today = "2026-10-27";
+    expect(bestStreak({ schedule: EVERY_DAY, checkins })).toBeGreaterThanOrEqual(
+      currentStreak({ schedule: EVERY_DAY, checkins, today }),
+    );
   });
 });
