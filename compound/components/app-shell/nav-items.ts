@@ -22,7 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/habits", label: "Habits", icon: ListChecks, ready: true },
   { href: "/tracks", label: "Learn", icon: GraduationCap, ready: true },
   { href: "/goals", label: "Goals", icon: Target, ready: true },
-  { href: "/money", label: "Money", icon: Wallet, ready: false },
+  { href: "/money", label: "Money", icon: Wallet, ready: true },
   { href: "/progress", label: "Progress", icon: ChartColumn, ready: true },
 ];
 
