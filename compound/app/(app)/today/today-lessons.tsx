@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, ChevronRight, CircleCheck, GraduationCap } from "lucide-react";
+import { BookOpen, ChevronRight, CircleCheck, GraduationCap, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TodayLesson = {
@@ -16,13 +16,27 @@ export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
   const doneCount = lessons.filter((l) => l.done).length;
 
   return (
-    <section className="rounded-2xl border p-5 shadow-card">
+    <section aria-labelledby="today-learning" className="rounded-2xl border p-5 shadow-card">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-semibold">Today&apos;s learning</h2>
-        <p className="text-sm text-muted-foreground tabular-nums">
-          {doneCount} of {lessons.length} done
-        </p>
+        <h2 id="today-learning" className="font-semibold">
+          Today&apos;s learning
+        </h2>
+        {lessons.length > 0 && (
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {doneCount} of {lessons.length} done
+          </p>
+        )}
       </div>
+
+      {lessons.length === 0 && (
+        <div className="mt-3 rounded-xl border border-dashed p-4 text-sm">
+          <p className="text-muted-foreground">No lessons today. Ten minutes a day adds up.</p>
+          <Link href="/tracks/new" className="mt-2 inline-flex items-center gap-1 font-medium text-primary hover:underline">
+            <Plus className="size-4" />
+            Start a learning track
+          </Link>
+        </div>
+      )}
 
       <ul className="mt-3 flex flex-col gap-1">
         {lessons.map((lesson) => (

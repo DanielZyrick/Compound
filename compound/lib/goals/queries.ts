@@ -152,6 +152,20 @@ export const getNavGoals = cache(async (userId: string, today: CalendarDate): Pr
   return goals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.title, status: g.schedule.status }));
 });
 
+/** How many goal steps the user has ticked off since `from` (their local date). */
+export async function stepsDoneSince(userId: string, from: CalendarDate): Promise<number> {
+  const row = await db
+    .selectFrom("goal_steps")
+    .innerJoin("goal_milestones", "goal_milestones.id", "goal_steps.milestone_id")
+    .innerJoin("goals", "goals.id", "goal_milestones.goal_id")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("goals.user_id", "=", userId)
+    .where("goals.status", "!=", "archived")
+    .where("goal_steps.done_on", ">=", from)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 /** Whether any active goal is behind or at risk: shows a dot on Goals in the nav. */
 export async function goalsNeedAttention(userId: string, today: CalendarDate): Promise<boolean> {
   const goals = await getNavGoals(userId, today);

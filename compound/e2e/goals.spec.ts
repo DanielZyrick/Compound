@@ -51,7 +51,7 @@ test("create a goal, then tick, add, rename and delete steps", async ({ page, co
 
   // Today offers the goal's next step; ticking it moves on to the one after.
   await open(page, "/today");
-  const card = page.locator("section").filter({ hasText: "Goal steps" });
+  const card = page.getByRole("region", { name: "Goals" });
   const next = card.getByRole("checkbox");
   const before = await next.getAttribute("aria-label");
   await next.click();

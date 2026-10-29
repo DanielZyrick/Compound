@@ -1,8 +1,9 @@
 import "server-only";
-import { weekdayOf } from "@/lib/dates/calendar";
+import { todayIn, weekdayOf } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
 import type { CalendarDate, Weekday } from "@/lib/db/types";
 import { currentStreak } from "./streaks";
+import { habitWeek, weekStart, type WeekDay } from "./week";
 
 export type HabitSummary = {
   id: string;
@@ -64,6 +65,33 @@ export async function getTodayHabits(userId: string, today: CalendarDate) {
   const weekday = weekdayOf(today);
   const scheduled = habits.filter((h) => h.schedule.includes(weekday));
   return { habits: await withStats(scheduled, today), activeCount: habits.length };
+}
+
+/** This week (Monday to Sunday) for Today's week strip: how many habits were done each day. */
+export async function getHabitWeek(user: { id: string; timezone: string }, today: CalendarDate): Promise<WeekDay[]> {
+  const habits = await db
+    .selectFrom("habits")
+    .select(["id", "schedule", "created_at"])
+    .where("user_id", "=", user.id)
+    .where("archived_at", "is", null)
+    .execute();
+  const checkins = habits.length
+    ? await db
+        .selectFrom("habit_checkins")
+        .select(["habit_id", "date"])
+        .where("habit_id", "in", habits.map((h) => h.id))
+        .where("date", ">=", weekStart(today))
+        .where("date", "<=", today)
+        .execute()
+    : [];
+  return habitWeek(
+    habits.map((h) => ({
+      schedule: h.schedule,
+      createdOn: todayIn(user.timezone, h.created_at), // the user's local date
+      checkins: new Set(checkins.filter((c) => c.habit_id === h.id).map((c) => c.date)),
+    })),
+    today,
+  );
 }
 
 /** Every habit for the Habits page: active ones with stats, plus the archived ones. */

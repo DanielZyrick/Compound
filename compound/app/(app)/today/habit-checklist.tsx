@@ -4,15 +4,17 @@ import { startTransition, useOptimistic, useState } from "react";
 import { Check, Flame } from "lucide-react";
 import { describeSchedule } from "@/lib/dates/schedule";
 import type { HabitSummary } from "@/lib/habits/queries";
+import type { WeekDay } from "@/lib/habits/week";
 import { cn } from "@/lib/utils";
 import { setCheckin } from "./actions";
+import { WeekStrip } from "./week-strip";
 
 type Toggle = { id: string; done: boolean };
 
 // Checking a habit updates the screen immediately (optimistic), then the
 // server saves it and re-renders the page. If saving fails, React drops the
 // optimistic change and the row goes back to how it was.
-export function HabitChecklist({ habits }: { habits: HabitSummary[] }) {
+export function HabitChecklist({ habits, week, today }: { habits: HabitSummary[]; week: WeekDay[]; today: string }) {
   const [shown, applyToggle] = useOptimistic(habits, (state, { id, done }: Toggle) =>
     state.map((h) =>
       h.id === id && h.doneToday !== done
@@ -33,11 +35,19 @@ export function HabitChecklist({ habits }: { habits: HabitSummary[] }) {
   }
 
   const doneCount = shown.filter((h) => h.doneToday).length;
+  // Keep today's mark in the week strip in step with the optimistic ticks.
+  const shownWeek = week.map((day) =>
+    day.date === today
+      ? { ...day, done: doneCount, due: shown.length, status: doneCount === shown.length ? "done" : doneCount > 0 ? "partial" : "pending" }
+      : day,
+  ) as WeekDay[];
 
   return (
-    <section className="rounded-2xl border p-5 shadow-card">
+    <section aria-labelledby="today-habits" className="rounded-2xl border p-5 shadow-card">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-semibold">Habits</h2>
+        <h2 id="today-habits" className="font-semibold">
+          Habits
+        </h2>
         <p className="text-sm text-muted-foreground tabular-nums" aria-live="polite">
           {doneCount} of {shown.length} done
         </p>
@@ -56,7 +66,11 @@ export function HabitChecklist({ habits }: { habits: HabitSummary[] }) {
         />
       </div>
 
-      <ul className="mt-4 flex flex-col gap-1">
+      <div className="mt-4 border-t pt-4">
+        <WeekStrip days={shownWeek} today={today} />
+      </div>
+
+      <ul className="mt-3 flex flex-col gap-1">
         {shown.map((habit) => (
           <li key={habit.id}>
             <HabitRow habit={habit} onToggle={() => toggle(habit)} />

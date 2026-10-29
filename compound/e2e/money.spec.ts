@@ -16,7 +16,7 @@ test("record expenses and income, then edit and delete them", async ({ page, con
 
   // From Today, one tap opens the add form.
   await open(page, "/today");
-  await expect(page.getByText("Spent today")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Today at a glance" })).toContainText("spent today");
   await page.getByRole("link", { name: "Expense" }).click();
   await expect(page).toHaveURL(/\/money\?add=expense/);
   await page.waitForLoadState("networkidle");
@@ -57,7 +57,7 @@ test("record expenses and income, then edit and delete them", async ({ page, con
 
   // Today shows what was spent.
   await open(page, "/today");
-  await expect(page.locator("section").filter({ hasText: "Spent today" })).toContainText("₱200.00");
+  await expect(page.getByRole("region", { name: "Today at a glance" })).toContainText("₱200.00 spent today");
 
   // The previous month is empty.
   await open(page, "/money");
