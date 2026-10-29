@@ -8,7 +8,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 
 > This is my portfolio project, built in small, deployable steps.
 
-![The Today page: today's lesson, goal steps and habits](docs/screenshots/today.png)
+![The Today dashboard: a greeting, today's numbers, goals with their next step, habits with a week strip, and today's lesson](docs/screenshots/today.png)
 
 ## Modules
 
