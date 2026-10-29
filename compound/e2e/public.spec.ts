@@ -17,6 +17,14 @@ test("signed-out visitors are sent to the login page", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Continue with GitHub" })).toBeVisible();
 });
 
+test("the privacy policy is public and linked from the login page", async ({ page }) => {
+  await open(page, "/login");
+  await page.getByRole("link", { name: "privacy policy" }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy" })).toBeVisible();
+  await expect(page.getByText("Anthropic")).toBeVisible();
+});
+
 test("the login page explains sign-in errors", async ({ page }) => {
   await open(page, "/login?error=AccessDenied");
   await expect(alerts(page)).toContainText("couldn't confirm your email address");

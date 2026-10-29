@@ -33,7 +33,13 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
             <SignInWithGoogle />
             <SignInWithGitHub />
           </div>
-          <p className="mt-4 text-xs text-subtle">New here? Signing in creates your account.</p>
+          <p className="mt-4 text-xs text-subtle">
+            New here? Signing in creates your account. See how your data is used in our{" "}
+            <Link href="/privacy" className="underline hover:text-foreground">
+              privacy policy
+            </Link>
+            .
+          </p>
         </div>
 
         <Link

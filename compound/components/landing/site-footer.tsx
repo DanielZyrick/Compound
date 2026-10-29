@@ -34,6 +34,9 @@ export function SiteFooter() {
             <a href={REPO_URL} className="flex items-center gap-1 hover:text-foreground">
               GitHub <ArrowUpRight className="size-3.5" />
             </a>
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacy
+            </Link>
           </nav>
         </div>
 

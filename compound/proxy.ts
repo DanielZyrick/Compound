@@ -7,7 +7,7 @@ import { authConfig } from "./auth.config";
 // The real check is requireUser() in lib/auth/dal.ts.
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC_PATHS = ["/", "/login"];
+const PUBLIC_PATHS = ["/", "/login", "/privacy"];
 
 export default auth((req) => {
   const isPublic = PUBLIC_PATHS.includes(req.nextUrl.pathname);
