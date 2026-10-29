@@ -2,20 +2,28 @@ import "server-only";
 import { todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
 import type { CalendarDate } from "@/lib/db/types";
+import type { NoteColor } from "./colors";
 
-export type Note = { id: string; title: string; body: string | null; pinned: boolean; done: boolean };
+export type Note = { id: string; title: string; body: string | null; pinned: boolean; done: boolean; color: NoteColor };
 
 export type NoteFilter = "open" | "done" | "all";
 
 function notes(userId: string) {
   return db
     .selectFrom("notes")
-    .select(["id", "title", "body", "pinned", "done_at"])
+    .select(["id", "title", "body", "pinned", "color", "done_at"])
     .where("user_id", "=", userId);
 }
 
-function toNote(row: { id: string; title: string; body: string | null; pinned: boolean; done_at: Date | null }): Note {
-  return { id: row.id, title: row.title, body: row.body, pinned: row.pinned, done: row.done_at !== null };
+function toNote(row: {
+  id: string;
+  title: string;
+  body: string | null;
+  pinned: boolean;
+  color: NoteColor;
+  done_at: Date | null;
+}): Note {
+  return { id: row.id, title: row.title, body: row.body, pinned: row.pinned, color: row.color, done: row.done_at !== null };
 }
 
 /** The Notes page: open notes first, pinned at the top, newest first. */
@@ -35,7 +43,7 @@ export async function getNotes(userId: string, filter: NoteFilter): Promise<Note
  * The Today card: up to `limit` open notes (pinned first, then newest), plus
  * the ones ticked off today, so a tick stays visible for the rest of the day.
  */
-export async function getTodayNotes(user: { id: string; timezone: string }, today: CalendarDate, limit = 5) {
+export async function getTodayNotes(user: { id: string; timezone: string }, today: CalendarDate, limit = 4) {
   const [open, recentlyDone, openCount] = await Promise.all([
     notes(user.id)
       .where("done_at", "is", null)

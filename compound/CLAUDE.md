@@ -52,8 +52,8 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
 - money_categories (id, user_id, kind: expense | income, name, icon, position, archived_at)
   — unique per (user_id, kind, lower(name)); defaults are seeded on first use
 - transactions (id, user_id, kind, amount_cents, category_id, note, occurred_on, goal_id)
-- notes (id, user_id, title, body, pinned, done_at, created_at, updated_at) — quick notes and
-  to-dos; done_at set when ticked off
+- notes (id, user_id, title, body, pinned, color, done_at, created_at, updated_at) — quick notes
+  and to-dos shown as sticky notes; color is the paper (lib/notes/colors.ts); done_at set when ticked off
 
 Rules:
 - Streaks are calculated from habit_checkins, never stored.

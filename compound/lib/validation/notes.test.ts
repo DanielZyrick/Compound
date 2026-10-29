@@ -23,6 +23,11 @@ describe("saveNoteSchema", () => {
     expect(saveNoteSchema.safeParse({ title: "a", body: "b".repeat(5001) }).success).toBe(false);
   });
 
+  it("accepts only the sticky-note colours", () => {
+    expect(saveNoteSchema.parse({ title: "x", color: "pink" }).color).toBe("pink");
+    expect(saveNoteSchema.safeParse({ title: "x", color: "purple" }).success).toBe(false);
+  });
+
   it("only accepts a real id when editing", () => {
     expect(saveNoteSchema.safeParse({ id: "not-a-uuid", title: "x" }).success).toBe(false);
   });

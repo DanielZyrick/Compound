@@ -18,12 +18,12 @@ export async function saveNote(input: unknown): Promise<NoteActionResult> {
   const user = await requireOnboardedUser();
   const parsed = saveNoteSchema.safeParse(input);
   if (!parsed.success) return { errors: [...new Set(parsed.error.issues.map((i) => i.message))] };
-  const { id, title, body } = parsed.data;
+  const { id, title, body, color } = parsed.data;
 
   if (id) {
     const updated = await db
       .updateTable("notes")
-      .set({ title, body, updated_at: new Date() })
+      .set({ title, body, ...(color && { color }), updated_at: new Date() })
       .where("id", "=", id)
       .where("user_id", "=", user.id)
       .executeTakeFirst();
@@ -37,7 +37,7 @@ export async function saveNote(input: unknown): Promise<NoteActionResult> {
     if (Number(count) >= MAX_NOTES) {
       return { errors: [`You can keep up to ${MAX_NOTES} notes. Delete some you no longer need.`] };
     }
-    await db.insertInto("notes").values({ user_id: user.id, title, body }).execute();
+    await db.insertInto("notes").values({ user_id: user.id, title, body, color }).execute();
   }
 
   refresh();

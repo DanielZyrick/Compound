@@ -33,13 +33,18 @@ test("write, tick, pin, edit and delete notes", async ({ page, context }) => {
   await expect(main.getByRole("checkbox", { name: "Call the bank" })).toBeVisible();
   await expect(main.getByRole("checkbox", { name: "Buy running shoes" })).toBeHidden();
 
-  // Pin it, then add details.
+  // New notes are yellow sticky notes.
+  await expect(main.locator('[data-color="yellow"]').filter({ hasText: "Call the bank" })).toBeVisible();
+
+  // Pin it, then add details and make it pink.
   await main.getByRole("button", { name: "Pin Call the bank" }).click();
   await expect(main.getByRole("button", { name: "Unpin Call the bank" })).toBeVisible();
   await main.getByRole("button", { name: "Edit Call the bank" }).click();
   await main.getByLabel("Details (optional)").fill("Ask about the annual fee.\nAnd the new card.");
+  await main.getByRole("radio", { name: "Pink" }).click();
   await main.getByRole("button", { name: "Save" }).click();
   await expect(main.getByText("Ask about the annual fee.")).toBeVisible();
+  await expect(main.locator('[data-color="pink"]').filter({ hasText: "Call the bank" })).toBeVisible();
 
   // Done notes have their own filter.
   await main.getByRole("link", { name: "Done" }).click();

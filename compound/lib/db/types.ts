@@ -1,4 +1,5 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from "kysely";
+import type { NoteColor } from "@/lib/notes/colors";
 
 // timestamptz columns: read as Date, written as Date or ISO string.
 type Timestamp = ColumnType<Date, Date | string, Date | string>;
@@ -212,6 +213,7 @@ export interface NotesTable {
   title: string;
   body: string | null;
   pinned: ColumnType<boolean, boolean | undefined, boolean>;
+  color: ColumnType<NoteColor, NoteColor | undefined, NoteColor>; // sticky-note paper
   done_at: Timestamp | null; // when it was ticked off; null while open
   created_at: CreatedAt;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
