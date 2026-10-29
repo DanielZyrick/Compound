@@ -3,11 +3,11 @@
 // internal details never reach the browser (see isClientError in @auth/core).
 
 const MESSAGES: Record<string, string> = {
-  // Our signIn callback refused the account: GitHub gave us no verified email.
+  // Our signIn callback refused the account: no verified email.
   AccessDenied:
-    "Your GitHub account needs a verified email address. Add one in your GitHub settings, then try again.",
-  // The user pressed Cancel on GitHub, or GitHub returned an error.
-  OAuthCallbackError: "GitHub sign-in was cancelled or didn't finish. Please try again.",
+    "We couldn't confirm your email address. Make sure it's verified in your Google or GitHub account, then try again.",
+  // The user pressed Cancel on Google or GitHub, or the provider returned an error.
+  OAuthCallbackError: "Sign-in was cancelled or didn't finish. Please try again.",
   // The form came from a stale tab, so its CSRF token no longer matched.
   MissingCSRF: "Your sign-in session expired. Please try again.",
 };

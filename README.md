@@ -37,7 +37,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **[Next.js 16](https://nextjs.org)** (App Router, Cache Components, partial prerendering) and **React 19**
 - **TypeScript** in strict mode
 - **PostgreSQL** on [Neon](https://neon.tech), queried with **[Kysely](https://kysely.dev)** (typed SQL and migrations)
-- **[Auth.js](https://authjs.dev)** with GitHub sign-in and JWT sessions
+- **[Auth.js](https://authjs.dev)** with Google and GitHub sign-in and JWT sessions
 - **[Zod](https://zod.dev)** to validate all form input and AI output
 - **[Tailwind CSS 4](https://tailwindcss.com)** and **[shadcn/ui](https://ui.shadcn.com)** on Base UI
 - **Claude API**, called from the server only
@@ -57,7 +57,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 
 ## Running it locally
 
-You need **Node.js 20.9 or newer**, a **Neon** database, and a **GitHub OAuth app**.
+You need **Node.js 20.9 or newer**, a **Neon** database, and a **Google OAuth client** and/or a **GitHub OAuth app**.
 
 ### 1. Install
 
@@ -79,20 +79,29 @@ Use a separate Neon branch for development, so local work never touches producti
 
 Don't run `vercel env pull`: it would overwrite `.env.local` with the Vercel project's variables.
 
-### 3. GitHub sign-in
+### 3. Sign-in
 
-Create an OAuth app at [github.com/settings/developers](https://github.com/settings/developers) with these settings:
-
-- **Homepage URL:** `http://localhost:3000`
-- **Callback URL:** `http://localhost:3000/api/auth/callback/github`
-
-Put its client ID and secret in `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`. Then generate `AUTH_SECRET`:
+Generate `AUTH_SECRET`:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-Production uses a separate OAuth app, because a GitHub OAuth app has only one callback URL.
+**Google.** In the [Google Cloud console](https://console.cloud.google.com/apis/credentials), create an **OAuth client ID** of type *Web application* with these authorized redirect URIs:
+
+- `http://localhost:3000/api/auth/callback/google`
+- `https://<your-domain>/api/auth/callback/google`
+
+Put its client ID and secret in `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`. One Google client can serve both local and production.
+
+**GitHub.** Create an OAuth app at [github.com/settings/developers](https://github.com/settings/developers) with these settings:
+
+- **Homepage URL:** `http://localhost:3000`
+- **Callback URL:** `http://localhost:3000/api/auth/callback/github`
+
+Put its client ID and secret in `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`. Production uses a separate GitHub OAuth app, because a GitHub OAuth app has only one callback URL.
+
+Accounts are matched by email, so Google and GitHub open the same Compound account when they share an address. Sign-in only accepts an address the provider has verified.
 
 ### 4. Migrate and run
 
@@ -101,7 +110,7 @@ npm run db:migrate
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000) and sign in with GitHub.
+Open [localhost:3000](http://localhost:3000) and sign in with Google or GitHub.
 
 ## Scripts
 
@@ -154,6 +163,7 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 | `DATABASE_URL` | Pooled Postgres connection (the app) |
 | `DATABASE_URL_UNPOOLED` | Direct Postgres connection (migrations) |
 | `AUTH_SECRET` | Encrypts session cookies |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth client |
 | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` | GitHub OAuth app |
 | `ANTHROPIC_API_KEY` | Claude API (server only) |
 | `MODEL_FAST`, `MODEL_SMART` | Claude model names: fast for feedback, smart for planning |
@@ -170,7 +180,7 @@ compound/
   app/
     (app)/          signed-in pages: today, habits, tracks, goals, money, progress, settings
     onboarding/     first-run setup: focus areas, first habits, timezone
-    login/          GitHub sign-in and error messages
+    login/          Google and GitHub sign-in, error messages
     page.tsx        landing page (fully static)
   components/
     app-shell/      sidebar, phone tab bar, account menu, nav attention dot

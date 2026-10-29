@@ -1,11 +1,13 @@
 import type { NextAuthConfig } from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 
 // The part of the Auth.js setup that never touches the database.
 // proxy.ts uses only this file, so it stays fast and free of database code.
 // auth.ts adds the database step on top of it.
 export const authConfig = {
-  providers: [GitHub], // reads AUTH_GITHUB_ID and AUTH_GITHUB_SECRET from env
+  // Read AUTH_GOOGLE_ID/SECRET and AUTH_GITHUB_ID/SECRET from env.
+  providers: [Google, GitHub],
   session: { strategy: "jwt" }, // the session lives in a signed cookie
   pages: {
     signIn: "/login",

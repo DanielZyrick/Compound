@@ -9,10 +9,10 @@ describe("loginErrorMessage", () => {
   });
 
   it("explains a missing verified email", () => {
-    expect(loginErrorMessage("AccessDenied")).toMatch(/verified email/);
+    expect(loginErrorMessage("AccessDenied")).toMatch(/verified/);
   });
 
-  it("explains a cancelled GitHub sign-in", () => {
+  it("explains a cancelled sign-in", () => {
     expect(loginErrorMessage("OAuthCallbackError")).toMatch(/cancelled/);
   });
 

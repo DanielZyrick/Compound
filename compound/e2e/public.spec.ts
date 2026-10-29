@@ -13,10 +13,11 @@ test("the landing page introduces Compound", async ({ page }) => {
 test("signed-out visitors are sent to the login page", async ({ page }) => {
   await page.goto("/today");
   await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with GitHub" })).toBeVisible();
 });
 
 test("the login page explains sign-in errors", async ({ page }) => {
   await open(page, "/login?error=AccessDenied");
-  await expect(alerts(page)).toContainText("verified email address");
+  await expect(alerts(page)).toContainText("couldn't confirm your email address");
 });

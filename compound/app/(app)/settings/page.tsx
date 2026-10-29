@@ -39,7 +39,7 @@ async function SettingsContent() {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          You sign in with GitHub. Your email and avatar come from your GitHub account.
+          You sign in with Google or GitHub. Your email and avatar come from that account, and both open the same Compound account when they use the same email.
         </p>
         <DisplayNameForm initial={user.name ?? ""} />
       </Section>

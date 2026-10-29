@@ -20,7 +20,8 @@ This is my portfolio project. I am the developer; you are my pair programmer.
 - Next.js 16 (App Router, `cacheComponents`), React 19, TypeScript (strict), Tailwind CSS 4,
   shadcn/ui on Base UI
 - PostgreSQL on Neon with Kysely (typed queries, migrations with Kysely's migrator)
-- Auth.js (NextAuth) with GitHub sign-in
+- Auth.js (NextAuth) with Google and GitHub sign-in. Users are matched by email, so only
+  provider-verified emails are accepted (`auth.ts`, `lib/auth/verified-email.ts`).
 - Claude API via @anthropic-ai/sdk, called ONLY from server code (route handlers / server actions)
 - Zod 4 for validating all AI JSON output and form input
 - Vitest for unit tests, Playwright for end-to-end tests

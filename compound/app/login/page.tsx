@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { SignInWithGitHub } from "@/components/auth-buttons";
+import { SignInWithGitHub, SignInWithGoogle } from "@/components/auth-buttons";
 import { FloatingTile } from "@/components/landing/floating";
 import { LogoMark } from "@/components/logo";
 import { getCurrentUser } from "@/lib/auth/dal";
@@ -29,7 +29,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
             <LoginNotice searchParams={searchParams} />
           </Suspense>
 
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col gap-3">
+            <SignInWithGoogle />
             <SignInWithGitHub />
           </div>
           <p className="mt-4 text-xs text-subtle">New here? Signing in creates your account.</p>
