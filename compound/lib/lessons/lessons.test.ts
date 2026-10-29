@@ -80,10 +80,18 @@ describe("rules", () => {
     expect(unlockDate("2026-10-28", 5)).toBe("2026-11-01");
   });
 
-  it("opens today's and earlier days only", () => {
-    expect(isDayOpen(3, 3)).toBe(true);
-    expect(isDayOpen(1, 3)).toBe(true);
-    expect(isDayOpen(4, 3)).toBe(false);
+  it("opens today's and earlier days by date", () => {
+    const none = new Set<number>();
+    expect(isDayOpen(3, 3, none)).toBe(true);
+    expect(isDayOpen(1, 3, none)).toBe(true);
+    expect(isDayOpen(4, 3, none)).toBe(false);
+  });
+
+  it("opens the next day early once the day before it is done", () => {
+    expect(isDayOpen(2, 1, new Set([1]))).toBe(true);
+    expect(isDayOpen(5, 1, new Set([1, 2, 3, 4]))).toBe(true);
+    // In order only: finishing day 1 doesn't open day 3.
+    expect(isDayOpen(3, 1, new Set([1]))).toBe(false);
   });
 
   it("allows completing only when every exercise was attempted", () => {

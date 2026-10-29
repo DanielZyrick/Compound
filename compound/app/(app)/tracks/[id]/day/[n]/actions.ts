@@ -14,6 +14,7 @@ import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE } from "@/lib/lessons
 import { feedbackSchema, lessonSchema } from "@/lib/lessons/schema";
 import { completeTrackDay } from "@/lib/tracks/complete";
 import { currentTrackDay } from "@/lib/tracks/progress";
+import { completedDayNumbers } from "@/lib/tracks/queries";
 
 type Result = { errors: string[] };
 const SOMETHING_WRONG = "Something went wrong. Please refresh and try again.";
@@ -40,8 +41,9 @@ export async function startLesson(input: unknown): Promise<Result> {
   if (!track || track.type === "reading" || !track.level) return { errors: [SOMETHING_WRONG] };
 
   const today = todayIn(user.timezone);
-  if (!isDayOpen(dayNumber, currentTrackDay(track.start_date, today, track.total_days))) {
-    return { errors: ["This day isn't open yet."] };
+  const calendarDay = currentTrackDay(track.start_date, today, track.total_days);
+  if (!isDayOpen(dayNumber, calendarDay, await completedDayNumbers(trackId))) {
+    return { errors: [`Finish day ${dayNumber - 1} first to open this one.`] };
   }
 
   const days = await db
@@ -300,8 +302,9 @@ export async function saveReadingReflection(input: unknown): Promise<Result> {
   if (!row || row.type !== "reading") return { errors: [SOMETHING_WRONG] };
 
   const today = todayIn(user.timezone);
-  if (!isDayOpen(dayNumber, currentTrackDay(row.start_date, today, row.total_days))) {
-    return { errors: ["This day isn't open yet."] };
+  const calendarDay = currentTrackDay(row.start_date, today, row.total_days);
+  if (!isDayOpen(dayNumber, calendarDay, await completedDayNumbers(trackId))) {
+    return { errors: [`Finish day ${dayNumber - 1} first to open this one.`] };
   }
 
   await db.transaction().execute(async (trx) => {

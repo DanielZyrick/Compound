@@ -43,9 +43,9 @@ async function Lesson({ params }: Pick<PageProps<"/tracks/[id]/day/[n]">, "param
   if (!page) notFound();
   await connection(); // demo mode reads the environment at request time
 
-  const open = isDayOpen(dayNumber, page.currentDay);
-  const nextOpenDay =
-    dayNumber < page.total_days && isDayOpen(dayNumber + 1, page.currentDay) ? dayNumber + 1 : null;
+  const open = isDayOpen(dayNumber, page.calendarDay, page.completedDays);
+  // Shown once this day is done: the next day opens then, if not already.
+  const nextOpenDay = dayNumber < page.total_days ? dayNumber + 1 : null;
   const reading = page.type === "reading";
   const reflection = reading && open ? await getReflection(user.id, page.dayId) : null;
 
@@ -79,10 +79,17 @@ async function Lesson({ params }: Pick<PageProps<"/tracks/[id]/day/[n]">, "param
           <div className="rounded-2xl border border-dashed p-8 text-center">
             <Lock className="mx-auto size-5 text-muted-foreground" />
             <p className="mt-2 font-medium">
-              This {reading ? "reading" : "lesson"} opens on{" "}
-              {formatLongDate(unlockDate(page.start_date, dayNumber))}.
+              Finish day {dayNumber - 1} to open this {reading ? "reading" : "lesson"}.
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">One small step a day.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Go at your own pace, or it opens by itself on {formatLongDate(unlockDate(page.start_date, dayNumber))}.
+            </p>
+            <Link
+              href={`/tracks/${trackId}/day/${dayNumber - 1}`}
+              className={buttonVariants({ variant: "outline", className: "mt-4" })}
+            >
+              Go to day {dayNumber - 1}
+            </Link>
           </div>
         ) : reading ? (
           <div className="flex flex-col gap-6">

@@ -40,7 +40,7 @@ export function CompleteLesson({ trackId, dayNumber, completed, ready, hasHabit,
           </Link>
           {nextOpenDay && (
             <Link href={`/tracks/${trackId}/day/${nextOpenDay}`} className={buttonVariants()}>
-              Day {nextOpenDay}
+              Continue to day {nextOpenDay}
               <ArrowRight />
             </Link>
           )}

@@ -41,7 +41,7 @@ async function TodayContent() {
   const [{ habits, activeCount }, week, lessons, principle, goals, stepsThisWeek, spentToday] = await Promise.all([
     getTodayHabits(user.id, today),
     getHabitWeek(user, today),
-    getTodayLessons(user.id, today),
+    getTodayLessons(user, today),
     getPrinciple(user.id, today), // only reads; the card writes it once if missing
     getGoals(user.id, today),
     stepsDoneSince(user.id, weekStart(today)),

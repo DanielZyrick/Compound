@@ -1,7 +1,9 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { CalendarDate } from "@/lib/db/types";
-import { currentTrackDay } from "@/lib/tracks/progress";
+import { todayIn } from "@/lib/dates/calendar";
+import { completedDayNumbers } from "@/lib/tracks/queries";
+import { currentTrackDay, nextTrackDay } from "@/lib/tracks/progress";
 import { lessonSchema, type LessonContent } from "./schema";
 
 /** Reads stored lesson JSON, validating it again. Bad data is treated as missing. */
@@ -28,6 +30,7 @@ export async function getLessonPage(userId: string, trackId: string, dayNumber: 
       "tracks.total_days",
       "tracks.start_date",
       "tracks.habit_id",
+      "tracks.id as trackId",
       "track_days.id as dayId",
       "track_days.title",
       "track_days.summary",
@@ -43,6 +46,7 @@ export async function getLessonPage(userId: string, trackId: string, dayNumber: 
   if (!row) return undefined;
 
   const lesson = row.lessonId ? parseLesson(row.type, row.content) : null;
+  const completedDays = await completedDayNumbers(row.trackId);
   const attempts = row.lessonId
     ? await db
         .selectFrom("attempts")
@@ -57,7 +61,8 @@ export async function getLessonPage(userId: string, trackId: string, dayNumber: 
     ...row,
     lesson,
     attempts,
-    currentDay: currentTrackDay(row.start_date, today, row.total_days),
+    completedDays,
+    calendarDay: currentTrackDay(row.start_date, today, row.total_days),
   };
 }
 
@@ -79,14 +84,16 @@ export async function getOwnedLesson(userId: string, lessonId: string) {
 }
 
 /**
- * For the Today page: each active track's step for today (a lesson, or a
- * reading for reading tracks), with whether it's done.
+ * For the Today page: each active track's step (a lesson, or a reading for
+ * reading tracks). If one was finished today, that one, marked done, with the
+ * next day to keep going with. Otherwise the first day not done yet: days
+ * open early once the one before is done, so that's always open.
  */
-export async function getTodayLessons(userId: string, today: CalendarDate) {
+export async function getTodayLessons(user: { id: string; timezone: string }, today: CalendarDate) {
   const tracks = await db
     .selectFrom("tracks")
-    .select(["id", "title", "type", "total_days", "start_date"])
-    .where("user_id", "=", userId)
+    .select(["id", "title", "type", "total_days"])
+    .where("user_id", "=", user.id)
     .where("status", "=", "active")
     .orderBy("created_at")
     .execute();
@@ -99,18 +106,25 @@ export async function getTodayLessons(userId: string, today: CalendarDate) {
     .execute();
 
   return tracks.flatMap((track) => {
-    const dayNumber = currentTrackDay(track.start_date, today, track.total_days);
-    const day = days.find((d) => d.track_id === track.id && d.day_number === dayNumber);
+    const own = days.filter((d) => d.track_id === track.id);
+    const completed = new Set(own.filter((d) => d.completed_at !== null).map((d) => d.day_number));
+    const next = nextTrackDay(track.total_days, completed);
+    // The latest day finished today, in the user's timezone.
+    const doneToday = own
+      .filter((d) => d.completed_at !== null && todayIn(user.timezone, d.completed_at) === today)
+      .sort((a, b) => b.day_number - a.day_number)[0];
+    const day = doneToday ?? own.find((d) => d.day_number === next);
     if (!day) return [];
     return [
       {
         trackId: track.id,
         trackTitle: track.title,
         reading: track.type === "reading",
-        dayNumber,
+        dayNumber: day.day_number,
         totalDays: track.total_days,
         dayTitle: day.title,
         done: day.completed_at !== null,
+        keepGoing: doneToday && next !== null ? next : null,
       },
     ];
   });

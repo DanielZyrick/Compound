@@ -78,3 +78,34 @@ test("a reading track links to a real translation and saves a reflection", async
   await page.getByRole("button", { name: "Save and complete" }).click();
   await expect(page.getByText("Reading complete. Well done!")).toBeVisible();
 });
+
+test("finishing a day opens the next one early, in order", async ({ page, context }) => {
+  await signInFreshUser(context);
+  await open(page, "/tracks/new");
+  await page.getByText("Reading", { exact: true }).click();
+  await page.getByText("The Gospel of John in 21 days").click();
+  await page.getByRole("button", { name: "Create track" }).click();
+  await expect(page).toHaveURL(/\/tracks\/[0-9a-f-]{36}$/);
+  const trackUrl = page.url();
+
+  // Day 3 is locked until day 2 is done.
+  await open(page, `${trackUrl}/day/3`);
+  await expect(page.getByText("Finish day 2 to open this reading.")).toBeVisible();
+
+  // Finish day 1, then continue straight to day 2 on the same day.
+  await open(page, `${trackUrl}/day/1`);
+  await page.getByRole("textbox").fill("A first reflection, long enough to save.");
+  await page.getByRole("button", { name: "Save and complete" }).click();
+  await page.getByRole("link", { name: "Continue to day 2" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("John 2");
+  await expect(page.getByRole("button", { name: "Save and complete" })).toBeVisible();
+
+  // Today shows the day finished today, with a way to keep going.
+  await open(page, "/today");
+  await expect(page.getByRole("link", { name: "Keep going: day 2" })).toBeVisible();
+
+  // The plan counts what's done and points at what's next.
+  await open(page, trackUrl);
+  await expect(page.getByText("1 of 21 done")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue with day 2" })).toBeVisible();
+});

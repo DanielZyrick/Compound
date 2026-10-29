@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
-import { todayIn } from "@/lib/dates/calendar";
 import { getTracks } from "@/lib/tracks/queries";
 import { TrackBadges } from "./track-badges";
 
@@ -35,7 +34,7 @@ export default function TracksPage() {
 
 async function TrackList() {
   const user = await requireOnboardedUser();
-  const tracks = await getTracks(user.id, todayIn(user.timezone));
+  const tracks = await getTracks(user.id);
 
   if (tracks.length === 0) {
     return (
@@ -62,7 +61,7 @@ async function TrackList() {
             <div className="flex items-start justify-between gap-3">
               <p className="font-medium">{track.title}</p>
               <p className="shrink-0 text-sm text-muted-foreground tabular-nums">
-                Day {track.currentDay} of {track.total_days}
+                {track.doneDays} of {track.total_days} done
               </p>
             </div>
             <div className="mt-2">
@@ -71,7 +70,7 @@ async function TrackList() {
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
               <div
                 className="h-full rounded-full bg-primary"
-                style={{ width: `${(track.currentDay / track.total_days) * 100}%` }}
+                style={{ width: `${(track.doneDays / track.total_days) * 100}%` }}
               />
             </div>
           </Link>

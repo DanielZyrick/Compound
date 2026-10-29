@@ -58,6 +58,8 @@ Rules:
 - Goal schedules (status, adjusted dates, buffer used) are calculated by pure functions in
   `lib/goals/schedule.ts`, never stored. The pace comes from the ORIGINAL plan's last
   planned_due, so extending a deadline really helps.
+- A track day opens on its own date OR as soon as the previous day is done (own pace, in
+  order; `isDayOpen` in `lib/lessons/rules.ts`). Server actions enforce the same rule.
 - Completing a lesson in a track with a habit_id auto-checks that habit for the day.
 - All dates use the user's timezone (`lib/dates/calendar.ts`).
 - Money is stored in integer cents (`lib/money/amount.ts`), never floats. One currency per

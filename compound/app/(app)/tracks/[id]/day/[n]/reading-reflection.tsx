@@ -98,7 +98,7 @@ export function ReadingReflection({ trackId, dayNumber, prompt, saved, completed
             </Link>
             {nextOpenDay && (
               <Link href={`/tracks/${trackId}/day/${nextOpenDay}`} className={buttonVariants()}>
-                Day {nextOpenDay}
+                Continue to day {nextOpenDay}
                 <ArrowRight />
               </Link>
             )}

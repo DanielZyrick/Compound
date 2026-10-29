@@ -8,9 +8,13 @@ export function unlockDate(startDate: CalendarDate, dayNumber: number): Calendar
   return addDays(startDate, dayNumber - 1);
 }
 
-/** Today's day and earlier ones are open; future days are locked. */
-export function isDayOpen(dayNumber: number, currentDay: number): boolean {
-  return dayNumber <= currentDay;
+/**
+ * A day is open on its own date (`calendarDay` is today's day of the track),
+ * or as soon as the day before it is done. So learners can go at their own
+ * pace, in order, and finish a 30-day track in a week if they like.
+ */
+export function isDayOpen(dayNumber: number, calendarDay: number, completedDays: ReadonlySet<number>): boolean {
+  return dayNumber <= calendarDay || completedDays.has(dayNumber - 1);
 }
 
 /** Open-answer exercises get up to this many AI reviews each. */

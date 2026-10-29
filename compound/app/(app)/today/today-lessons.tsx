@@ -10,6 +10,8 @@ type TodayLesson = {
   totalDays: number;
   dayTitle: string;
   done: boolean;
+  /** Set when a day was finished today: the next one, open now. */
+  keepGoing: number | null;
 };
 
 export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
@@ -69,6 +71,15 @@ export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
               </span>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
             </Link>
+            {lesson.keepGoing && (
+              <Link
+                href={`/tracks/${lesson.trackId}/day/${lesson.keepGoing}`}
+                className="ml-12 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              >
+                Keep going: day {lesson.keepGoing}
+                <ChevronRight className="size-4" />
+              </Link>
+            )}
           </li>
         ))}
       </ul>
