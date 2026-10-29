@@ -141,14 +141,22 @@ export async function getGoal(userId: string, goalId: string, today: CalendarDat
   return { ...goal, guide: parsed.success ? (parsed.data as Guide) : null };
 }
 
+export type NavGoal = { id: string; title: string; status: GoalWithSchedule["schedule"]["status"] };
+
 /**
- * Whether any active goal is behind or at risk: shows a dot on Goals in the
- * nav. Cached per request, since the sidebar and the phone tab bar both ask.
+ * Active goals for the navigation, soonest deadline first. Cached per request:
+ * the sidebar's goal list and the attention dots on both navs share one load.
  */
-export const goalsNeedAttention = cache(async (userId: string, today: CalendarDate): Promise<boolean> => {
+export const getNavGoals = cache(async (userId: string, today: CalendarDate): Promise<NavGoal[]> => {
   const goals = await loadGoals(userId, today);
-  return goals.some((g) => g.status === "active" && (g.schedule.status === "behind" || g.schedule.status === "at_risk"));
+  return goals.filter((g) => g.status === "active").map((g) => ({ id: g.id, title: g.title, status: g.schedule.status }));
 });
+
+/** Whether any active goal is behind or at risk: shows a dot on Goals in the nav. */
+export async function goalsNeedAttention(userId: string, today: CalendarDate): Promise<boolean> {
+  const goals = await getNavGoals(userId, today);
+  return goals.some((g) => g.status === "behind" || g.status === "at_risk");
+}
 
 /** Active goals with a savings target, for "put toward a goal" on income. */
 export function getSavingsGoals(userId: string) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { isActive, NAV_ITEMS, type NavItem } from "./nav-items";
@@ -41,6 +42,17 @@ export function NavLinksView({
       ))}
     </ul>
   );
+}
+
+const SETTINGS: NavItem = { href: "/settings", label: "Settings", icon: Settings, ready: true };
+
+/** Settings, pinned at the bottom of the sidebar. Render inside <Suspense> (usePathname). */
+export function SettingsLink() {
+  return <SettingsLinkView pathname={usePathname()} />;
+}
+
+export function SettingsLinkView({ pathname }: { pathname: string | null }) {
+  return <SidebarLink item={SETTINGS} active={isActive(pathname, SETTINGS.href)} alert={false} />;
 }
 
 function SidebarLink({ item, active, alert }: { item: NavItem; active: boolean; alert: boolean }) {

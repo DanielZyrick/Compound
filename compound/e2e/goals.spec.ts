@@ -74,7 +74,7 @@ test("an at-risk goal shows a nav dot, and extending the deadline fixes it", asy
   });
 
   await open(page, "/goals");
-  await expect(page.getByText("At risk")).toBeVisible();
+  await expect(page.getByRole("main").getByText("At risk")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Main" }).first()).toContainText("(needs attention)");
 
   await open(page, `/goals/${id}`);
