@@ -3,6 +3,7 @@ import {
   GraduationCap,
   House,
   ListChecks,
+  StickyNote,
   Target,
   Wallet,
   type LucideIcon,
@@ -14,6 +15,8 @@ export interface NavItem {
   icon: LucideIcon;
   /** false until the page exists: shown greyed out with a "Soon" badge. */
   ready: boolean;
+  /** false to keep it off the phone tab bar (sidebar only), which fits six. */
+  tabBar?: boolean;
 }
 
 // One list for both the desktop sidebar and the phone tab bar.
@@ -23,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/tracks", label: "Learn", icon: GraduationCap, ready: true },
   { href: "/goals", label: "Goals", icon: Target, ready: true },
   { href: "/money", label: "Money", icon: Wallet, ready: true },
+  { href: "/notes", label: "Notes", icon: StickyNote, ready: true, tabBar: false },
   { href: "/progress", label: "Progress", icon: ChartColumn, ready: true },
 ];
 

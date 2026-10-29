@@ -10,10 +10,12 @@ import { getGoals, stepsDoneSince } from "@/lib/goals/queries";
 import { getHabitWeek, getTodayHabits } from "@/lib/habits/queries";
 import { weekStart } from "@/lib/habits/week";
 import { getTodayLessons } from "@/lib/lessons/queries";
+import { getTodayNotes } from "@/lib/notes/queries";
 import { spentOn } from "@/lib/money/queries";
 import { getPrinciple } from "@/lib/principles/queries";
 import { GoalsTable, type GoalRow } from "./goals-table";
 import { HabitChecklist } from "./habit-checklist";
+import { NotesCard } from "./notes-card";
 import { PrincipleCard } from "./principle-card";
 import { StatsPill } from "./stats-pill";
 import { TodayLessons } from "./today-lessons";
@@ -38,7 +40,7 @@ async function TodayContent() {
   // The date in the user's timezone decides which habits are due and which
   // check-ins count as today.
   const today = todayIn(user.timezone);
-  const [{ habits, activeCount }, week, lessons, principle, goals, stepsThisWeek, spentToday] = await Promise.all([
+  const [{ habits, activeCount }, week, lessons, principle, goals, stepsThisWeek, spentToday, notes] = await Promise.all([
     getTodayHabits(user.id, today),
     getHabitWeek(user, today),
     getTodayLessons(user, today),
@@ -46,6 +48,7 @@ async function TodayContent() {
     getGoals(user.id, today),
     stepsDoneSince(user.id, weekStart(today)),
     spentOn(user.id, today),
+    getTodayNotes(user, today),
   ]);
 
   const active = goals.filter((g) => g.status === "active");
@@ -90,23 +93,26 @@ async function TodayContent() {
         <GoalsTable rows={goalRows} total={active.length} />
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
-          {habits.length > 0 ? (
-            <HabitChecklist habits={habits} week={week} today={today} />
-          ) : (
-            <div className="rounded-2xl border border-dashed p-8 text-center">
-              <p className="font-medium">
-                {activeCount > 0 ? "No habits scheduled today." : "You don't have any habits yet."}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {activeCount > 0
-                  ? "Enjoy the rest day. Your streaks are safe."
-                  : "Habits you add will show up here."}
-              </p>
-              <Link href="/habits" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
-                {activeCount > 0 ? "Manage habits" : "Add a habit"}
-              </Link>
-            </div>
-          )}
+          <div className="flex flex-col gap-6">
+            {habits.length > 0 ? (
+              <HabitChecklist habits={habits} week={week} today={today} />
+            ) : (
+              <div className="rounded-2xl border border-dashed p-8 text-center">
+                <p className="font-medium">
+                  {activeCount > 0 ? "No habits scheduled today." : "You don't have any habits yet."}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {activeCount > 0
+                    ? "Enjoy the rest day. Your streaks are safe."
+                    : "Habits you add will show up here."}
+                </p>
+                <Link href="/habits" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
+                  {activeCount > 0 ? "Manage habits" : "Add a habit"}
+                </Link>
+              </div>
+            )}
+            <NotesCard notes={notes.notes} openCount={notes.openCount} />
+          </div>
 
           <div className="flex flex-col gap-6">
             <TodayLessons lessons={lessons} />

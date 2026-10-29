@@ -206,6 +206,17 @@ export interface TransactionsTable {
   created_at: CreatedAt;
 }
 
+export interface NotesTable {
+  id: Generated<string>;
+  user_id: string;
+  title: string;
+  body: string | null;
+  pinned: ColumnType<boolean, boolean | undefined, boolean>;
+  done_at: Timestamp | null; // when it was ticked off; null while open
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -223,6 +234,7 @@ export interface Database {
   goal_steps: GoalStepsTable;
   money_categories: MoneyCategoriesTable;
   transactions: TransactionsTable;
+  notes: NotesTable;
 }
 
 // Row types for use in the rest of the app.

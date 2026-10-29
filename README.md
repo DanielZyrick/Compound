@@ -16,6 +16,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 | --- | --- | --- |
 | **Learning & Habits** | Daily habits with streaks. AI learning tracks (skills, reading plans, thinking exercises) with lessons, exercises and feedback. A principle of the day. | Done |
 | **Goals** | The AI drafts a plan of milestones and steps, which you can edit. Each goal keeps buffer days before its deadline. When you fall behind, the remaining dates move and the status changes from on track to behind or at risk. Goals that need attention get a dot in the nav. | Done |
+| **Notes** | Quick notes and to-dos: add one from Today in a second, tick it off, pin what matters. | Done |
 | **Money** | Record expenses and income in a few taps. Monthly totals, spending by category, and your own categories. Income can go toward a goal's savings target. | Done |
 
 ## Screenshots

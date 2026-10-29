@@ -31,7 +31,7 @@ export function NavLinksView({
 }) {
   return (
     <ul className={variant === "sidebar" ? "space-y-1" : "grid grid-cols-6"}>
-      {NAV_ITEMS.map((item) => (
+      {NAV_ITEMS.filter((item) => variant === "sidebar" || item.tabBar !== false).map((item) => (
         <li key={item.href}>
           {variant === "sidebar" ? (
             <SidebarLink item={item} active={isActive(pathname, item.href)} alert={attention.includes(item.href)} />
