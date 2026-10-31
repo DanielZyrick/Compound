@@ -2,7 +2,7 @@
 
 **Small daily steps, compounding growth.**
 
-Compound is a web app for getting 1% better every day. You track daily habits, follow short AI-generated learning tracks, break big goals into steps you can take today, and write down every peso you spend.
+Compound is a web app for getting 1% better every day. You track daily habits, follow short AI-generated learning tracks, break big goals into steps you can take today, jot down quick notes and to-dos, and write down every peso you spend.
 
 **Live:** [compound-nine-chi.vercel.app](https://compound-nine-chi.vercel.app)
 
@@ -14,9 +14,9 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 
 | Module | What it does | Status |
 | --- | --- | --- |
-| **Learning & Habits** | Daily habits with streaks. AI learning tracks (skills, reading plans, thinking exercises) with lessons, exercises and feedback. A principle of the day. | Done |
+| **Learning & Habits** | Daily habits with streaks, and a missed day from the last week can be filled in. AI learning tracks (skills, reading plans, thinking exercises) with lessons, exercises and feedback, at your own pace: finishing a day opens the next one. A principle of the day. | Done |
 | **Goals** | The AI drafts a plan of milestones and steps, which you can edit. Each goal keeps buffer days before its deadline. When you fall behind, the remaining dates move and the status changes from on track to behind or at risk. Goals that need attention get a dot in the nav. | Done |
-| **Notes** | Quick notes and to-dos: add one from Today in a second, tick it off, pin what matters. | Done |
+| **Notes** | Quick notes and to-dos on a board of sticky notes: add one from Today in a second, tick it off, pin what matters, pick a paper colour. | Done |
 | **Money** | Record expenses and income in a few taps. Monthly totals, spending by category, and your own categories. Income can go toward a goal's savings target. | Done |
 
 ## Screenshots
@@ -24,6 +24,8 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 | A goal that's slipping | Money for the month |
 | --- | --- |
 | ![A goal page with its savings, progress and adjusted dates](docs/screenshots/goal.png) | ![The Money page with the add form and monthly totals](docs/screenshots/money.png) |
+| **Sticky notes** | **Habits, with the last week to fill in** |
+| ![The Notes page: a board of coloured sticky notes, one pinned](docs/screenshots/notes.png) | ![The Habits page: each habit with streaks and a row of the last seven days](docs/screenshots/habits.png) |
 | **Progress** | **Landing page** |
 | ![Habit history over the last 30 days](docs/screenshots/progress.png) | ![The landing page](docs/screenshots/landing.png) |
 
@@ -50,7 +52,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **Static shell, dynamic data.** With Cache Components, every page prerenders a static shell. Anything that reads the session sits inside `<Suspense>` and streams in, so pages appear instantly.
 - **Auth checks in a data access layer.** `proxy.ts` sends signed-out visitors to `/login`, but the real check lives in [`lib/auth/dal.ts`](compound/lib/auth/dal.ts). Every protected page and server action calls `requireUser()` or `requireOnboardedUser()` before it touches data.
 - **Typed database.** The table types are in [`lib/db/types.ts`](compound/lib/db/types.ts), so Kysely catches mistakes in queries at compile time. Constraints such as allowed values and unique check-ins are enforced in Postgres as well.
-- **Streaks are calculated, never stored.** They're always derived from the check-in history, so they can't drift out of sync.
+- **Streaks are calculated, never stored.** They're always derived from the check-in history, so they can't drift out of sync. Filling in a missed day follows one pure rule ([`lib/habits/fill-in.ts`](compound/lib/habits/fill-in.ts)), shared by the page and the server action: only the last 7 days, only days the habit was due, and never a habit that finishing a lesson checks off.
 - **AI is treated as untrusted input.** Every AI response must be JSON that passes a Zod schema. Generated content is cached so it's never regenerated. Model names come from environment variables, and the AI never writes scripture text.
 - **Demo mode.** Without an API key (or with `AI_DEMO_MODE=1`), the app uses clearly labelled example content instead of calling Claude, so it runs end to end for free.
 - **Goal schedules are pure functions.** [`lib/goals/schedule.ts`](compound/lib/goals/schedule.ts) works out the status, adjusted dates and buffer use from the plan and the steps you've ticked. Nothing about the schedule is stored, and it's covered by unit tests. The pace comes from the original plan, so extending a deadline really gives you more room.
@@ -138,7 +140,7 @@ rm .env.migrate-main
 
 ### End-to-end tests
 
-The 16 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits, a lesson, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal) and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
+The 20 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
 
 - **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
 - force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;
@@ -179,7 +181,7 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 docs/screenshots/   images for this README
 compound/
   app/
-    (app)/          signed-in pages: today, habits, tracks, goals, money, progress, settings
+    (app)/          signed-in pages: today, habits, tracks, goals, money, notes, progress, settings
     onboarding/     first-run setup: focus areas, first habits, timezone
     login/          Google and GitHub sign-in, error messages
     page.tsx        landing page (fully static)
@@ -197,8 +199,9 @@ compound/
     auth/           data access layer, server actions, login errors
     db/             Kysely client and table types
     goals/          plan prompt, schedule engine, queries
-    habits/         streaks and check-ins
+    habits/         streaks, check-ins, the week strip, filling in missed days
     money/          amounts in cents, categories, monthly summaries
+    notes/          note queries, paper colours
     tracks/, lessons/, reading/, principles/, progress/
     validation/     Zod schemas
   auth.ts           Auth.js setup
@@ -214,7 +217,8 @@ compound/
 5. ✅ Polish: error pages, settings, mobile pass, end-to-end tests
 6. ✅ Goals module: AI plans, buffers, self-adjusting schedules, in-app reminders
 7. ✅ Money module: expenses and income, categories, savings toward goals
-8. Demo video and write-up
+8. ✅ Google sign-in, a dashboard redesign, own-pace learning, sticky notes, filling in missed habit days
+9. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
 
 Later: monthly budgets, email reminders.
 

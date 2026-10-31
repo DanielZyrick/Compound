@@ -1,6 +1,6 @@
 # Compound demo video script
 
-About 2½ minutes. A screen recording with voice-over. Say the lines naturally; they don't need to be word for word.
+About 2¾ minutes. A screen recording with voice-over. Say the lines naturally; they don't need to be word for word.
 
 ## Before you record
 
@@ -9,6 +9,8 @@ About 2½ minutes. A screen recording with voice-over. Say the lines naturally; 
   - 3 habits with a few days of check-ins (e.g. Read 20 pages, Walk 30 minutes, Write for 15 minutes)
   - a goal "Build a ₱50,000 emergency fund" with a savings target and a few steps done
   - a week or two of expenses and one salary
+  - 4–5 notes in different colours, one pinned (e.g. "Call the bank", "Book a dentist appointment")
+  - one habit with **yesterday left unticked**, to fill in live
 - [ ] **Leave for the recording:** today's check-in on one habit, and no track yet (you'll create one live).
 - [ ] **Browser:** a clean window, no bookmarks bar, zoom 110–125% so text is readable, 1920×1080 recording.
 - [ ] **Quiet:** turn off notifications. Close other tabs.
@@ -21,8 +23,9 @@ About 2½ minutes. A screen recording with voice-over. Say the lines naturally; 
 | 0:00 | Landing page, scroll slowly once | "This is Compound, a web app for getting one percent better every day. Habits, learning, goals and money in one place, so you can see small daily steps add up." |
 | 0:15 | Sign in, land on **Today** | "Everything starts on Today: the few things I should do today. My lesson, the next steps on my goals, and my habits." |
 | 0:25 | Tick the unchecked habit, show the streak | "I check off a habit, and the streak updates. Streaks are calculated from the check-in history, never stored, so they can't get out of sync." |
+| 0:32 | **Habits**, tap yesterday on the habit you left unticked | "And if I forgot to tick something yesterday, I can fill in any day from the last week. The app asks me to be honest." |
 | 0:35 | **Learn → New track.** Type "SQL for data analysis", Beginner, 14 days, Create | "Let's learn something. I describe what I want, and Claude drafts a two-week plan." |
-| 0:50 | The plan appears, open Day 1 | "Every AI response has to pass a schema before it's saved. Lessons are generated once and cached." |
+| 0:50 | The plan appears, open Day 1 | "Every AI response has to pass a schema before it's saved. Lessons are generated once and cached. And I go at my own pace: finishing a day opens the next one." |
 | 1:00 | Start the lesson, answer a multiple-choice question, then a written one, Get feedback | "Multiple choice is graded on the server. For written answers, the AI gives feedback and a better version." |
 | 1:15 | **Goals**, open the emergency fund goal | "Goals get an AI plan I can edit, and buffer days before the deadline." |
 | 1:25 | Point at the status badge and the banner with adjusted dates | "I'm a little behind, so the remaining dates moved to fit, and the app tells me how much buffer I've used. If I fall further behind, it warns me with a dot in the navigation." |
@@ -30,8 +33,9 @@ About 2½ minutes. A screen recording with voice-over. Say the lines naturally; 
 | 1:50 | Scroll to the month totals and categories | "The month view shows what I spent, earned and have left, by category." |
 | 1:58 | Switch to Income, 5,000, Salary, put toward the emergency fund | "And income can go toward a goal, so my savings show up on the goal itself." |
 | 2:08 | Open the goal: the savings bar moved | "There it is." |
-| 2:12 | Resize the window narrow, or switch to the phone recording; tap through Today and Money | "It's built for the phone too, since that's where you record a coffee." |
-| 2:22 | GitHub README or the Progress page | "Under the hood: Next.js 16, Postgres, TypeScript and the Claude API. There are 191 unit tests and end-to-end tests on desktop and mobile. The links are below. Thanks for watching." |
+| 2:12 | **Notes**: type "Buy running socks", Enter; edit it and pick Green | "For everything else, there are quick notes, on a board of sticky notes. Pin what matters, tick off what's done." |
+| 2:25 | Resize the window narrow, or switch to the phone recording; tap through Today and Money | "It's built for the phone too, since that's where you record a coffee." |
+| 2:35 | GitHub README or the Progress page | "Under the hood: Next.js 16, Postgres, TypeScript and the Claude API. There are over 200 unit tests and end-to-end tests on desktop and mobile. The links are below. Thanks for watching." |
 
 ## After recording
 

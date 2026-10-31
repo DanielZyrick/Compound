@@ -2,7 +2,7 @@
 
 **Live:** [compound-nine-chi.vercel.app](https://compound-nine-chi.vercel.app) · **Code:** [github.com/DanielZyrick/Compound](https://github.com/DanielZyrick/Compound)
 
-Compound is a web app for getting 1% better every day. In one place, you check off your habits, follow a short AI-generated learning track, take the next step on your goals, and write down what you spent. I designed, built, tested and deployed it on my own as a portfolio project, in small steps that each shipped to production.
+Compound is a web app for getting 1% better every day. In one place, you check off your habits, follow a short AI-generated learning track, take the next step on your goals, jot down a quick to-do, and write down what you spent. I designed, built, tested and deployed it on my own as a portfolio project, in small steps that each shipped to production.
 
 ![The Today page](screenshots/today.png)
 
@@ -12,7 +12,7 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 ## What it does
 
-**Learning & Habits.** You create habits with a weekly schedule and check them off on Today. Streaks and a 30-day history show your consistency. You can start a learning track by describing what you want to learn, such as "SQL for data analysis". Claude drafts a 7, 14 or 30-day plan, and each day opens a short lesson with exercises. Multiple-choice answers are graded on the server. Written answers get AI feedback and a better version. Reading tracks, such as a Bible plan, follow a fixed plan, link to a real translation, and keep a reflection journal. A principle of the day adds one idea to think about.
+**Learning & Habits.** You create habits with a weekly schedule and check them off on Today. Streaks and a 30-day history show your consistency. Forgot to tick the gym yesterday? The Habits page lets you fill in any day from the last week when the habit was due, with a nudge to be honest. You can start a learning track by describing what you want to learn, such as "SQL for data analysis". Claude drafts a 7, 14 or 30-day plan, and each day opens a short lesson with exercises. You go at your own pace: a day opens on its date, or as soon as you finish the one before, so a 30-day track can take a week. Multiple-choice answers are graded on the server. Written answers get AI feedback and a better version. Reading tracks, such as a Bible plan, follow a fixed plan, link to a real translation, and keep a reflection journal. A principle of the day adds one idea to think about.
 
 **Goals.** You describe a goal, why it matters and a deadline. The AI drafts milestones and steps, which you can edit before and after saving, plus a short execution guide. Each goal keeps buffer days before its deadline for setbacks. As you tick off steps, the app works out whether you're on track, behind and using buffer, or at risk. If you slip, the remaining dates move to fit. Goals that need attention get a dot in the navigation.
 
@@ -21,6 +21,12 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 **Money.** You record an expense or income in a few taps: amount, category, done. The form stays open for the next one. A month view shows spent, income and what's left, spending by category, and a list grouped by day. You can manage your own categories. Income can go toward a goal's savings target, so the money module and the goals module tell one story.
 
 ![The Money page](screenshots/money.png)
+
+**Notes.** Quick notes and to-dos live on a board of sticky notes. You add one from Today in a second, tick it off, pin what matters, and give it a paper colour. Titles are in a handwriting font, and each note sits at a slight angle, fixed per note so the board never jumps around.
+
+![The Notes page](screenshots/notes.png)
+
+**Sign-in.** You sign in with Google or GitHub. Accounts are matched by email, so both open the same account, and sign-in only accepts an address the provider has verified. A public privacy page explains what's stored.
 
 ## Key technical decisions
 
@@ -38,14 +44,15 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 ## Testing
 
-- **191 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, timezone-aware dates, the goal schedule, parsing and formatting money, and validating AI output.
-- **16 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits, a lesson, a reading, creating and editing goals, falling behind and catching up, recording money, managing categories, and saving toward a goal. They sign in as a dedicated test user, run in demo mode, and clean up afterwards.
+- **223 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, timezone-aware dates, which days can be filled in, which lesson days are open, the goal schedule, parsing and formatting money, verified sign-in emails, and validating AI output.
+- **20 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits and filling in a missed day, lessons at your own pace, a reading, creating and editing goals, falling behind and catching up, recording money, managing categories, saving toward a goal, and notes. They sign in as a dedicated test user, run in demo mode, and clean up afterwards.
 
 ## What I learned
 
 - **Write the test the way a person uses the app.** Several "bugs" turned out to be test problems: clicking a button before React had hydrated it, or a check finding the previous page still hidden in the DOM after navigation. Waiting for the page to be interactive, and asserting what's *visible*, made the suite reliable.
 - **Round trips add up.** Creating a goal first did one insert per milestone and per step, about ten trips to the database, and it was slow enough to time out tests. Batching the inserts fixed it.
 - **Guardrails are cheaper than accidents.** Early on, a misconfigured environment variable pointed a migration at production. Nothing was lost, but it led directly to printing the host before every migration and to the e2e guard.
+- **Ship the schema first, every time.** Once, I pushed a feature before running its migration on production, and the Today page broke until the migration ran. Now every new migration runs on production before its code is pushed.
 - **AI features are mostly not about the prompt.** Schemas, retries, caching, limits, logging and a demo mode took more work than the prompts, and they're what make the AI parts dependable.
 
 ## What's next
@@ -54,4 +61,4 @@ Monthly budgets per category, email reminders, an Explore page that recommends t
 
 ## Stack
 
-Next.js 16 (App Router, Cache Components) · React 19 · TypeScript (strict) · PostgreSQL on Neon · Kysely · Auth.js (GitHub) · Zod · Tailwind CSS 4 · shadcn/ui · Claude API · Vitest · Playwright · Vercel
+Next.js 16 (App Router, Cache Components) · React 19 · TypeScript (strict) · PostgreSQL on Neon · Kysely · Auth.js (Google, GitHub) · Zod · Tailwind CSS 4 · shadcn/ui · Claude API · Vitest · Playwright · Vercel
