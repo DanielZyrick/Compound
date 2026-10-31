@@ -9,7 +9,7 @@ import { daysBetween, todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
 import { demoGoalPlan, GOAL_SYSTEM_PROMPT, goalPlanSchema, goalPrompt } from "@/lib/goals/plan";
 import { bufferDaysFor, plannedDueDates, workEndFor } from "@/lib/goals/schedule";
-import { GOAL_LABELS } from "@/lib/onboarding/goals";
+import { getLearnerContext } from "@/lib/profile/queries";
 import { deadlineError, MAX_ACTIVE_GOALS, newGoalSchema } from "@/lib/validation/goals";
 
 export type CreateGoalState = { errors: string[] };
@@ -31,14 +31,9 @@ export async function createGoal(_previous: CreateGoalState, input: unknown): Pr
   const dateProblem = deadlineError(today, deadline);
   if (dateProblem) return { errors: [dateProblem] };
 
-  const [active, focus] = await Promise.all([
+  const [active, focusText] = await Promise.all([
     db.selectFrom("goals").select("id").where("user_id", "=", user.id).where("status", "=", "active").execute(),
-    db
-      .selectFrom("focus_areas")
-      .select(["goal", "custom_label", "description"])
-      .where("user_id", "=", user.id)
-      .orderBy("created_at", "desc")
-      .executeTakeFirst(),
+    getLearnerContext(user.id),
   ]);
   if (active.length >= MAX_ACTIVE_GOALS) {
     return { errors: [`You can have up to ${MAX_ACTIVE_GOALS} active goals. Finish or archive one first.`] };
@@ -46,9 +41,6 @@ export async function createGoal(_previous: CreateGoalState, input: unknown): Pr
 
   const bufferDays = bufferDaysFor(today, deadline, bufferPercent);
   const workEnd = workEndFor(deadline, bufferDays);
-  const focusText = focus
-    ? `${focus.custom_label ?? GOAL_LABELS[focus.goal]}${focus.description ? `: ${focus.description}` : ""}`
-    : null;
 
   let plan;
   let source;

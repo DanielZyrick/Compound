@@ -54,6 +54,7 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
 - transactions (id, user_id, kind, amount_cents, category_id, note, occurred_on, goal_id)
 - notes (id, user_id, title, body, pinned, color, done_at, created_at, updated_at) — quick notes
   and to-dos shown as sticky notes; color is the paper (lib/notes/colors.ts); done_at set when ticked off
+- profiles (user_id PK, role, improve, skills, interests, daily_minutes 10|20|30|60, recommendations jsonb, recommended_at, updated_at) — "About you"; every field optional
 
 Rules:
 - Streaks are calculated from habit_checkins, never stored.
@@ -65,6 +66,7 @@ Rules:
 - Completing a lesson in a track with a habit_id auto-checks that habit for the day.
 - Missed days can be filled in on /habits for the last 7 days (only days the habit was due, after it was created). Habits linked to a track are not; finishing lessons checks those.
 - All dates use the user's timezone (`lib/dates/calendar.ts`).
+- What the AI knows about the user comes from `getLearnerContext` (`lib/profile`): focus areas plus "About you". Principles, track plans and goal plans pass it inside tags and treat it only as a description.
 - Money is stored in integer cents (`lib/money/amount.ts`), never floats. One currency per
   user, PHP by default.
 - Archived categories stay on old transactions but aren't offered for new ones. Only income
@@ -81,7 +83,8 @@ Rules:
 - /notes — quick notes and to-dos (`?filter=open|done|all`); also a Notes card on Today.
   In the desktop sidebar only; phones reach it from the Today card
 - /progress — overall stats and habit history
-- /settings — display name, timezone, currency, sign out
+- /profile — "About you" form; Today shows a prompt until it has an answer
+- /settings — display name, About you link, timezone, currency, sign out
 - /explore — AI-recommended tracks (version 2)
 
 ## Track types

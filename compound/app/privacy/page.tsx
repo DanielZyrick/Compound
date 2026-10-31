@@ -33,8 +33,9 @@ export default function PrivacyPage() {
               sign in. We never see your password.
             </li>
             <li>
-              <strong>What you enter:</strong> your focus areas, habits and check-ins, learning tracks, answers and
-              reflections, goals and their steps, and the expenses and income you record.
+              <strong>What you enter:</strong> your focus areas, your &quot;About you&quot; answers, habits and check-ins,
+              learning tracks, answers and reflections, goals and their steps, notes, and the expenses and income you
+              record.
             </li>
             <li>
               <strong>Settings:</strong> your timezone and currency.
@@ -65,8 +66,9 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Anthropic</strong> (the Claude API) receives the text needed for AI features, such as a goal or
-              topic you describe and the answers you ask feedback on. Under Anthropic&apos;s commercial terms, API data
-              isn&apos;t used to train their models.
+              topic you describe, your focus areas and &quot;About you&quot; answers (to fit the content to you), and the
+              answers you ask feedback on. Under Anthropic&apos;s commercial terms, API data isn&apos;t used to train
+              their models.
             </li>
             <li>
               <strong>Google</strong> or <strong>GitHub</strong> handle sign-in.

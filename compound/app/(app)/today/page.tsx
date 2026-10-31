@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, UserRound } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatLongDate, todayIn } from "@/lib/dates/calendar";
@@ -13,6 +13,8 @@ import { getTodayLessons } from "@/lib/lessons/queries";
 import { getTodayNotes } from "@/lib/notes/queries";
 import { spentOn } from "@/lib/money/queries";
 import { getPrinciple } from "@/lib/principles/queries";
+import { isProfileEmpty } from "@/lib/profile/context";
+import { getProfile } from "@/lib/profile/queries";
 import { GoalsTable, type GoalRow } from "./goals-table";
 import { HabitChecklist } from "./habit-checklist";
 import { NotesCard } from "./notes-card";
@@ -40,7 +42,7 @@ async function TodayContent() {
   // The date in the user's timezone decides which habits are due and which
   // check-ins count as today.
   const today = todayIn(user.timezone);
-  const [{ habits, activeCount }, week, lessons, principle, goals, stepsThisWeek, spentToday, notes] = await Promise.all([
+  const [{ habits, activeCount }, week, lessons, principle, goals, stepsThisWeek, spentToday, notes, profile] = await Promise.all([
     getTodayHabits(user.id, today),
     getHabitWeek(user, today),
     getTodayLessons(user, today),
@@ -49,6 +51,7 @@ async function TodayContent() {
     stepsDoneSince(user.id, weekStart(today)),
     spentOn(user.id, today),
     getTodayNotes(user, today),
+    getProfile(user.id),
   ]);
 
   const active = goals.filter((g) => g.status === "active");
@@ -90,6 +93,21 @@ async function TodayContent() {
       </div>
 
       <div className="mt-6 flex flex-col gap-6">
+        {isProfileEmpty(profile) && (
+          <section
+            aria-label="About you"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed p-4"
+          >
+            <p className="text-sm">
+              <span className="font-medium">Tell Compound about yourself</span>{" "}
+              <span className="text-muted-foreground">so principles, tracks and goal plans fit you.</span>
+            </p>
+            <Link href="/profile" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <UserRound />
+              Fill in About you
+            </Link>
+          </section>
+        )}
         <GoalsTable rows={goalRows} total={active.length} />
 
         <div className="grid items-start gap-6 lg:grid-cols-2">

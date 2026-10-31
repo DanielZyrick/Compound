@@ -8,6 +8,7 @@ import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
 import type { TrackLevel, TrackType } from "@/lib/db/types";
+import { getLearnerContext } from "@/lib/profile/queries";
 import { findReadingPlan } from "@/lib/reading/plans";
 import { shorten } from "@/lib/text";
 import { demoPlan, PLAN_SYSTEM_PROMPT, planPrompt, trackPlanSchema } from "@/lib/tracks/plan";
@@ -83,13 +84,7 @@ export async function createTrack(
     };
   } else {
     const { topic, type, level, totalDays } = request;
-    const focus = await db
-      .selectFrom("focus_areas")
-      .select("description")
-      .where("user_id", "=", user.id)
-      .orderBy("created_at", "desc")
-      .executeTakeFirst();
-    const planRequest = { topic, type, level, totalDays, focus: focus?.description };
+    const planRequest = { topic, type, level, totalDays, focus: await getLearnerContext(user.id) };
 
     try {
       const { data: plan, source } = await runAiTask({

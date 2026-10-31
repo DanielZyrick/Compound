@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { signOutAction } from "@/lib/auth/actions";
 import { CurrencyForm, DisplayNameForm, TimezoneForm } from "./settings-forms";
@@ -42,6 +43,17 @@ async function SettingsContent() {
           You sign in with Google or GitHub. Your email and avatar come from that account, and both open the same Compound account when they use the same email.
         </p>
         <DisplayNameForm initial={user.name ?? ""} />
+      </Section>
+
+      <Section title="About you">
+        <p className="text-sm text-muted-foreground">
+          What you do, what you want to get better at, and how much time you have. Compound uses it to fit principles,
+          tracks and goal plans to you.
+        </p>
+        <Link href="/profile" className={buttonVariants({ variant: "outline", className: "self-start" })}>
+          <UserRound />
+          Edit About you
+        </Link>
       </Section>
 
       <Section title="Time">

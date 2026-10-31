@@ -6,9 +6,9 @@ import { runAiTask } from "@/lib/ai/run";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
-import { GOAL_LABELS } from "@/lib/onboarding/goals";
 import { demoPrinciple, PRINCIPLE_SYSTEM_PROMPT, principlePrompt, principleSchema } from "@/lib/principles/principle";
 import { getPrinciple, recentPrincipleTitles, type TodayPrinciple } from "@/lib/principles/queries";
+import { getLearnerContext } from "@/lib/profile/queries";
 
 export type LoadPrincipleResult = { principle: TodayPrinciple | null; error: string | null };
 
@@ -24,18 +24,7 @@ export async function loadPrinciple(): Promise<LoadPrincipleResult> {
   const existing = await getPrinciple(user.id, today);
   if (existing) return { principle: existing, error: null };
 
-  const [focus, recent] = await Promise.all([
-    db
-      .selectFrom("focus_areas")
-      .select(["goal", "custom_label", "description"])
-      .where("user_id", "=", user.id)
-      .orderBy("created_at", "desc")
-      .executeTakeFirst(),
-    recentPrincipleTitles(user.id),
-  ]);
-  const focusText = focus
-    ? `${focus.custom_label ?? GOAL_LABELS[focus.goal]}${focus.description ? `: ${focus.description}` : ""}`
-    : null;
+  const [focusText, recent] = await Promise.all([getLearnerContext(user.id), recentPrincipleTitles(user.id)]);
 
   try {
     const { data, source } = await runAiTask({

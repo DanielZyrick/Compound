@@ -219,6 +219,22 @@ export interface NotesTable {
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
+export const DAILY_MINUTES = [10, 20, 30, 60] as const;
+export type DailyMinutes = (typeof DAILY_MINUTES)[number];
+
+export interface ProfilesTable {
+  user_id: string;
+  role: string | null; // what they do, e.g. "Junior web developer"
+  improve: string | null; // what they want to get better at
+  skills: string | null; // what they already know
+  interests: string | null;
+  daily_minutes: DailyMinutes | null; // time for learning each day
+  // JSON written once as a string; read as unknown and validated with Zod before use.
+  recommendations: ColumnType<unknown, string | null | undefined, string | null>;
+  recommended_at: Timestamp | null;
+  updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -237,6 +253,7 @@ export interface Database {
   money_categories: MoneyCategoriesTable;
   transactions: TransactionsTable;
   notes: NotesTable;
+  profiles: ProfilesTable;
 }
 
 // Row types for use in the rest of the app.

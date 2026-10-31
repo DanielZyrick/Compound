@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { startTransition } from "react";
-import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
+import { ChevronsUpDown, LogOut, Settings, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -58,6 +58,10 @@ export function UserMenuDropdown({ name, email, image, compact = false }: Props)
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+          <DropdownMenuItem render={<Link href="/profile" />}>
+            <UserRound />
+            About you
+          </DropdownMenuItem>
           <DropdownMenuItem render={<Link href="/settings" />}>
             <Settings />
             Settings

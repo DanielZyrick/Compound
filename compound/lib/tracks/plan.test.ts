@@ -45,12 +45,12 @@ describe("planPrompt", () => {
   it("wraps the user's words in tags and includes the goal when given", () => {
     const prompt = planPrompt({ topic: "Negotiation", type: "thinking", level: "intermediate", totalDays: 7, focus: "Get a raise" });
     expect(prompt).toContain("<topic>Negotiation</topic>");
-    expect(prompt).toContain("<goal>Get a raise</goal>");
+    expect(prompt).toContain("<learner>Get a raise</learner>");
     expect(prompt).toContain("exactly 7 days");
   });
 
   it("leaves the goal out when there isn't one", () => {
     const prompt = planPrompt({ topic: "Excel", type: "skill", level: "beginner", totalDays: 7, focus: null });
-    expect(prompt).not.toContain("<goal>");
+    expect(prompt).not.toContain("<learner>");
   });
 });
