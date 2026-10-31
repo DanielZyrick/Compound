@@ -11,11 +11,14 @@ import { READING_PLANS, type ReadingPlanId } from "@/lib/reading/plans";
 import { newTrackSchema } from "@/lib/validation/tracks";
 import { createTrack } from "./actions";
 
-export function NewTrackForm({ demoMode }: { demoMode: boolean }) {
-  const [type, setType] = useState<TrackType | null>(null);
-  const [topic, setTopic] = useState("");
-  const [level, setLevel] = useState<TrackLevel | null>(null);
-  const [totalDays, setTotalDays] = useState<number | null>(14);
+/** A suggestion from "Recommended for you", passed in the link. */
+export type TrackPrefill = { topic: string; type: "skill" | "thinking"; level: TrackLevel; totalDays: number };
+
+export function NewTrackForm({ demoMode, prefill }: { demoMode: boolean; prefill: TrackPrefill | null }) {
+  const [type, setType] = useState<TrackType | null>(prefill?.type ?? null);
+  const [topic, setTopic] = useState(prefill?.topic ?? "");
+  const [level, setLevel] = useState<TrackLevel | null>(prefill?.level ?? null);
+  const [totalDays, setTotalDays] = useState<number | null>(prefill?.totalDays ?? 14);
   const [readingPlan, setReadingPlan] = useState<ReadingPlanId | null>(null);
   const [addHabit, setAddHabit] = useState(true);
   // Errors stay hidden until the first submit, then update as the user types.

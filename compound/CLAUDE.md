@@ -83,7 +83,7 @@ Rules:
 - /notes — quick notes and to-dos (`?filter=open|done|all`); also a Notes card on Today.
   In the desktop sidebar only; phones reach it from the Today card
 - /progress — overall stats and habit history
-- /profile — "About you" form; Today shows a prompt until it has an answer
+- /profile — "About you" form; Today shows a prompt until it has an answer. Learn shows "Recommended for you" (3 AI track ideas saved in profiles.recommendations, rewritten when the profile changes or on "Suggest others"; "Start this" opens /tracks/new filled in)
 - /settings — display name, About you link, timezone, currency, sign out
 - /explore — AI-recommended tracks (version 2)
 

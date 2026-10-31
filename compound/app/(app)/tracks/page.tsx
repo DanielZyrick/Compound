@@ -4,7 +4,9 @@ import { Suspense } from "react";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
+import { getRecommendations } from "@/lib/recommendations/queries";
 import { getTracks } from "@/lib/tracks/queries";
+import { Recommendations } from "./recommendations";
 import { TrackBadges } from "./track-badges";
 
 export const metadata: Metadata = { title: "Learn" };
@@ -28,8 +30,19 @@ export default function TracksPage() {
           <TrackList />
         </Suspense>
       </div>
+
+      <div className="mt-8">
+        <Suspense fallback={<div aria-hidden className="h-24 animate-pulse rounded-2xl bg-muted" />}>
+          <RecommendedTracks />
+        </Suspense>
+      </div>
     </main>
   );
+}
+
+async function RecommendedTracks() {
+  const user = await requireOnboardedUser();
+  return <Recommendations initial={await getRecommendations(user.id)} />;
 }
 
 async function TrackList() {
