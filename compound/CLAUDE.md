@@ -55,6 +55,7 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
 - notes (id, user_id, title, body, pinned, color, done_at, created_at, updated_at) — quick notes
   and to-dos shown as sticky notes; color is the paper (lib/notes/colors.ts); done_at set when ticked off
 - profiles (user_id PK, role, improve, skills, interests, daily_minutes 10|20|30|60, recommendations jsonb, recommended_at, updated_at) — "About you"; every field optional
+- contacts (id, user_id, name, company, role, where_met, email, phone, linkedin https only, notes, follow_up_on, goal_id set null on goal delete, created_at, updated_at) — never sent to the AI
 
 Rules:
 - Streaks are calculated from habit_checkins, never stored.
@@ -82,6 +83,7 @@ Rules:
 - /money — quick add (`?add=expense|income`), month view (`?month=YYYY-MM`)
 - /money/categories — add, rename, change icon, archive, restore categories
 - /notes — quick notes and to-dos (`?filter=open|done|all`); also a Notes card on Today.
+- /contacts — networking contacts (`?filter=all|due|goal`, `?q=` search); /contacts/[id] shows, edits and deletes one. Sidebar only; on phones, sidebar-only pages are in the account menu.
   In the desktop sidebar only; phones reach it from the Today card
 - /progress — overall stats and habit history
 - /profile — "About you" form; Today shows a prompt until it has an answer. Learn shows "Recommended for you" (3 AI track ideas saved in profiles.recommendations, rewritten when the profile changes or on "Suggest others"; "Start this" opens /tracks/new filled in)

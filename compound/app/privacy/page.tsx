@@ -34,8 +34,9 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>What you enter:</strong> your focus areas, your &quot;About you&quot; answers, habits and check-ins,
-              learning tracks, answers and reflections, goals and their steps, notes, and the expenses and income you
-              record.
+              learning tracks, answers and reflections, goals and their steps, notes, the expenses and income you
+              record, and contacts you add (other people&apos;s names and details, which only you can see and which
+              are never sent to the AI).
             </li>
             <li>
               <strong>Settings:</strong> your timezone and currency.

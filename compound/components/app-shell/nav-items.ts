@@ -4,6 +4,7 @@ import {
   House,
   ListChecks,
   StickyNote,
+  Users,
   Target,
   Wallet,
   type LucideIcon,
@@ -27,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/goals", label: "Goals", icon: Target, ready: true },
   { href: "/money", label: "Money", icon: Wallet, ready: true },
   { href: "/notes", label: "Notes", icon: StickyNote, ready: true, tabBar: false },
+  { href: "/contacts", label: "Contacts", icon: Users, ready: true, tabBar: false },
   { href: "/progress", label: "Progress", icon: ChartColumn, ready: true },
 ];
 

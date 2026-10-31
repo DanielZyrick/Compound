@@ -235,6 +235,23 @@ export interface ProfilesTable {
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
+export interface ContactsTable {
+  id: Generated<string>;
+  user_id: string;
+  name: string;
+  company: string | null;
+  role: string | null;
+  where_met: string | null; // e.g. "DevCon Manila 2026" or "Referred by Ana"
+  email: string | null;
+  phone: string | null;
+  linkedin: string | null; // an https:// link
+  notes: string | null;
+  follow_up_on: CalendarDate | null;
+  goal_id: string | null; // the goal they can help with; unlinked if the goal is deleted
+  created_at: CreatedAt;
+  updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -254,6 +271,7 @@ export interface Database {
   transactions: TransactionsTable;
   notes: NotesTable;
   profiles: ProfilesTable;
+  contacts: ContactsTable;
 }
 
 // Row types for use in the rest of the app.

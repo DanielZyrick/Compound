@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOutAction } from "@/lib/auth/actions";
 import { cn } from "@/lib/utils";
+import { NAV_ITEMS } from "./nav-items";
 
 interface Props {
   name: string | null;
@@ -58,6 +59,14 @@ export function UserMenuDropdown({ name, email, image, compact = false }: Props)
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+          {/* On phones, pages that don't fit the tab bar live here. */}
+          {compact &&
+            NAV_ITEMS.filter((item) => item.tabBar === false).map((item) => (
+              <DropdownMenuItem key={item.href} render={<Link href={item.href} />}>
+                <item.icon />
+                {item.label}
+              </DropdownMenuItem>
+            ))}
           <DropdownMenuItem render={<Link href="/profile" />}>
             <UserRound />
             About you
