@@ -2,8 +2,15 @@
 
 import { refresh } from "next/cache";
 import { requireOnboardedUser } from "@/lib/auth/dal";
+import { todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
-import { MAX_ACTIVE_HABITS, saveHabitSchema, setArchivedSchema } from "@/lib/validation/habits";
+import { canFillIn, FILL_IN_DAYS } from "@/lib/habits/fill-in";
+import {
+  MAX_ACTIVE_HABITS,
+  saveHabitSchema,
+  setArchivedSchema,
+  setPastCheckinSchema,
+} from "@/lib/validation/habits";
 
 export type HabitActionResult = { errors: string[] };
 
@@ -87,6 +94,50 @@ export async function setArchived(input: unknown): Promise<HabitActionResult> {
     .where("id", "=", id)
     .where("user_id", "=", user.id)
     .execute();
+
+  refresh();
+  return { errors: [] };
+}
+
+/**
+ * Fills in (or clears) a missed day. Only the owner's active habits, only
+ * days in the last week the habit was due, and never a habit that finishing
+ * a lesson checks off. "Today" comes from the user's timezone, not the browser.
+ */
+export async function setPastCheckin(input: unknown): Promise<HabitActionResult> {
+  const user = await requireOnboardedUser();
+
+  const parsed = setPastCheckinSchema.safeParse(input);
+  if (!parsed.success) return { errors: ["Something went wrong. Please try again."] };
+  const { habitId, date, done } = parsed.data;
+
+  const habit = await db
+    .selectFrom("habits")
+    .select(["schedule", "created_at"])
+    .where("id", "=", habitId)
+    .where("user_id", "=", user.id)
+    .where("archived_at", "is", null)
+    .executeTakeFirst();
+  if (!habit) return { errors: ["That habit no longer exists."] };
+
+  const fromLesson = await db.selectFrom("tracks").select("id").where("habit_id", "=", habitId).executeTakeFirst();
+  if (fromLesson) return { errors: ["This habit is checked off by finishing a lesson."] };
+
+  const today = todayIn(user.timezone);
+  const createdOn = todayIn(user.timezone, habit.created_at);
+  if (!canFillIn({ schedule: habit.schedule, createdOn }, date, today)) {
+    return { errors: [`You can only fill in days from the last ${FILL_IN_DAYS} days when the habit was due.`] };
+  }
+
+  if (done) {
+    await db
+      .insertInto("habit_checkins")
+      .values({ habit_id: habitId, date })
+      .onConflict((oc) => oc.columns(["habit_id", "date"]).doNothing())
+      .execute();
+  } else {
+    await db.deleteFrom("habit_checkins").where("habit_id", "=", habitId).where("date", "=", date).execute();
+  }
 
   refresh();
   return { errors: [] };

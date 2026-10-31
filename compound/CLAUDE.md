@@ -63,6 +63,7 @@ Rules:
 - A track day opens on its own date OR as soon as the previous day is done (own pace, in
   order; `isDayOpen` in `lib/lessons/rules.ts`). Server actions enforce the same rule.
 - Completing a lesson in a track with a habit_id auto-checks that habit for the day.
+- Missed days can be filled in on /habits for the last 7 days (only days the habit was due, after it was created). Habits linked to a track are not; finishing lessons checks those.
 - All dates use the user's timezone (`lib/dates/calendar.ts`).
 - Money is stored in integer cents (`lib/money/amount.ts`), never floats. One currency per
   user, PHP by default.
@@ -72,7 +73,7 @@ Rules:
 ## Pages
 - /onboarding — step form: focus areas with a description, first habits, timezone
 - /today — habits, today's lessons, goal steps due, spent today, principle of the day
-- /habits — manage habits and see streaks
+- /habits — manage habits, see streaks, fill in missed days from the last week
 - /tracks, /tracks/new, /tracks/[id], /tracks/[id]/day/[n] — learning tracks and lessons
 - /goals, /goals/new, /goals/[id] — goals, the AI plan, step editing, savings
 - /money — quick add (`?add=expense|income`), month view (`?month=YYYY-MM`)

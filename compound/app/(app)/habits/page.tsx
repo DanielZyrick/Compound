@@ -26,6 +26,6 @@ export default function HabitsPage() {
 
 async function HabitsContent() {
   const user = await requireOnboardedUser();
-  const { active, archived } = await getHabitsOverview(user.id, todayIn(user.timezone));
+  const { active, archived } = await getHabitsOverview(user, todayIn(user.timezone));
   return <HabitsManager active={active} archived={archived} />;
 }

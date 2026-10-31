@@ -4,12 +4,14 @@ import { useState, useTransition } from "react";
 import { Archive, ArchiveRestore, Flame, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { describeSchedule } from "@/lib/dates/schedule";
-import type { ArchivedHabit, HabitSummary } from "@/lib/habits/queries";
+import { FILL_IN_DAYS } from "@/lib/habits/fill-in";
+import type { ArchivedHabit, HabitOverview } from "@/lib/habits/queries";
 import { MAX_ACTIVE_HABITS } from "@/lib/validation/habits";
 import { setArchived } from "./actions";
 import { HabitForm } from "./habit-form";
+import { PastDays } from "./past-days";
 
-type Props = { active: HabitSummary[]; archived: ArchivedHabit[] };
+type Props = { active: HabitOverview[]; archived: ArchivedHabit[] };
 
 // Which habit is open in the form: "new", a habit's id, or none.
 type Editing = "new" | string | null;
@@ -46,6 +48,11 @@ export function HabitsManager({ active, archived }: Props) {
             </Button>
           )}
         </div>
+        {active.some((h) => !h.fromLesson) && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Missed a day? Tap it to fill it in, but be honest. Only the last {FILL_IN_DAYS} days can be changed.
+          </p>
+        )}
 
         <ul className="mt-4 flex flex-col gap-3">
           {editing === "new" && (
@@ -116,7 +123,7 @@ function HabitCard({
   onEdit,
   onArchive,
 }: {
-  habit: HabitSummary;
+  habit: HabitOverview;
   disabled: boolean;
   onEdit: () => void;
   onArchive: () => void;
@@ -124,38 +131,46 @@ function HabitCard({
   const { name, schedule, streak, totalCheckins } = habit;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border p-4">
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 font-medium break-words">{name}</p>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {describeSchedule(schedule)} · {totalCheckins} {totalCheckins === 1 ? "check-in" : "check-ins"}
-        </p>
-      </div>
+    <div className="flex flex-col gap-3 rounded-xl border p-4">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 font-medium break-words">{name}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {describeSchedule(schedule)} · {totalCheckins} {totalCheckins === 1 ? "check-in" : "check-ins"}
+          </p>
+        </div>
 
-      <span
-        className="flex shrink-0 items-center gap-1 text-sm font-medium tabular-nums"
-        aria-label={`${streak}-day streak`}
-      >
-        <Flame
-          className={streak > 0 ? "size-4 fill-orange-400 text-orange-500" : "size-4 text-subtle"}
-        />
-        {streak}
-      </span>
-
-      <div className="flex shrink-0">
-        <Button variant="ghost" size="icon" onClick={onEdit} disabled={disabled} aria-label={`Edit ${name}`}>
-          <Pencil />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onArchive}
-          disabled={disabled}
-          aria-label={`Archive ${name}`}
+        <span
+          className="flex shrink-0 items-center gap-1 text-sm font-medium tabular-nums"
+          aria-label={`${streak}-day streak`}
         >
-          <Archive />
-        </Button>
+          <Flame
+            className={streak > 0 ? "size-4 fill-orange-400 text-orange-500" : "size-4 text-subtle"}
+          />
+          {streak}
+        </span>
+
+        <div className="flex shrink-0">
+          <Button variant="ghost" size="icon" onClick={onEdit} disabled={disabled} aria-label={`Edit ${name}`}>
+            <Pencil />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onArchive}
+            disabled={disabled}
+            aria-label={`Archive ${name}`}
+          >
+            <Archive />
+          </Button>
+        </div>
       </div>
+
+      {habit.fromLesson ? (
+        <p className="text-sm text-muted-foreground">Ticked off by finishing a lesson.</p>
+      ) : (
+        <PastDays habitId={habit.id} habitName={name} days={habit.pastDays} />
+      )}
     </div>
   );
 }

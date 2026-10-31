@@ -26,4 +26,7 @@ export const saveHabitSchema = habitSchema.extend({ id: z.uuid().optional() });
 
 export const setArchivedSchema = z.object({ id: z.uuid(), archived: z.boolean() });
 
+/** Checking a habit off (or not) for a past day. */
+export const setPastCheckinSchema = z.object({ habitId: z.uuid(), date: z.iso.date(), done: z.boolean() });
+
 export type HabitInput = z.input<typeof habitSchema>;

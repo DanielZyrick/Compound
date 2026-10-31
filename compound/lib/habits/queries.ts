@@ -1,7 +1,8 @@
 import "server-only";
-import { todayIn, weekdayOf } from "@/lib/dates/calendar";
+import { addDays, todayIn, weekdayOf } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
 import type { CalendarDate, Weekday } from "@/lib/db/types";
+import { FILL_IN_DAYS, pastDays, type PastDay } from "./fill-in";
 import { currentStreak } from "./streaks";
 import { habitWeek, weekStart, type WeekDay } from "./week";
 
@@ -15,6 +16,12 @@ export type HabitSummary = {
 };
 
 export type ArchivedHabit = { id: string; name: string };
+
+/** A habit on the Habits page: its stats, plus the last week for filling in missed days. */
+export type HabitOverview = HabitSummary & {
+  fromLesson: boolean; // checked off by finishing a lesson, so it can't be filled in
+  pastDays: PastDay[];
+};
 
 type HabitRow = { id: string; name: string; schedule: Weekday[] };
 
@@ -94,17 +101,51 @@ export async function getHabitWeek(user: { id: string; timezone: string }, today
   );
 }
 
-/** Every habit for the Habits page: active ones with stats, plus the archived ones. */
-export async function getHabitsOverview(userId: string, today: CalendarDate) {
+/** Every habit for the Habits page: active ones with stats and the last week, plus the archived ones. */
+export async function getHabitsOverview(user: { id: string; timezone: string }, today: CalendarDate) {
   const [active, archived] = await Promise.all([
-    activeHabits(userId),
+    db
+      .selectFrom("habits")
+      .select(["id", "name", "schedule", "created_at"])
+      .where("user_id", "=", user.id)
+      .where("archived_at", "is", null)
+      .orderBy("created_at")
+      .execute(),
     db
       .selectFrom("habits")
       .select(["id", "name"])
-      .where("user_id", "=", userId)
+      .where("user_id", "=", user.id)
       .where("archived_at", "is not", null)
       .orderBy("archived_at", "desc")
       .execute(),
   ]);
-  return { active: await withStats(active, today), archived: archived as ArchivedHabit[] };
+  if (active.length === 0) return { active: [] as HabitOverview[], archived: archived as ArchivedHabit[] };
+
+  const ids = active.map((h) => h.id);
+  const [stats, lessonHabits, recent] = await Promise.all([
+    withStats(active.map(({ id, name, schedule }) => ({ id, name, schedule })), today),
+    db.selectFrom("tracks").select("habit_id").where("habit_id", "in", ids).execute(),
+    db
+      .selectFrom("habit_checkins")
+      .select(["habit_id", "date"])
+      .where("habit_id", "in", ids)
+      .where("date", ">=", addDays(today, -FILL_IN_DAYS))
+      .where("date", "<", today)
+      .execute(),
+  ]);
+  const fromLesson = new Set(lessonHabits.map((t) => t.habit_id));
+
+  const overview: HabitOverview[] = stats.map((habit, i) => ({
+    ...habit,
+    fromLesson: fromLesson.has(habit.id),
+    pastDays: pastDays(
+      {
+        schedule: habit.schedule,
+        createdOn: todayIn(user.timezone, active[i].created_at), // the user's local date
+        checkins: new Set(recent.filter((c) => c.habit_id === habit.id).map((c) => c.date)),
+      },
+      today,
+    ),
+  }));
+  return { active: overview, archived: archived as ArchivedHabit[] };
 }
