@@ -14,6 +14,8 @@ type RunOptions<Schema extends z.ZodType> = {
   schema: Schema;
   system: string;
   prompt: string;
+  /** A PDF for the model to read, base64-encoded. */
+  pdf?: string;
   effort?: "low" | "medium" | "high";
   /** Example output for demo mode (no API key). Checked against the schema too. */
   demo: () => z.input<Schema>;

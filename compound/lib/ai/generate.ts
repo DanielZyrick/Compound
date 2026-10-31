@@ -22,6 +22,8 @@ export type GenerateOptions<Schema extends z.ZodType> = {
   system: string;
   /** The request itself, including any per-user details. */
   prompt: string;
+  /** A PDF for the model to read with the prompt, base64-encoded (e.g. a resume). */
+  pdf?: string;
   effort?: "low" | "medium" | "high";
   maxTokens?: number;
   /** Called after every API attempt, successful or not (for logging and limits). */
@@ -37,7 +39,7 @@ export async function generateJson<Schema extends z.ZodType>(
   messages: MessagesClient,
   options: GenerateOptions<Schema>,
 ): Promise<z.infer<Schema>> {
-  const { schema, model, system, prompt, effort = "medium", maxTokens = 16000, onAttempt } = options;
+  const { schema, model, system, prompt, pdf, effort = "medium", maxTokens = 16000, onAttempt } = options;
   // Sent to the API as a JSON schema; its parse() validates with the Zod schema.
   const format = betaZodOutputFormat(schema);
 
@@ -48,7 +50,17 @@ export async function generateJson<Schema extends z.ZodType>(
         model,
         max_tokens: maxTokens,
         system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          {
+            role: "user",
+            content: pdf
+              ? [
+                  { type: "document", source: { type: "base64", media_type: "application/pdf", data: pdf } },
+                  { type: "text", text: prompt },
+                ]
+              : prompt,
+          },
+        ],
         output_config: { effort, format },
         // If the model declines for safety reasons, the API retries the same
         // request on a fallback model it picks, inside this one call.

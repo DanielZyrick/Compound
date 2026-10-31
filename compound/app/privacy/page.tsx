@@ -67,7 +67,8 @@ export default function PrivacyPage() {
             <li>
               <strong>Anthropic</strong> (the Claude API) receives the text needed for AI features, such as a goal or
               topic you describe, your focus areas and &quot;About you&quot; answers (to fit the content to you), and the
-              answers you ask feedback on. Under Anthropic&apos;s commercial terms, API data isn&apos;t used to train
+              answers you ask feedback on. If you choose to fill in About you from a resume, the PDF is sent to
+              Anthropic once to draft your answers; Compound doesn&apos;t store the file. Under Anthropic&apos;s commercial terms, API data isn&apos;t used to train
               their models.
             </li>
             <li>

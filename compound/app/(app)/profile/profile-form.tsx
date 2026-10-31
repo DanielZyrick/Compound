@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { Check, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,8 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { DAILY_MINUTES, type DailyMinutes } from "@/lib/db/types";
 import type { ContextProfile } from "@/lib/profile/context";
 import { cn } from "@/lib/utils";
+import { MAX_RESUME_BYTES } from "@/lib/profile/resume";
 import { PROFILE_LIMITS } from "@/lib/validation/profile";
 import { saveProfile } from "./actions";
+import { readResume } from "./resume-actions";
 
 type TextField = "role" | "improve" | "skills" | "interests";
 
@@ -52,9 +54,42 @@ export function ProfileForm({ initial }: { initial: ContextProfile | null }) {
   const [errors, setErrors] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [resume, setResume] = useState<{ notice: string | null; error: string | null }>({ notice: null, error: null });
+  const [reading, startReading] = useTransition();
+  const fileInput = useRef<HTMLInputElement>(null);
 
   function change() {
     setSaved(false);
+  }
+
+  function readFile(file: File) {
+    setResume({ notice: null, error: null });
+    const data = new FormData();
+    data.set("resume", file);
+    startReading(async () => {
+      const result = await readResume(data);
+      if (fileInput.current) fileInput.current.value = ""; // the same file can be picked again
+      if (!result.answers) {
+        setResume({ notice: null, error: result.error });
+        return;
+      }
+      const drafted = result.answers;
+      // Fill in what the resume says; keep your own text where it says nothing.
+      setAnswers((current) => ({
+        role: drafted.role || current.role,
+        improve: drafted.improve || current.improve,
+        skills: drafted.skills || current.skills,
+        interests: drafted.interests || current.interests,
+      }));
+      change();
+      setResume({
+        notice:
+          result.source === "demo"
+            ? "Filled in with example answers (no AI key is set). Check them, then Save."
+            : "Filled in from your resume. Check the answers, then Save.",
+        error: null,
+      });
+    });
   }
 
   return (
@@ -71,6 +106,44 @@ export function ProfileForm({ initial }: { initial: ContextProfile | null }) {
         });
       }}
     >
+      <div className="flex flex-col gap-2 rounded-xl bg-muted/50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm">
+            <span className="font-medium">Have a resume?</span>{" "}
+            <span className="text-muted-foreground">Claude can fill this in for you to check.</span>
+          </p>
+          <Button type="button" variant="outline" size="sm" disabled={reading} onClick={() => fileInput.current?.click()}>
+            <FileText />
+            {reading ? "Reading your resume…" : "Fill in from your resume (PDF)"}
+          </Button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="application/pdf"
+            aria-label="Resume (PDF)"
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) readFile(file);
+            }}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          PDF under {MAX_RESUME_BYTES / 1024 / 1024} MB. The file isn&apos;t stored, and nothing is saved until you press
+          Save. Contact details are left out.
+        </p>
+        {resume.notice && (
+          <p role="status" className="text-sm text-success">
+            {resume.notice}
+          </p>
+        )}
+        {resume.error && (
+          <p role="alert" className="text-sm text-destructive">
+            {resume.error}
+          </p>
+        )}
+      </div>
       {QUESTIONS.map(({ field, label, hint, placeholder }) => (
         <div key={field} className="flex flex-col gap-1.5">
           <Label htmlFor={`profile-${field}`}>{label}</Label>

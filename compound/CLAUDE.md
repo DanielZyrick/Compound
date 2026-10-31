@@ -67,6 +67,7 @@ Rules:
 - Missed days can be filled in on /habits for the last 7 days (only days the habit was due, after it was created). Habits linked to a track are not; finishing lessons checks those.
 - All dates use the user's timezone (`lib/dates/calendar.ts`).
 - What the AI knows about the user comes from `getLearnerContext` (`lib/profile`): focus areas plus "About you". Principles, track plans and goal plans pass it inside tags and treat it only as a description.
+- "Fill in from your resume" (`lib/profile/resume.ts`): a PDF under 4 MB is checked by its bytes, sent to Claude once as a document, and never stored. It only drafts the About you answers (no contact details); the user saves them. Server actions allow 5 MB bodies for this (next.config.ts).
 - Money is stored in integer cents (`lib/money/amount.ts`), never floats. One currency per
   user, PHP by default.
 - Archived categories stay on old transactions but aren't offered for new ones. Only income
