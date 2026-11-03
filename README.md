@@ -2,13 +2,13 @@
 
 **Small daily steps, compounding growth.**
 
-Compound is a web app for getting 1% better every day. You track daily habits, follow short AI-generated learning tracks, break big goals into steps you can take today, jot down quick notes and to-dos, and write down every peso you spend.
+Compound is a web app for getting 1% better every day. You track daily habits, follow short AI-generated learning tracks picked for you, break big goals into steps you can take today, keep in touch with the people in your network, see your Google Calendar next to it all, jot down quick notes, and write down every peso you spend.
 
 **Live:** [compound-nine-chi.vercel.app](https://compound-nine-chi.vercel.app)
 
 > This is my portfolio project, built in small, deployable steps.
 
-![The Today dashboard: a greeting, today's numbers, goals with their next step, habits with a week strip, and today's lesson](docs/screenshots/today.png)
+![The Today dashboard: a greeting, today's numbers, goals with their next step, habits with a week strip, today's calendar events and today's lesson](docs/screenshots/today.png)
 
 ## Modules
 
@@ -16,6 +16,9 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 | --- | --- | --- |
 | **Learning & Habits** | Daily habits with streaks, and a missed day from the last week can be filled in. AI learning tracks (skills, reading plans, thinking exercises) with lessons, exercises and feedback, at your own pace: finishing a day opens the next one. A principle of the day. | Done |
 | **Goals** | The AI drafts a plan of milestones and steps, which you can edit. Each goal keeps buffer days before its deadline. When you fall behind, the remaining dates move and the status changes from on track to behind or at risk. Goals that need attention get a dot in the nav. | Done |
+| **About you** | A short profile (what you do, what you want to get better at, what you know, time per day) that personalises principles, track plans and goal plans, and powers "Recommended for you" tracks. It can be filled in from a resume PDF, which is never stored. | Done |
+| **Contacts** | People you meet for work: where you met, a follow-up date and a related goal. Log touchpoints, see who to follow up with on Today, and see who can help on each goal. | Done |
+| **Schedule** | Connect Google Calendar (read-only) to see today's events on Today and the week ahead on a Schedule page. Events are fetched live and never stored. | Done |
 | **Notes** | Quick notes and to-dos on a board of sticky notes: add one from Today in a second, tick it off, pin what matters, pick a paper colour. | Done |
 | **Money** | Record expenses and income in a few taps. Monthly totals, spending by category, and your own categories. Income can go toward a goal's savings target. | Done |
 
@@ -24,6 +27,10 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 | A goal that's slipping | Money for the month |
 | --- | --- |
 | ![A goal page with its savings, progress and adjusted dates](docs/screenshots/goal.png) | ![The Money page with the add form and monthly totals](docs/screenshots/money.png) |
+| **Recommended for you** | **About you, with "fill in from your resume"** |
+| ![Learn: a track in progress and three recommended tracks, each with a reason](docs/screenshots/learn.png) | ![The About you form with the resume box and the time-per-day choice](docs/screenshots/profile.png) |
+| **A contact, with touchpoints** | **The week from Google Calendar** |
+| ![A contact page: follow-up date, last contacted, where you met, notes and touchpoints](docs/screenshots/contact.png) | ![The Schedule page: the next seven days of events](docs/screenshots/schedule.png) |
 | **Sticky notes** | **Habits, with the last week to fill in** |
 | ![The Notes page: a board of coloured sticky notes, one pinned](docs/screenshots/notes.png) | ![The Habits page: each habit with streaks and a row of the last seven days](docs/screenshots/habits.png) |
 | **Progress** | **Landing page** |
@@ -57,6 +64,9 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **Demo mode.** Without an API key (or with `AI_DEMO_MODE=1`), the app uses clearly labelled example content instead of calling Claude, so it runs end to end for free.
 - **Goal schedules are pure functions.** [`lib/goals/schedule.ts`](compound/lib/goals/schedule.ts) works out the status, adjusted dates and buffer use from the plan and the steps you've ticked. Nothing about the schedule is stored, and it's covered by unit tests. The pace comes from the original plan, so extending a deadline really gives you more room.
 - **Money in integer cents.** Amounts are parsed and stored as whole cents, never floats, so totals don't pick up rounding errors. They're formatted with `Intl` in the currency you choose in Settings.
+- **One place for what the AI knows about you.** [`getLearnerContext`](compound/lib/profile/queries.ts) combines your focus areas and About you answers into a few plain lines. Principles, track plans, goal plans and recommendations all use it, inside tags the prompts treat only as a description. A resume PDF is sent to Claude once to draft the answers, then dropped; contact details are left out.
+- **Google Calendar without an SDK.** Read-only access through Google's OAuth and REST API with plain `fetch`. A random state cookie protects the connect flow, tokens are encrypted with AES-256-GCM before they're stored ([`lib/calendar/crypto.ts`](compound/lib/calendar/crypto.ts)), and events are fetched live, so the database never holds anyone's calendar. Each event lands on the right day in your timezone, including on daylight-saving days.
+- **Calculated, not stored, again.** A contact's "last contacted" date comes from their touchpoints, the same way streaks come from check-ins.
 
 ## Running it locally
 
@@ -106,6 +116,15 @@ Put its client ID and secret in `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`. Produ
 
 Accounts are matched by email, so Google and GitHub open the same Compound account when they share an address. Sign-in only accepts an address the provider has verified.
 
+**Google Calendar (optional).** The same Google client also serves Calendar. In the same Google Cloud project:
+
+1. Enable the **Google Calendar API**.
+2. Add the `.../auth/calendar.readonly` scope to the consent screen. It's a sensitive scope: until Google verifies the app, people who connect see an "unverified app" warning.
+3. Add these authorized redirect URIs to the client:
+   - `http://localhost:3000/api/calendar/callback`
+   - `https://<your-domain>/api/calendar/callback`
+4. Set `CALENDAR_TOKEN_KEY` to 32 random bytes in base64 (the same command as `AUTH_SECRET` above), with a different key in each environment.
+
 ### 4. Migrate and run
 
 ```bash
@@ -140,10 +159,11 @@ rm .env.migrate-main
 
 ### End-to-end tests
 
-The 20 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
+The 28 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
 
 - **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
 - force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;
+- use a **demo calendar** (`CALENDAR_DEMO_MODE=1`), so they never call Google;
 - use your installed **Microsoft Edge**, so no browser download is needed.
 
 Running `npm start` locally also needs `AUTH_TRUST_HOST=true`. Vercel sets it automatically, and `npm run dev` doesn't need it.
@@ -171,6 +191,8 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 | `ANTHROPIC_API_KEY` | Claude API (server only) |
 | `MODEL_FAST`, `MODEL_SMART` | Claude model names: fast for feedback, smart for planning |
 | `AI_DEMO_MODE` | Optional. `1` uses example content instead of calling Claude |
+| `CALENDAR_TOKEN_KEY` | Optional. Encrypts Google Calendar tokens (32 bytes, base64); without it, Calendar isn't offered |
+| `CALENDAR_DEMO_MODE` | End-to-end tests only. `1` uses a demo calendar instead of calling Google |
 | `E2E_DB_HOST` | End-to-end tests only: the dev database host they're allowed to use |
 
 `.env.local` is gitignored. Only `.env.example` is committed, with empty values.
@@ -181,7 +203,8 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 docs/screenshots/   images for this README
 compound/
   app/
-    (app)/          signed-in pages: today, habits, tracks, goals, money, notes, progress, settings
+    (app)/          signed-in pages: today, schedule, habits, tracks, goals, money, notes, contacts, progress, profile, settings
+    api/calendar/   Google Calendar connect and callback routes
     onboarding/     first-run setup: focus areas, first habits, timezone
     login/          Google and GitHub sign-in, error messages
     page.tsx        landing page (fully static)
@@ -197,11 +220,15 @@ compound/
   lib/
     ai/             Claude client, demo mode, daily limits, call logging
     auth/           data access layer, server actions, login errors
+    calendar/       Google OAuth, token encryption, fetching events, days in your timezone
+    contacts/       contact queries, follow-up dates
     db/             Kysely client and table types
     goals/          plan prompt, schedule engine, queries
     habits/         streaks, check-ins, the week strip, filling in missed days
     money/          amounts in cents, categories, monthly summaries
     notes/          note queries, paper colours
+    profile/        About you, the learner context for prompts, reading a resume
+    recommendations/  "Recommended for you" tracks
     tracks/, lessons/, reading/, principles/, progress/
     validation/     Zod schemas
   auth.ts           Auth.js setup
@@ -218,9 +245,10 @@ compound/
 6. ✅ Goals module: AI plans, buffers, self-adjusting schedules, in-app reminders
 7. ✅ Money module: expenses and income, categories, savings toward goals
 8. ✅ Google sign-in, a dashboard redesign, own-pace learning, sticky notes, filling in missed habit days
-9. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
+9. ✅ About you (with a resume), recommended tracks, Contacts with follow-ups, Google Calendar (read-only)
+10. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
 
-Later: monthly budgets, email reminders.
+Later: monthly budgets, due dates on to-dos, email reminders, AI feedback evals.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Live:** [compound-nine-chi.vercel.app](https://compound-nine-chi.vercel.app) · **Code:** [github.com/DanielZyrick/Compound](https://github.com/DanielZyrick/Compound)
 
-Compound is a web app for getting 1% better every day. In one place, you check off your habits, follow a short AI-generated learning track, take the next step on your goals, jot down a quick to-do, and write down what you spent. I designed, built, tested and deployed it on my own as a portfolio project, in small steps that each shipped to production.
+Compound is a web app for getting 1% better every day. In one place, you check off your habits, follow a short AI-generated learning track picked for you, take the next step on your goals, follow up with the people in your network, see today's calendar, jot down a quick to-do, and write down what you spent. I designed, built, tested and deployed it on my own as a portfolio project, in small steps that each shipped to production.
 
 ![The Today page](screenshots/today.png)
 
@@ -26,6 +26,16 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 ![The Notes page](screenshots/notes.png)
 
+**About you and recommended tracks.** A short, optional profile asks what you do, what you want to get better at, what you already know and how much time you have a day. Claude can fill it in from a resume PDF for you to check; the file is never stored and contact details are left out. Everything the AI writes for you (principles, track plans, goal plans) uses it, and the Learn page suggests three tracks with a reason each, such as *"Because you already know JavaScript and want to get better at backend development."* One tap opens the new-track form already filled in.
+
+![Recommended for you on the Learn page](screenshots/learn.png)
+
+**Contacts.** For the people you meet for work: where you met, a follow-up date, and the goal they can help with. You log touchpoints ("Coffee chat, sent my portfolio") and pick when to follow up next. Today shows who's due, with Done and Snooze, and each goal lists the people who can help with it.
+
+![A contact with touchpoints](screenshots/contact.png)
+
+**Schedule.** You can connect Google Calendar, read-only. Today shows today's events with the next one highlighted, and a Schedule page shows the week ahead, all in your timezone.
+
 **Sign-in.** You sign in with Google or GitHub. Accounts are matched by email, so both open the same account, and sign-in only accepts an address the provider has verified. A public privacy page explains what's stored.
 
 ## Key technical decisions
@@ -38,14 +48,18 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 **Money in integer cents.** Amounts are parsed from what you type ("1,250.50") into whole cents and stored as integers, never floats, so totals never pick up rounding errors. Formatting uses `Intl` with the currency you pick in Settings. The database enforces the rest: positive amounts, a valid currency code, and unique category names regardless of capitalisation. Categories are archived instead of deleted, so old transactions keep their history.
 
+**Google Calendar without storing anyone's calendar.** I used Google's OAuth and REST API directly with `fetch` rather than adding an SDK. Access is read-only. A random, single-use state value in a short-lived cookie ties Google's answer to the request that started it. The tokens are encrypted with AES-256-GCM under a key that lives only in the environment, so a database copy alone can't read anyone's calendar. Events are fetched when you look and never saved, never sent to the AI, and a slow or broken connection shows a short message instead of breaking Today. Placing events on the right day meant working out local midnight in any timezone, including on daylight-saving days, which unit tests pin down.
+
+**A resume is input, not storage.** The resume PDF goes to Claude once as a document, and the answers come back through the same schema checks as every other AI output. The server checks the file's first bytes, not just its name, and limits it to 4 MB to stay under Vercel's request size. Nothing is saved until you press Save.
+
 **Safety around production data.** Development runs on a separate Neon database branch. The migration runner prints which host it's about to touch. A new migration is applied to production *before* the code that needs it is pushed, so the live site never runs code against a schema it doesn't have yet. The end-to-end tests refuse to run unless the database host matches an allowed dev host.
 
 **Fast pages with Next.js 16.** With Cache Components, each page prerenders a static shell, and anything that reads the session streams in inside `<Suspense>`. Auth is checked in a data access layer that every page and server action calls before touching data, not only in middleware. Server actions validate input with Zod and check ownership in the query itself.
 
 ## Testing
 
-- **223 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, timezone-aware dates, which days can be filled in, which lesson days are open, the goal schedule, parsing and formatting money, verified sign-in emails, and validating AI output.
-- **20 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits and filling in a missed day, lessons at your own pace, a reading, creating and editing goals, falling behind and catching up, recording money, managing categories, saving toward a goal, and notes. They sign in as a dedicated test user, run in demo mode, and clean up afterwards.
+- **279 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, timezone-aware dates, which days can be filled in, which lesson days are open, the goal schedule, parsing and formatting money, verified sign-in emails, follow-up dates, token encryption, the calendar connect checks, placing events on days, and validating AI output.
+- **28 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits and filling in a missed day, lessons at your own pace, a reading, creating and editing goals, falling behind and catching up, recording money, managing categories, saving toward a goal, notes, About you and a resume, recommended tracks, contacts and follow-ups, and connecting a calendar. They sign in as a dedicated test user, run with a demo AI and a demo calendar, and clean up afterwards.
 
 ## What I learned
 
@@ -53,11 +67,12 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 - **Round trips add up.** Creating a goal first did one insert per milestone and per step, about ten trips to the database, and it was slow enough to time out tests. Batching the inserts fixed it.
 - **Guardrails are cheaper than accidents.** Early on, a misconfigured environment variable pointed a migration at production. Nothing was lost, but it led directly to printing the host before every migration and to the e2e guard.
 - **Ship the schema first, every time.** Once, I pushed a feature before running its migration on production, and the Today page broke until the migration ran. Now every new migration runs on production before its code is pushed.
+- **Compare times from one clock.** Recommended tracks were regenerating on every reload. The profile's "last changed" time came from the database's clock and the suggestions' "made at" time from the app server's, and the two were a little apart. An end-to-end test caught it; both now use the database's clock.
 - **AI features are mostly not about the prompt.** Schemas, retries, caching, limits, logging and a demo mode took more work than the prompts, and they're what make the AI parts dependable.
 
 ## What's next
 
-Monthly budgets per category, email reminders, an Explore page that recommends tracks based on your goals, and evals to measure the quality of AI feedback.
+Monthly budgets per category, due dates on to-dos that show on Today and in Schedule, email reminders, a custom domain so Google can verify the Calendar connection, and evals to measure the quality of AI feedback and suggestions.
 
 ## Stack
 
