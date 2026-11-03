@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft, Check, Compass } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Compass, Users } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { requireOnboardedUser } from "@/lib/auth/dal";
+import { describeFollowUp } from "@/lib/contacts/follow-up";
+import { getGoalContacts } from "@/lib/contacts/queries";
 import { formatShortDate, todayIn } from "@/lib/dates/calendar";
 import type { Guide } from "@/lib/goals/plan";
 import { getGoal, type GoalWithSchedule } from "@/lib/goals/queries";
@@ -37,7 +39,7 @@ async function GoalDetail({ params }: Pick<PageProps<"/goals/[id]">, "params">) 
 
   const user = await requireOnboardedUser();
   const today = todayIn(user.timezone);
-  const goal = await getGoal(user.id, id, today);
+  const [goal, contacts] = await Promise.all([getGoal(user.id, id, today), getGoalContacts(user.id, id)]);
   if (!goal) notFound();
 
   const { schedule } = goal;
@@ -138,6 +140,8 @@ async function GoalDetail({ params }: Pick<PageProps<"/goals/[id]">, "params">) 
         </ol>
       </section>
 
+      {contacts.length > 0 && <GoalContacts contacts={contacts} today={today} />}
+
       {goal.guide && <GuideSection guide={goal.guide} demo={goal.planSource === "demo"} />}
 
       {editable && (
@@ -146,6 +150,49 @@ async function GoalDetail({ params }: Pick<PageProps<"/goals/[id]">, "params">) 
         </div>
       )}
     </div>
+  );
+}
+
+/** The people linked to this goal, from Contacts. */
+function GoalContacts({
+  contacts,
+  today,
+}: {
+  contacts: Awaited<ReturnType<typeof getGoalContacts>>;
+  today: string;
+}) {
+  return (
+    <section aria-labelledby="goal-contacts">
+      <h2 id="goal-contacts" className="flex items-center gap-2 text-lg font-semibold">
+        <Users className="size-4 text-primary" aria-hidden />
+        People who can help
+      </h2>
+      <ul className="mt-3 divide-y rounded-xl border">
+        {contacts.map((contact) => {
+          const work = [contact.role, contact.company].filter(Boolean).join(" at ");
+          const followUp = contact.follow_up_on ? describeFollowUp(contact.follow_up_on, today) : null;
+          return (
+            <li key={contact.id}>
+              <Link
+                href={`/contacts/${contact.id}`}
+                className="flex items-center gap-3 px-4 py-3 text-sm outline-none first:rounded-t-xl last:rounded-b-xl hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{contact.name}</span>
+                  {work && <span className="block truncate text-muted-foreground">{work}</span>}
+                </span>
+                {followUp && (
+                  <span className={cn("shrink-0 text-xs", followUp.due ? "font-medium text-destructive" : "text-muted-foreground")}>
+                    Follow up: {followUp.label}
+                  </span>
+                )}
+                <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

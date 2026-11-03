@@ -2,21 +2,32 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { CalendarClock, ExternalLink, Mail, MapPin, Pencil, Phone, Target, Trash2 } from "lucide-react";
+import { CalendarClock, ExternalLink, History, Mail, MapPin, Pencil, Phone, Target, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { describeFollowUp } from "@/lib/contacts/follow-up";
-import type { Contact } from "@/lib/contacts/queries";
+import { describeFollowUp, describeLastContact } from "@/lib/contacts/follow-up";
+import type { Contact, Touchpoint } from "@/lib/contacts/queries";
 import { cn } from "@/lib/utils";
 import { CONTACT_LIMITS } from "@/lib/validation/contacts";
 import { deleteContact, saveContact } from "../actions";
+import { Touchpoints } from "./touchpoints";
 
 type Goal = { id: string; title: string };
 
-/** A contact's page: their details, with Edit and Delete. */
-export function ContactDetails({ contact, goals, today }: { contact: Contact; goals: Goal[]; today: string }) {
+/** A contact's page: their details and touchpoints, with Edit and Delete. */
+export function ContactDetails({
+  contact,
+  goals,
+  touchpoints,
+  today,
+}: {
+  contact: Contact;
+  goals: Goal[];
+  touchpoints: Touchpoint[];
+  today: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +57,13 @@ export function ContactDetails({ contact, goals, today }: { contact: Contact; go
             <span className={cn(followUp.due && "font-medium text-destructive")}>{followUp.label}</span>
           ) : (
             <span className="text-muted-foreground">No date set</span>
+          )}
+        </Detail>
+        <Detail icon={History} label="Last contacted">
+          {touchpoints.length > 0 ? (
+            describeLastContact(touchpoints[0].happened_on, today)
+          ) : (
+            <span className="text-muted-foreground">Not yet</span>
           )}
         </Detail>
         {contact.where_met && (
@@ -94,6 +112,8 @@ export function ContactDetails({ contact, goals, today }: { contact: Contact; go
           <p className="mt-2 text-sm whitespace-pre-line break-words text-foreground/85">{contact.notes}</p>
         </section>
       )}
+
+      <Touchpoints contactId={contact.id} name={contact.name} touchpoints={touchpoints} today={today} />
 
       <div className="mt-8 border-t pt-6">
         {confirming ? (

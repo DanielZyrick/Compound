@@ -87,3 +87,48 @@ export function getGoalOptions(userId: string) {
     .orderBy("created_at")
     .execute();
 }
+
+export type Touchpoint = { id: string; happened_on: CalendarDate; note: string | null };
+
+/** A contact's touchpoints, newest first. The first one's date is "last contacted". */
+export function getTouchpoints(contactId: string, limit = 20): Promise<Touchpoint[]> {
+  return db
+    .selectFrom("contact_touchpoints")
+    .select(["id", "happened_on", "note"])
+    .where("contact_id", "=", contactId)
+    .orderBy("happened_on", "desc")
+    .orderBy("created_at", "desc")
+    .limit(limit)
+    .execute();
+}
+
+export type DueFollowUp = { id: string; name: string; company: string | null; follow_up_on: CalendarDate };
+
+/** Contacts to follow up with today or earlier (the oldest first), and how many there are in all. */
+export async function getDueFollowUps(userId: string, today: CalendarDate, limit = 3) {
+  const due = db
+    .selectFrom("contacts")
+    .where("user_id", "=", userId)
+    .where("follow_up_on", "<=", today);
+  const [contacts, { count }] = await Promise.all([
+    due
+      .select(["id", "name", "company", "follow_up_on"])
+      .orderBy("follow_up_on")
+      .orderBy("name")
+      .limit(limit)
+      .execute() as Promise<DueFollowUp[]>,
+    due.select((eb) => eb.fn.countAll<string>().as("count")).executeTakeFirstOrThrow(),
+  ]);
+  return { contacts, total: Number(count) };
+}
+
+/** The contacts linked to one of the user's goals, for the goal page. */
+export function getGoalContacts(userId: string, goalId: string) {
+  return db
+    .selectFrom("contacts")
+    .select(["id", "name", "company", "role", "follow_up_on"])
+    .where("user_id", "=", userId)
+    .where("goal_id", "=", goalId)
+    .orderBy("name")
+    .execute();
+}

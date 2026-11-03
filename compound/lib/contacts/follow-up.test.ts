@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { saveContactSchema } from "@/lib/validation/contacts";
-import { containsPattern, describeFollowUp } from "./follow-up";
+import { containsPattern, describeFollowUp, describeLastContact, nextFollowUpDate } from "./follow-up";
 
 describe("describeFollowUp", () => {
   const today = "2026-10-31";
@@ -57,5 +57,33 @@ describe("saveContactSchema", () => {
 
   it("needs a name", () => {
     expect(saveContactSchema.safeParse({ id, name: "  " }).success).toBe(false);
+  });
+});
+
+describe("nextFollowUpDate", () => {
+  const today = "2026-10-31";
+
+  it("sets a date from today, or none", () => {
+    expect(nextFollowUpDate("none", today)).toBeNull();
+    expect(nextFollowUpDate("1w", today)).toBe("2026-11-07");
+    expect(nextFollowUpDate("2w", today)).toBe("2026-11-14");
+    expect(nextFollowUpDate("1m", today)).toBe("2026-11-30");
+  });
+
+  it("keeps a chosen date from today on, and drops one in the past", () => {
+    expect(nextFollowUpDate("2026-12-01", today)).toBe("2026-12-01");
+    expect(nextFollowUpDate(today, today)).toBe(today);
+    expect(nextFollowUpDate("2026-10-01", today)).toBeNull();
+  });
+});
+
+describe("describeLastContact", () => {
+  const today = "2026-10-31";
+
+  it("reads naturally", () => {
+    expect(describeLastContact(today, today)).toBe("Today");
+    expect(describeLastContact("2026-10-30", today)).toBe("Yesterday");
+    expect(describeLastContact("2026-10-21", today)).toBe("10 days ago");
+    expect(describeLastContact("2026-08-02", today)).toBe("Aug 2");
   });
 });

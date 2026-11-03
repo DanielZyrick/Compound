@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { requireOnboardedUser } from "@/lib/auth/dal";
-import { getContact, getGoalOptions } from "@/lib/contacts/queries";
+import { getContact, getGoalOptions, getTouchpoints } from "@/lib/contacts/queries";
 import { todayIn } from "@/lib/dates/calendar";
 import { ContactDetails } from "./contact-details";
 
@@ -32,6 +32,7 @@ async function ContactContent({ params }: Pick<PageProps<"/contacts/[id]">, "par
   const user = await requireOnboardedUser();
   const [contact, goals] = await Promise.all([getContact(user.id, id), getGoalOptions(user.id)]);
   if (!contact) notFound();
+  const touchpoints = await getTouchpoints(contact.id); // only after the ownership check above
 
-  return <ContactDetails contact={contact} goals={goals} today={todayIn(user.timezone)} />;
+  return <ContactDetails contact={contact} goals={goals} touchpoints={touchpoints} today={todayIn(user.timezone)} />;
 }

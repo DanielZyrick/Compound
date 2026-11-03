@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NEXT_FOLLOW_UPS } from "@/lib/contacts/follow-up";
 
 export const CONTACT_LIMITS = {
   name: 80,
@@ -71,3 +72,16 @@ export const saveContactSchema = z.object({
 export const deleteContactSchema = z.object({ id: z.uuid() });
 
 export type SaveContactInput = z.input<typeof saveContactSchema>;
+
+export const MAX_TOUCHPOINT_NOTE = 280;
+
+/** Logging that you were in touch, and when to follow up next. */
+export const logTouchpointSchema = z.object({
+  contactId: z.uuid(),
+  happenedOn: z.iso.date({ error: "Choose when you were in touch." }),
+  note: optional(MAX_TOUCHPOINT_NOTE, "the note"),
+  next: z.union([z.enum(NEXT_FOLLOW_UPS), z.iso.date()], { error: "Choose when to follow up next." }),
+});
+
+export const deleteTouchpointSchema = z.object({ id: z.uuid() });
+export const snoozeFollowUpSchema = z.object({ contactId: z.uuid() });

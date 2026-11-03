@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { describeFollowUp } from "../lib/contacts/follow-up";
 import { addDays } from "../lib/dates/calendar";
-import { alerts, open, seedGoal, signInFreshUser } from "./support";
+import { alerts, db, open, seedGoal, signInFreshUser } from "./support";
 
 test("add, edit, search, filter and delete contacts", async ({ page, context }) => {
   const user = await signInFreshUser(context);
@@ -69,4 +70,59 @@ test("add, edit, search, filter and delete contacts", async ({ page, context }) 
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(main.getByRole("link", { name: /Ben Reyes/ })).toBeHidden();
   await expect(main.getByRole("link", { name: /Ana Cruz/ })).toBeVisible();
+});
+
+test("follow-ups on Today, touchpoints, and contacts on a goal", async ({ page, context }) => {
+  const user = await signInFreshUser(context);
+  const { id: goalId, today } = await seedGoal(user.id, {
+    title: "Get a backend developer job",
+    startOffset: 0,
+    deadlineOffset: 60,
+    bufferDays: 9,
+    milestones: [{ title: "Prepare", steps: ["Update my resume"] }],
+  });
+  await db
+    .insertInto("contacts")
+    .values([
+      { user_id: user.id, name: "Ana Cruz", company: "Acme Digital", follow_up_on: addDays(today, -1), goal_id: goalId },
+      { user_id: user.id, name: "Ben Reyes", company: "Globe", follow_up_on: today },
+    ])
+    .execute();
+
+  // Today: both are due. Snooze one, mark the other done.
+  await open(page, "/today");
+  const card = page.getByRole("region", { name: "Follow up" });
+  await expect(card.getByRole("link", { name: /Ana Cruz/ })).toBeVisible();
+  await card.getByRole("button", { name: "Snooze Ben Reyes for a week" }).click();
+  await expect(card.getByRole("link", { name: /Ben Reyes/ })).toBeHidden();
+  await card.getByRole("button", { name: "Done: followed up with Ana Cruz" }).click();
+  await expect(page.getByRole("region", { name: "Follow up" })).toBeHidden();
+
+  // Ana's page: the touchpoint from Today, and "last contacted".
+  await open(page, "/contacts");
+  const main = page.getByRole("main");
+  await expect(main.getByText("Follow up: In 7 days")).toBeVisible(); // Ben, snoozed
+  await main.getByRole("link", { name: /Ana Cruz/ }).click();
+  await page.waitForLoadState("networkidle");
+  await expect(main.getByText("Got in touch")).toBeVisible();
+  await expect(main.getByText("No date set")).toBeVisible();
+
+  // Log another touchpoint with a note and a follow-up in two weeks (the default).
+  await main.getByRole("button", { name: "Log a touchpoint" }).click();
+  await main.getByLabel("What happened (optional)").fill("Coffee chat, sent my portfolio");
+  await expect(main.getByRole("radio", { name: "In 2 weeks" })).toHaveAttribute("aria-checked", "true");
+  await main.getByRole("button", { name: "Save touchpoint" }).click();
+  await expect(main.getByText("Coffee chat, sent my portfolio")).toBeVisible();
+  await expect(main.getByText("Today", { exact: true })).toBeVisible(); // last contacted
+  const nextFollowUp = describeFollowUp(addDays(today, 14), today).label;
+  await expect(main.getByText(nextFollowUp, { exact: true })).toBeVisible();
+
+  // A touchpoint logged by mistake can be removed.
+  await main.getByRole("button", { name: /^Remove the touchpoint/ }).first().click();
+  await expect(main.getByText("Coffee chat, sent my portfolio")).toBeHidden();
+
+  // The goal page lists Ana.
+  await open(page, `/goals/${goalId}`);
+  const helpers = page.getByRole("region", { name: "People who can help" });
+  await expect(helpers.getByRole("link", { name: /Ana Cruz/ })).toBeVisible();
 });

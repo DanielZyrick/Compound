@@ -10,12 +10,14 @@ import { getGoals, stepsDoneSince } from "@/lib/goals/queries";
 import { getHabitWeek, getTodayHabits } from "@/lib/habits/queries";
 import { weekStart } from "@/lib/habits/week";
 import { getTodayLessons } from "@/lib/lessons/queries";
+import { getDueFollowUps } from "@/lib/contacts/queries";
 import { getTodayNotes } from "@/lib/notes/queries";
 import { spentOn } from "@/lib/money/queries";
 import { getPrinciple } from "@/lib/principles/queries";
 import { isProfileEmpty } from "@/lib/profile/context";
 import { getProfile } from "@/lib/profile/queries";
 import { GoalsTable, type GoalRow } from "./goals-table";
+import { FollowUpsCard } from "./follow-ups-card";
 import { HabitChecklist } from "./habit-checklist";
 import { NotesCard } from "./notes-card";
 import { PrincipleCard } from "./principle-card";
@@ -42,7 +44,7 @@ async function TodayContent() {
   // The date in the user's timezone decides which habits are due and which
   // check-ins count as today.
   const today = todayIn(user.timezone);
-  const [{ habits, activeCount }, week, lessons, principle, goals, stepsThisWeek, spentToday, notes, profile] = await Promise.all([
+  const [{ habits, activeCount }, week, lessons, principle, goals, stepsThisWeek, spentToday, notes, profile, followUps] = await Promise.all([
     getTodayHabits(user.id, today),
     getHabitWeek(user, today),
     getTodayLessons(user, today),
@@ -52,6 +54,7 @@ async function TodayContent() {
     spentOn(user.id, today),
     getTodayNotes(user, today),
     getProfile(user.id),
+    getDueFollowUps(user.id, today),
   ]);
 
   const active = goals.filter((g) => g.status === "active");
@@ -134,6 +137,9 @@ async function TodayContent() {
 
           <div className="flex flex-col gap-6">
             <TodayLessons lessons={lessons} />
+            {followUps.total > 0 && (
+              <FollowUpsCard contacts={followUps.contacts} total={followUps.total} today={today} />
+            )}
             <PrincipleCard initial={principle} />
           </div>
         </div>

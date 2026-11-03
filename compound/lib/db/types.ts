@@ -252,6 +252,14 @@ export interface ContactsTable {
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
+export interface ContactTouchpointsTable {
+  id: Generated<string>;
+  contact_id: string;
+  happened_on: CalendarDate;
+  note: string | null; // e.g. "Coffee chat, sent my portfolio"
+  created_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -272,6 +280,7 @@ export interface Database {
   notes: NotesTable;
   profiles: ProfilesTable;
   contacts: ContactsTable;
+  contact_touchpoints: ContactTouchpointsTable;
 }
 
 // Row types for use in the rest of the app.
