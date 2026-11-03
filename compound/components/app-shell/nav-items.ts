@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   ChartColumn,
   GraduationCap,
   House,
@@ -23,6 +24,7 @@ export interface NavItem {
 // One list for both the desktop sidebar and the phone tab bar.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/today", label: "Today", icon: House, ready: true },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays, ready: true, tabBar: false },
   { href: "/habits", label: "Habits", icon: ListChecks, ready: true },
   { href: "/tracks", label: "Learn", icon: GraduationCap, ready: true },
   { href: "/goals", label: "Goals", icon: Target, ready: true },

@@ -90,6 +90,7 @@ Rules:
   In the desktop sidebar only; phones reach it from the Today card
 - /progress — overall stats and habit history
 - /profile — "About you" form; Today shows a prompt until it has an answer. Learn shows "Recommended for you" (3 AI track ideas saved in profiles.recommendations, rewritten when the profile changes or on "Suggest others"; "Start this" opens /tracks/new filled in)
+- /schedule — the next 7 days from Google Calendar (primary calendar, read-only, fetched live by lib/calendar/queries.ts). Today shows a Schedule card in its own Suspense once connected; errors become a status (revoked → Reconnect), never a broken page.
 - /settings — display name, About you link, Google Calendar connect/disconnect (/api/calendar/connect and /callback, state cookie, lib/calendar), timezone, currency, sign out. CALENDAR_DEMO_MODE=1 (e2e) never calls Google.
 - /explore — AI-recommended tracks (version 2)
 

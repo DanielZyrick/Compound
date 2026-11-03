@@ -21,6 +21,7 @@ import { FollowUpsCard } from "./follow-ups-card";
 import { HabitChecklist } from "./habit-checklist";
 import { NotesCard } from "./notes-card";
 import { PrincipleCard } from "./principle-card";
+import { ScheduleCard } from "./schedule-card";
 import { StatsPill } from "./stats-pill";
 import { TodayLessons } from "./today-lessons";
 
@@ -136,6 +137,10 @@ async function TodayContent() {
           </div>
 
           <div className="flex flex-col gap-6">
+            {/* Streams in on its own, so a slow Google Calendar never holds up the page. */}
+            <Suspense fallback={null}>
+              <ScheduleCard user={user} today={today} />
+            </Suspense>
             <TodayLessons lessons={lessons} />
             {followUps.total > 0 && (
               <FollowUpsCard contacts={followUps.contacts} total={followUps.total} today={today} />
