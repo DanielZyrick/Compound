@@ -79,6 +79,27 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2>Google Calendar</h2>
+          <p>
+            Connecting Google Calendar is optional. If you connect it, Compound asks Google for read-only access and
+            stores only an encrypted connection key, so it can show your upcoming events to you. Events are fetched
+            from Google when you view them and aren&apos;t stored. They&apos;re never shared, never sent to the AI, and
+            never used for anything except showing them to you. You can disconnect in Settings at any time, which
+            removes Compound&apos;s access and deletes the key.
+          </p>
+          <p>
+            Compound&apos;s use of information received from Google APIs adheres to the{" "}
+            <a
+              href="https://developers.google.com/terms/api-services-user-data-policy"
+              className="text-primary hover:underline"
+            >
+              Google API Services User Data Policy
+            </a>
+            , including the Limited Use requirements.
+          </p>
+        </section>
+
+        <section>
           <h2>Cookies</h2>
           <p>
             One essential cookie keeps you signed in. It&apos;s encrypted and contains only your account ID, name and

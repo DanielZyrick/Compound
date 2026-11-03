@@ -1,5 +1,6 @@
 "use server";
 
+import { sql } from "kysely";
 import { refresh } from "next/cache";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -15,7 +16,8 @@ export async function saveProfile(input: unknown): Promise<ProfileResult> {
   if (!parsed.success) return { errors: [...new Set(parsed.error.issues.map((i) => i.message))] };
   const { role, improve, skills, interests, dailyMinutes } = parsed.data;
 
-  const answers = { role, improve, skills, interests, daily_minutes: dailyMinutes, updated_at: new Date() };
+  // The database clock, like recommended_at, so stale suggestions are spotted reliably.
+  const answers = { role, improve, skills, interests, daily_minutes: dailyMinutes, updated_at: sql<Date>`now()` };
   await db
     .insertInto("profiles")
     .values({ user_id: user.id, ...answers })

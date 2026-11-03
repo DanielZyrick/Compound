@@ -260,6 +260,15 @@ export interface ContactTouchpointsTable {
   created_at: CreatedAt;
 }
 
+export interface CalendarConnectionsTable {
+  user_id: string;
+  google_email: string | null;
+  refresh_token: string; // encrypted (lib/calendar/crypto.ts)
+  access_token: string | null; // encrypted
+  access_expires_at: Timestamp | null;
+  connected_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   focus_areas: FocusAreasTable;
@@ -281,6 +290,7 @@ export interface Database {
   profiles: ProfilesTable;
   contacts: ContactsTable;
   contact_touchpoints: ContactTouchpointsTable;
+  calendar_connections: CalendarConnectionsTable;
 }
 
 // Row types for use in the rest of the app.

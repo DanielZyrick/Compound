@@ -57,6 +57,7 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
 - profiles (user_id PK, role, improve, skills, interests, daily_minutes 10|20|30|60, recommendations jsonb, recommended_at, updated_at) — "About you"; every field optional
 - contacts (id, user_id, name, company, role, where_met, email, phone, linkedin https only, notes, follow_up_on, goal_id set null on goal delete, created_at, updated_at) — never sent to the AI
 - contact_touchpoints (id, contact_id, happened_on, note <= 280, created_at) — "last contacted" is the newest happened_on, never stored
+- calendar_connections (user_id PK, google_email, refresh_token and access_token encrypted with CALENDAR_TOKEN_KEY, access_expires_at, connected_at) — Google Calendar read-only; events are fetched live, never stored or sent to the AI
 
 Rules:
 - Streaks are calculated from habit_checkins, never stored.
@@ -89,7 +90,7 @@ Rules:
   In the desktop sidebar only; phones reach it from the Today card
 - /progress — overall stats and habit history
 - /profile — "About you" form; Today shows a prompt until it has an answer. Learn shows "Recommended for you" (3 AI track ideas saved in profiles.recommendations, rewritten when the profile changes or on "Suggest others"; "Start this" opens /tracks/new filled in)
-- /settings — display name, About you link, timezone, currency, sign out
+- /settings — display name, About you link, Google Calendar connect/disconnect (/api/calendar/connect and /callback, state cookie, lib/calendar), timezone, currency, sign out. CALENDAR_DEMO_MODE=1 (e2e) never calls Google.
 - /explore — AI-recommended tracks (version 2)
 
 ## Track types

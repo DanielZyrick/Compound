@@ -6,24 +6,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { signOutAction } from "@/lib/auth/actions";
+import { getConnection } from "@/lib/calendar/google";
+import { CalendarSection } from "./calendar-section";
 import { CurrencyForm, DisplayNameForm, TimezoneForm } from "./settings-forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export default function SettingsPage() {
+export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-8 md:py-10">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
 
       <Suspense fallback={<div aria-hidden className="mt-8 h-80 animate-pulse rounded-2xl bg-muted" />}>
-        <SettingsContent />
+        <SettingsContent searchParams={searchParams} />
       </Suspense>
     </main>
   );
 }
 
-async function SettingsContent() {
+async function SettingsContent({ searchParams }: Pick<PageProps<"/settings">, "searchParams">) {
   const user = await requireOnboardedUser();
+  const [calendar, params] = await Promise.all([getConnection(user.id), searchParams]);
   const displayName = user.name ?? user.email;
 
   return (
@@ -56,6 +59,14 @@ async function SettingsContent() {
         </Link>
       </Section>
 
+      <Section title="Google Calendar">
+        <CalendarSection
+          available={calendar.available}
+          email={calendar.connection ? calendar.connection.google_email : undefined}
+          status={typeof params.calendar === "string" ? params.calendar : null}
+        />
+      </Section>
+
       <Section title="Time">
         <TimezoneForm initial={user.timezone} />
       </Section>
@@ -78,9 +89,15 @@ async function SettingsContent() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border p-5">
-      <h2 className="font-semibold">{title}</h2>
+    <section aria-labelledby={`settings-${slug(title)}`} className="flex flex-col gap-4 rounded-2xl border p-5">
+      <h2 id={`settings-${slug(title)}`} className="font-semibold">
+        {title}
+      </h2>
       {children}
     </section>
   );
+}
+
+function slug(title: string) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }

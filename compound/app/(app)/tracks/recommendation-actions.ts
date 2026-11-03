@@ -1,5 +1,6 @@
 "use server";
 
+import { sql } from "kysely";
 import { z } from "zod";
 import { AiError } from "@/lib/ai/errors";
 import { runAiTask } from "@/lib/ai/run";
@@ -53,9 +54,10 @@ export async function loadRecommendations(input?: unknown): Promise<LoadRecommen
     const saved: StoredRecommendations = { ...data, source };
 
     // Leaves updated_at alone, so the profile's own "last changed" time stays true.
+    // Uses the database clock, like updated_at, so the two compare correctly.
     await db
       .updateTable("profiles")
-      .set({ recommendations: JSON.stringify(saved), recommended_at: new Date() })
+      .set({ recommendations: JSON.stringify(saved), recommended_at: sql`now()` })
       .where("user_id", "=", user.id)
       .execute();
     return { saved, error: null };

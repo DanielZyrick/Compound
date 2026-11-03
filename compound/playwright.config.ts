@@ -33,6 +33,7 @@ export default defineConfig({
     env: {
       AUTH_TRUST_HOST: "true", // next start is a production server on localhost
       AI_DEMO_MODE: "1", // never call the AI from tests
+      CALENDAR_DEMO_MODE: "1", // never call Google Calendar from tests
     },
   },
 });

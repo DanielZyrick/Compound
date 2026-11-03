@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { requireOnboardedUser } from "@/lib/auth/dal";
+import { disconnect } from "@/lib/calendar/google";
 import { db } from "@/lib/db";
 import { currencySettingSchema, displayNameSchema, timezoneSettingSchema } from "@/lib/validation/settings";
 
@@ -46,6 +47,14 @@ export async function updateCurrency(input: unknown): Promise<SettingsResult> {
   if (!parsed.success) return { errors: messages(parsed.error.issues) };
 
   await db.updateTable("users").set({ currency: parsed.data.currency }).where("id", "=", user.id).execute();
+  refresh();
+  return { errors: [] };
+}
+
+/** Disconnects Google Calendar: revokes access at Google and deletes the stored tokens. */
+export async function disconnectCalendar(): Promise<SettingsResult> {
+  const user = await requireOnboardedUser();
+  await disconnect(user.id);
   refresh();
   return { errors: [] };
 }
