@@ -1,18 +1,33 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Archive, ArchiveRestore, Pencil, Plus } from "lucide-react";
+import { useId, useState, useTransition } from "react";
+import { Archive, ArchiveRestore, Pencil, PiggyBank, Plus } from "lucide-react";
 import { CategoryIcon } from "@/components/money/category-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { MoneyKind } from "@/lib/db/types";
+import { centsToInput, formatMoney } from "@/lib/money/amount";
 import { CATEGORY_ICONS, type CategoryIcon as IconKey } from "@/lib/money/categories";
 import type { ManagedCategory } from "@/lib/money/queries";
 import { cn } from "@/lib/utils";
-import { addCategory, setCategoryArchived, updateCategory, type CategoryActionResult } from "./actions";
+import {
+  addCategory,
+  setCategoryArchived,
+  setCategoryBudget,
+  updateCategory,
+  type CategoryActionResult,
+} from "./actions";
 
-/** One kind's categories: rename, change icon, archive, restore, add. */
-export function CategoryManager({ kind, categories }: { kind: MoneyKind; categories: ManagedCategory[] }) {
+/** One kind's categories: rename, change icon, set a budget (expenses), archive, restore, add. */
+export function CategoryManager({
+  kind,
+  categories,
+  currency,
+}: {
+  kind: MoneyKind;
+  categories: ManagedCategory[];
+  currency: string;
+}) {
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -33,7 +48,16 @@ export function CategoryManager({ kind, categories }: { kind: MoneyKind; categor
       <ul className="divide-y rounded-xl border">
         {active.map((c) => (
           <li key={c.id} className="p-2">
-            {editing === c.id ? (
+            {editing === `budget-${c.id}` ? (
+              <BudgetEditor
+                name={c.name}
+                initial={c.budgetCents}
+                currency={currency}
+                pending={pending}
+                onCancel={() => setEditing(null)}
+                onSave={(budget) => run(() => setCategoryBudget({ id: c.id, budget }), () => setEditing(null))}
+              />
+            ) : editing === c.id ? (
               <CategoryEditor
                 initialName={c.name}
                 initialIcon={c.icon as IconKey}
@@ -51,8 +75,21 @@ export function CategoryManager({ kind, categories }: { kind: MoneyKind; categor
                   <span className="block truncate font-medium">{c.name}</span>
                   <span className="block text-xs text-muted-foreground">
                     {c.uses} {c.uses === 1 ? "transaction" : "transactions"}
+                    {c.budgetCents !== null && (
+                      <span className="text-foreground"> · Budget {formatMoney(c.budgetCents, currency)} a month</span>
+                    )}
                   </span>
                 </span>
+                {kind === "expense" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Budget for ${c.name}`}
+                    onClick={() => setEditing(`budget-${c.id}`)}
+                  >
+                    <PiggyBank />
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" aria-label={`Rename ${c.name}`} onClick={() => setEditing(c.id)}>
                   <Pencil />
                 </Button>
@@ -181,6 +218,60 @@ function CategoryEditor({
           {pending ? "Saving…" : submitLabel}
         </Button>
       </div>
+    </form>
+  );
+}
+
+/** A category's monthly budget: an amount, or Remove to have none. */
+function BudgetEditor({
+  name,
+  initial,
+  currency,
+  pending,
+  onCancel,
+  onSave,
+}: {
+  name: string;
+  initial: number | null;
+  currency: string;
+  pending: boolean;
+  onCancel: () => void;
+  onSave: (budget: string) => void;
+}) {
+  const [budget, setBudget] = useState(initial === null ? "" : centsToInput(initial));
+  const inputId = useId();
+
+  return (
+    <form
+      className="flex flex-wrap items-center gap-2 p-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(budget);
+      }}
+    >
+      <label htmlFor={inputId} className="text-sm font-medium">
+        {name} budget a month
+      </label>
+      <Input
+        id={inputId}
+        inputMode="decimal"
+        value={budget}
+        onChange={(e) => setBudget(e.target.value)}
+        placeholder={`e.g. ${formatMoney(800_000, currency)}`}
+        autoFocus
+        className="h-9 w-36"
+      />
+      <Button type="submit" size="sm" disabled={pending}>
+        Save
+      </Button>
+      {initial !== null && (
+        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => onSave("")}>
+          Remove
+        </Button>
+      )}
+      <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+        Cancel
+      </Button>
     </form>
   );
 }

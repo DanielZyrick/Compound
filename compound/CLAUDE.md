@@ -49,7 +49,7 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
   guide, target_cents, created_at, completed_at)
 - goal_milestones (id, goal_id, position, title, description, weight, planned_due)
 - goal_steps (id, milestone_id, position, title, done_on, created_at)
-- money_categories (id, user_id, kind: expense | income, name, icon, position, archived_at)
+- money_categories (id, user_id, kind: expense | income, name, icon, position, monthly_budget_cents (expense only, applies every month), archived_at) — budget left, over and pace in lib/money/budget.ts
   — unique per (user_id, kind, lower(name)); defaults are seeded on first use
 - transactions (id, user_id, kind, amount_cents, category_id, note, occurred_on, goal_id)
 - notes (id, user_id, title, body, pinned, color, done_at, created_at, updated_at) — quick notes

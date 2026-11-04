@@ -4,7 +4,7 @@ import type { CalendarDate, MoneyKind } from "@/lib/db/types";
 import { DEFAULT_CATEGORIES } from "./categories";
 import { monthRange, summarize, type Month } from "./summary";
 
-export type MoneyCategory = { id: string; kind: MoneyKind; name: string; icon: string };
+export type MoneyCategory = { id: string; kind: MoneyKind; name: string; icon: string; budgetCents: number | null };
 
 /**
  * The user's active categories. The first time, it copies in the default
@@ -15,7 +15,7 @@ export async function getCategories(userId: string): Promise<MoneyCategory[]> {
   const load = () =>
     db
       .selectFrom("money_categories")
-      .select(["id", "kind", "name", "icon"])
+      .select(["id", "kind", "name", "icon", "monthly_budget_cents as budgetCents"])
       .where("user_id", "=", userId)
       .where("archived_at", "is", null)
       .orderBy("kind")
@@ -115,6 +115,7 @@ export async function getAllCategories(userId: string): Promise<ManagedCategory[
       "money_categories.kind",
       "money_categories.name",
       "money_categories.icon",
+      "money_categories.monthly_budget_cents",
       "money_categories.archived_at",
       eb.fn.count<string>("transactions.id").as("uses"),
     ])
@@ -128,6 +129,7 @@ export async function getAllCategories(userId: string): Promise<ManagedCategory[
     kind: r.kind,
     name: r.name,
     icon: r.icon,
+    budgetCents: r.monthly_budget_cents,
     archived: r.archived_at !== null,
     uses: Number(r.uses),
   }));

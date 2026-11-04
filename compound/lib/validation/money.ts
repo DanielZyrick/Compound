@@ -60,3 +60,17 @@ export const updateCategorySchema = z.object({
 });
 
 export const archiveCategorySchema = z.object({ id: z.uuid(), archived: z.boolean() });
+
+/** A category's monthly budget as typed: an amount in cents, or empty (null) to remove it. */
+export const setBudgetSchema = z.object({
+  id: z.uuid(),
+  budget: z.string().transform((text, ctx) => {
+    if (text.trim() === "") return null;
+    const cents = parseAmount(text);
+    if (cents === null) {
+      ctx.addIssue({ code: "custom", message: "Enter a budget like 8000 or 8,000 (up to 10,000,000)." });
+      return z.NEVER;
+    }
+    return cents;
+  }),
+});

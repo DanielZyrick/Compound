@@ -32,12 +32,23 @@ async function Categories() {
   return (
     <div className="mt-8 flex flex-col gap-8">
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Expenses</h2>
-        <CategoryManager kind="expense" categories={categories.filter((c) => c.kind === "expense")} />
+        <h2 className="text-lg font-semibold">Expenses</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Give a category a monthly budget to see what&apos;s left on the Money page. It applies every month.
+        </p>
+        <CategoryManager
+          kind="expense"
+          categories={categories.filter((c) => c.kind === "expense")}
+          currency={user.currency}
+        />
       </section>
       <section>
         <h2 className="mb-3 text-lg font-semibold">Income</h2>
-        <CategoryManager kind="income" categories={categories.filter((c) => c.kind === "income")} />
+        <CategoryManager
+          kind="income"
+          categories={categories.filter((c) => c.kind === "income")}
+          currency={user.currency}
+        />
       </section>
     </div>
   );

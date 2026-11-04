@@ -154,3 +154,43 @@ test("save toward a goal, and change the currency", async ({ page, context }) =>
   await open(page, "/money");
   await expect(page.locator("dl")).toContainText("$5,000.00");
 });
+
+test("set a monthly budget and watch it fill up, then go over", async ({ page, context }) => {
+  await signInFreshUser(context);
+
+  // Set a Food budget on the categories page.
+  await open(page, "/money/categories");
+  const main = page.getByRole("main");
+  await main.getByRole("button", { name: "Budget for Food" }).click();
+  await main.getByLabel("Food budget a month").fill("abc");
+  await main.getByRole("button", { name: "Save" }).click();
+  await expect(alerts(page)).toContainText("Enter a budget like 8000");
+  await main.getByLabel("Food budget a month").fill("1,000");
+  await main.getByRole("button", { name: "Save" }).click();
+  await expect(main.getByText("Budget ₱1,000.00 a month")).toBeVisible();
+
+  // On Money, the budget shows before anything is spent.
+  await open(page, "/money");
+  const food = page.getByRole("listitem", { name: "Food" });
+  await expect(food).toContainText("₱0.00 of ₱1,000.00");
+  await expect(food).toContainText("₱1,000.00 left");
+  const budget = page.getByRole("region", { name: "Budget" });
+  await expect(budget).toContainText("₱1,000.00 left");
+
+  // Past 80%: almost there. Then over.
+  await add(page, "850", "Food", "Groceries");
+  await expect(food).toContainText("₱150.00 left · almost there");
+  await add(page, "300", "Food", "Dinner out");
+  await expect(food).toContainText("₱150.00 over");
+  await expect(budget).toContainText("₱150.00 over");
+  await expect(budget).toContainText("Over budget");
+
+  // Removing the budget brings back the plain share of spending.
+  await open(page, "/money/categories");
+  await main.getByRole("button", { name: "Budget for Food" }).click();
+  await main.getByRole("button", { name: "Remove" }).click();
+  await expect(main.getByText(/Budget ₱/)).toBeHidden();
+  await open(page, "/money");
+  await expect(page.getByRole("region", { name: "Budget" })).toBeHidden();
+  await expect(page.getByRole("listitem", { name: "Food" })).toContainText("₱1,150.00 · 100%");
+});

@@ -191,6 +191,7 @@ export interface MoneyCategoriesTable {
   name: string;
   icon: string; // a key from lib/money/categories.ts
   position: number;
+  monthly_budget_cents: number | null; // expense categories only; applies every month
   archived_at: Timestamp | null;
   created_at: CreatedAt;
 }

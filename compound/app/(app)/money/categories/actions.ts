@@ -9,6 +9,7 @@ import {
   archiveCategorySchema,
   MAX_CATEGORIES_PER_KIND,
   newCategorySchema,
+  setBudgetSchema,
   updateCategorySchema,
 } from "@/lib/validation/money";
 
@@ -117,6 +118,26 @@ export async function setCategoryArchived(input: unknown): Promise<CategoryActio
     .set({ archived_at: archived ? new Date() : null })
     .where("id", "=", id)
     .execute();
+  refresh();
+  return { errors: [] };
+}
+
+/** Sets a monthly budget on one of the user's expense categories, or removes it (empty). */
+export async function setCategoryBudget(input: unknown): Promise<CategoryActionResult> {
+  const user = await requireOnboardedUser();
+  const parsed = setBudgetSchema.safeParse(input);
+  if (!parsed.success) return { errors: messages(parsed.error.issues) };
+  const { id, budget } = parsed.data;
+
+  const updated = await db
+    .updateTable("money_categories")
+    .set({ monthly_budget_cents: budget })
+    .where("id", "=", id)
+    .where("user_id", "=", user.id)
+    .where("kind", "=", "expense") // income categories have no budget
+    .executeTakeFirst();
+  if (updated.numUpdatedRows === BigInt(0)) return { errors: [SOMETHING_WRONG] };
+
   refresh();
   return { errors: [] };
 }

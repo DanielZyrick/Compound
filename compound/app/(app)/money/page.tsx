@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { CategoryIcon } from "@/components/money/category-icon";
 import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { formatMoney } from "@/lib/money/amount";
 import { getSavingsGoals } from "@/lib/goals/queries";
 import { getCategories, getMonth } from "@/lib/money/queries";
+import { monthElapsed } from "@/lib/money/budget";
 import { formatMonth, monthOf, shiftMonth } from "@/lib/money/summary";
 import { cn } from "@/lib/utils";
+import { SpendingByCategory } from "./spending-by-category";
 import { TransactionForm } from "./transaction-form";
 import { TransactionList } from "./transaction-list";
 
@@ -48,7 +49,13 @@ async function MoneyContent({ searchParams }: Pick<PageProps<"/money">, "searchP
   // Categories that only appear on old transactions (archived) still need a name.
   for (const item of items) {
     if (!categoryById.has(item.categoryId)) {
-      categoryById.set(item.categoryId, { id: item.categoryId, kind: item.kind, name: item.categoryName, icon: item.categoryIcon });
+      categoryById.set(item.categoryId, {
+        id: item.categoryId,
+        kind: item.kind,
+        name: item.categoryName,
+        icon: item.categoryIcon,
+        budgetCents: null,
+      });
     }
   }
 
@@ -105,33 +112,15 @@ async function MoneyContent({ searchParams }: Pick<PageProps<"/money">, "searchP
           />
         </dl>
 
-        {summary.categories.length > 0 && (
-          <div className="mt-4 rounded-xl border p-4">
-            <h3 className="text-sm font-medium">Spending by category</h3>
-            <ul className="mt-3 flex flex-col gap-3">
-              {summary.categories.map((c) => {
-                const category = categoryById.get(c.categoryId);
-                const percent = Math.round(c.share * 100);
-                return (
-                  <li key={c.categoryId}>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="flex items-center gap-2">
-                        <CategoryIcon icon={category?.icon ?? "other"} className="text-muted-foreground" />
-                        {category?.name ?? "Other"}
-                      </span>
-                      <span className="tabular-nums">
-                        {formatMoney(c.cents, currency)} <span className="text-muted-foreground">· {percent}%</span>
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-secondary" aria-hidden>
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(percent, 1)}%` }} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
+        <SpendingByCategory
+          spent={summary.spent}
+          spentByCategory={new Map(summary.categories.map((c) => [c.categoryId, c.cents]))}
+          categoryById={categoryById}
+          budgeted={categories.filter((c) => c.kind === "expense" && c.budgetCents !== null)}
+          elapsed={monthElapsed(month, today)}
+          pastMonth={month < thisMonth}
+          currency={currency}
+        />
       </section>
 
       <section>
