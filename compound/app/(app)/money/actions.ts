@@ -4,9 +4,16 @@ import { refresh } from "next/cache";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
+import { describeBudgetLeft } from "@/lib/money/budget";
+import { categorySpent } from "@/lib/money/queries";
+import { formatMonth, monthOf } from "@/lib/money/summary";
 import { deleteTransactionSchema, occurredOnError, transactionSchema } from "@/lib/validation/money";
 
-export type MoneyActionResult = { errors: string[] };
+export type MoneyActionResult = {
+  errors: string[];
+  /** After adding an expense in a budgeted category: what's left (or over) that month. */
+  budget?: { text: string; over: boolean };
+};
 
 const SOMETHING_WRONG = "Something went wrong. Please refresh and try again.";
 
@@ -23,7 +30,7 @@ export async function saveTransaction(input: unknown): Promise<MoneyActionResult
   // The category must be the user's own and match the kind (no "Salary" expense).
   const category = await db
     .selectFrom("money_categories")
-    .select(["id", "archived_at"])
+    .select(["id", "name", "archived_at", "monthly_budget_cents"])
     .where("id", "=", categoryId)
     .where("user_id", "=", user.id)
     .where("kind", "=", kind)
@@ -68,7 +75,12 @@ export async function saveTransaction(input: unknown): Promise<MoneyActionResult
   }
 
   refresh();
-  return { errors: [] };
+  if (id || kind !== "expense" || category.monthly_budget_cents === null) return { errors: [] };
+
+  const month = monthOf(occurredOn);
+  const left = category.monthly_budget_cents - (await categorySpent(user.id, categoryId, month));
+  const when = month === monthOf(todayIn(user.timezone)) ? "this month" : formatMonth(month);
+  return { errors: [], budget: { text: describeBudgetLeft(left, category.name, when, user.currency), over: left < 0 } };
 }
 
 export async function deleteTransaction(input: unknown): Promise<MoneyActionResult> {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { setBudgetSchema } from "@/lib/validation/money";
-import { budgetStatus, monthElapsed, totalBudget } from "./budget";
+import { budgetStatus, describeBudgetLeft, monthElapsed, totalBudget } from "./budget";
 
 describe("monthElapsed", () => {
   it("counts whole days through the month", () => {
@@ -81,5 +81,17 @@ describe("setBudgetSchema", () => {
     expect(setBudgetSchema.safeParse({ id, budget: "lots" }).success).toBe(false);
     expect(setBudgetSchema.safeParse({ id, budget: "-50" }).success).toBe(false);
     expect(setBudgetSchema.safeParse({ id, budget: "0" }).success).toBe(false);
+  });
+});
+
+describe("describeBudgetLeft", () => {
+  it("says what's left, or how much over", () => {
+    expect(describeBudgetLeft(156_000, "Food", "this month", "PHP")).toBe("₱1,560.00 left in Food this month");
+    expect(describeBudgetLeft(-20_000, "Food", "this month", "PHP")).toBe("₱200.00 over your Food budget this month");
+    expect(describeBudgetLeft(0, "Fun", "this month", "PHP")).toBe("₱0.00 left in Fun this month");
+  });
+
+  it("names an earlier month", () => {
+    expect(describeBudgetLeft(5_000, "Food", "October 2026", "PHP")).toBe("₱50.00 left in Food for October 2026");
   });
 });

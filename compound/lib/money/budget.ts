@@ -1,4 +1,5 @@
 import type { CalendarDate } from "@/lib/db/types";
+import { formatMoney } from "./amount";
 import { monthRange, type Month } from "./summary";
 
 // Monthly budgets: how much of a budget is spent, what's left, and whether
@@ -62,4 +63,16 @@ export function totalBudget(
     spent += spentByCategory.get(c.id) ?? 0;
   }
   return budget > 0 ? budgetStatus(spent, budget, elapsed) : null;
+}
+
+/**
+ * The line shown after saving an expense in a budgeted category, e.g.
+ * "₱1,560.00 left in Food this month" or "₱200.00 over your Food budget this month".
+ * `when` is "this month" or a month like "October 2026".
+ */
+export function describeBudgetLeft(left: number, categoryName: string, when: string, currency: string): string {
+  const period = when === "this month" ? when : `for ${when}`;
+  return left < 0
+    ? `${formatMoney(-left, currency)} over your ${categoryName} budget ${period}`
+    : `${formatMoney(left, currency)} left in ${categoryName} ${period}`;
 }

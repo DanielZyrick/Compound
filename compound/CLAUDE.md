@@ -82,8 +82,8 @@ Rules:
 - /habits — manage habits, see streaks, fill in missed days from the last week
 - /tracks, /tracks/new, /tracks/[id], /tracks/[id]/day/[n] — learning tracks and lessons
 - /goals, /goals/new, /goals/[id] — goals, the AI plan, step editing, savings
-- /money — quick add (`?add=expense|income`), month view (`?month=YYYY-MM`)
-- /money/categories — add, rename, change icon, archive, restore categories
+- /money — quick add (`?add=expense|income`; after a budgeted expense it says what's left in that category), month view (`?month=YYYY-MM`) with a Budget summary and budget bars. Today's stats pill shows what's left this month.
+- /money/categories — add, rename, change icon, set a monthly budget (expenses), archive, restore categories
 - /notes — quick notes and to-dos (`?filter=open|done|all`); also a Notes card on Today.
 - /contacts — networking contacts (`?filter=all|due|goal`, `?q=` search); /contacts/[id] shows, edits and deletes one. Sidebar only; on phones, sidebar-only pages are in the account menu.
   A contact page logs touchpoints and sets the next follow-up (lib/contacts/follow-up.ts). Today shows a Follow up card (Done logs a touchpoint, Snooze adds a week); the goal page lists linked contacts.

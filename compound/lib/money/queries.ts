@@ -2,7 +2,8 @@ import "server-only";
 import { db } from "@/lib/db";
 import type { CalendarDate, MoneyKind } from "@/lib/db/types";
 import { DEFAULT_CATEGORIES } from "./categories";
-import { monthRange, summarize, type Month } from "./summary";
+import { monthElapsed, totalBudget } from "./budget";
+import { monthOf, monthRange, summarize, type Month } from "./summary";
 
 export type MoneyCategory = { id: string; kind: MoneyKind; name: string; icon: string; budgetCents: number | null };
 
@@ -133,4 +134,55 @@ export async function getAllCategories(userId: string): Promise<ManagedCategory[
     archived: r.archived_at !== null,
     uses: Number(r.uses),
   }));
+}
+
+/** What the user spent in one category during a month, in cents. */
+export async function categorySpent(userId: string, categoryId: string, month: Month): Promise<number> {
+  const { start, end } = monthRange(month);
+  const row = await db
+    .selectFrom("transactions")
+    .select((eb) => eb.fn.sum<string>("amount_cents").as("total"))
+    .where("user_id", "=", userId)
+    .where("category_id", "=", categoryId)
+    .where("kind", "=", "expense")
+    .where("occurred_on", ">=", start)
+    .where("occurred_on", "<=", end)
+    .executeTakeFirstOrThrow();
+  return Number(row.total ?? 0);
+}
+
+/**
+ * This month's budgets for Today: what's left across all budgeted
+ * categories, and which ones are already over. Null when there are no budgets.
+ */
+export async function getBudgetOverview(userId: string, today: CalendarDate) {
+  const month = monthOf(today);
+  const { start, end } = monthRange(month);
+  const budgeted = await db
+    .selectFrom("money_categories")
+    .select(["id", "name", "monthly_budget_cents as budgetCents"])
+    .where("user_id", "=", userId)
+    .where("kind", "=", "expense")
+    .where("archived_at", "is", null)
+    .where("monthly_budget_cents", "is not", null)
+    .execute();
+  if (budgeted.length === 0) return null;
+
+  const spent = await db
+    .selectFrom("transactions")
+    .select(["category_id", (eb) => eb.fn.sum<string>("amount_cents").as("total")])
+    .where("user_id", "=", userId)
+    .where("kind", "=", "expense")
+    .where("category_id", "in", budgeted.map((c) => c.id))
+    .where("occurred_on", ">=", start)
+    .where("occurred_on", "<=", end)
+    .groupBy("category_id")
+    .execute();
+  const spentByCategory = new Map(spent.map((s) => [s.category_id, Number(s.total)]));
+
+  const total = totalBudget(budgeted, spentByCategory, monthElapsed(month, today))!;
+  const over = budgeted
+    .filter((c) => (spentByCategory.get(c.id) ?? 0) > c.budgetCents!)
+    .map((c) => c.name);
+  return { left: total.left, over };
 }

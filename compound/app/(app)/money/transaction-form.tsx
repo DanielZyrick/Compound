@@ -59,6 +59,7 @@ export function TransactionForm({
   const [goalId, setGoalId] = useState<string>(existing?.goalId ?? "");
   const [errors, setErrors] = useState<string[]>([]);
   const [saved, setSaved] = useState<string | null>(null);
+  const [budgetNote, setBudgetNote] = useState<{ text: string; over: boolean } | null>(null);
   const [pending, startTransition] = useTransition();
   const amountRef = useRef<HTMLInputElement>(null);
   const idPrefix = existing ? `tx-${existing.id}` : "quick-add";
@@ -76,6 +77,7 @@ export function TransactionForm({
     event.preventDefault();
     setErrors([]);
     setSaved(null);
+    setBudgetNote(null);
     if (!categoryId) return setErrors(["Choose a category."]);
     startTransition(async () => {
       const result = await saveTransaction({
@@ -92,6 +94,7 @@ export function TransactionForm({
       // Ready for the next one: keep the kind and date, clear the rest.
       const name = categories.find((c) => c.id === categoryId)?.name ?? "";
       setSaved(`Saved ${formatMoney(preview ?? 0, currency)} · ${name}`);
+      setBudgetNote(result.budget ?? null);
       setAmount("");
       setNote("");
       setCategoryId(null);
@@ -220,10 +223,17 @@ export function TransactionForm({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         {saved ? (
-          <p role="status" className="flex items-center gap-1 text-sm text-success">
-            <Check className="size-4" />
-            {saved}
-          </p>
+          <div role="status" className="text-sm">
+            <p className="flex items-center gap-1 text-success">
+              <Check className="size-4" />
+              {saved}
+            </p>
+            {budgetNote && (
+              <p className={cn("mt-0.5", budgetNote.over ? "font-medium text-destructive" : "text-muted-foreground")}>
+                {budgetNote.text}
+              </p>
+            )}
+          </div>
         ) : existing ? (
           <Button type="button" variant="ghost" className="text-destructive" disabled={pending} onClick={remove}>
             <Trash2 />

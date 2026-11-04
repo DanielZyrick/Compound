@@ -178,12 +178,23 @@ test("set a monthly budget and watch it fill up, then go over", async ({ page, c
   await expect(budget).toContainText("₱1,000.00 left");
 
   // Past 80%: almost there. Then over.
+  const form = page.locator("#quick-add");
   await add(page, "850", "Food", "Groceries");
+  await expect(form.getByRole("status")).toContainText("₱150.00 left in Food this month");
   await expect(food).toContainText("₱150.00 left · almost there");
+
+  // Today: what's left this month, under spent today.
+  await open(page, "/today");
+  await expect(page.getByRole("region", { name: "Today at a glance" })).toContainText("₱150.00 left this month");
+  await open(page, "/money");
+
   await add(page, "300", "Food", "Dinner out");
+  await expect(form.getByRole("status")).toContainText("₱150.00 over your Food budget this month");
   await expect(food).toContainText("₱150.00 over");
   await expect(budget).toContainText("₱150.00 over");
   await expect(budget).toContainText("Over budget");
+  await open(page, "/today");
+  await expect(page.getByRole("region", { name: "Today at a glance" })).toContainText("₱150.00 over budget this month");
 
   // Removing the budget brings back the plain share of spending.
   await open(page, "/money/categories");

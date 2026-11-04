@@ -10,10 +10,12 @@ type Props = {
   stepsThisWeek: number;
   spentCents: number;
   currency: string;
+  /** This month's budgets, when the user has any. */
+  budget: { left: number; over: string[] } | null;
 };
 
 /** Today's numbers at a glance: one row on wide screens, two by two on phones. */
-export function StatsPill({ streak, habitsDone, habitsDue, stepsThisWeek, spentCents, currency }: Props) {
+export function StatsPill({ streak, habitsDone, habitsDue, stepsThisWeek, spentCents, currency, budget }: Props) {
   return (
     <section
       aria-label="Today at a glance"
@@ -28,7 +30,22 @@ export function StatsPill({ streak, habitsDone, habitsDue, stepsThisWeek, spentC
       />
       <Stat icon={Target} iconClass="text-primary" value={String(stepsThisWeek)} label={stepsThisWeek === 1 ? "step this week" : "steps this week"} />
       <Link href="/money" className="bg-card hover:bg-muted">
-        <Stat icon={Wallet} iconClass="text-primary" value={formatMoney(spentCents, currency)} label="spent today" bare />
+        <Stat icon={Wallet} iconClass="text-primary" value={formatMoney(spentCents, currency)} label="spent today" bare>
+          {budget && (
+            <span className="block text-xs">
+              {budget.left < 0 ? (
+                <span className="font-medium text-destructive">
+                  {formatMoney(-budget.left, currency)} over budget this month
+                </span>
+              ) : (
+                <span className="text-muted-foreground">{formatMoney(budget.left, currency)} left this month</span>
+              )}
+              {budget.left >= 0 && budget.over.length > 0 && (
+                <span className="text-destructive"> · {budget.over.join(", ")} over</span>
+              )}
+            </span>
+          )}
+        </Stat>
       </Link>
     </section>
   );
@@ -40,6 +57,7 @@ function Stat({
   value,
   label,
   bare = false,
+  children,
 }: {
   icon: LucideIcon;
   iconClass: string;
@@ -47,6 +65,8 @@ function Stat({
   label: string;
   /** Without its own background, when wrapped in a link. */
   bare?: boolean;
+  /** An extra line under the label. */
+  children?: React.ReactNode;
 }) {
   return (
     <p className={cn("flex items-center gap-2 px-4 py-2.5 lg:px-5", !bare && "bg-card")}>
@@ -54,6 +74,7 @@ function Stat({
       <span className="min-w-0 text-sm">
         <span className="font-semibold tabular-nums">{value}</span>{" "}
         <span className="text-muted-foreground">{label}</span>
+        {children}
       </span>
     </p>
   );
