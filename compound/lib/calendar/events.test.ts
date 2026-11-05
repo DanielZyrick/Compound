@@ -72,13 +72,13 @@ describe("groupByDay", () => {
 
   it("puts timed events on their local day, in order", () => {
     const [today, tomorrow] = groupByDay(events, "2026-11-03", 2, "Asia/Manila");
-    expect(today.timed.map((e) => e.title)).toEqual(["Team standup", "Lunch with Ana", "Portfolio review"]);
+    expect(today.timed.map((e) => e.title)).toEqual(["Team standup", "Lunch with Ana", "Design sync", "Portfolio review"]);
     expect(today.allDay).toEqual([]);
     expect(tomorrow.allDay.map((e) => e.title)).toEqual(["Mom's birthday"]);
   });
 
   it("shows a multi-day all-day event on every day it covers", () => {
-    const trip: CalendarEvent = { id: "t", title: "Trip", allDay: true, start: "2026-11-03", end: "2026-11-06", location: null, link: null };
+    const trip: CalendarEvent = { id: "t", title: "Trip", allDay: true, start: "2026-11-03", end: "2026-11-06", location: null, link: null, colorId: null };
     const days = groupByDay([trip], "2026-11-02", 5, "UTC");
     expect(days.map((d) => d.allDay.length)).toEqual([0, 1, 1, 1, 0]);
   });

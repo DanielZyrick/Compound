@@ -1,88 +1,123 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
-import { describeStartsIn, groupByDay, nextEvent } from "@/lib/calendar/events";
+import { groupByDay } from "@/lib/calendar/events";
 import { getSchedule } from "@/lib/calendar/queries";
-import { formatLongDate, todayIn } from "@/lib/dates/calendar";
+import { blocksForDay, hourRange, layoutDay, mondayOf, weekLabel } from "@/lib/calendar/week";
+import { addDays, todayIn } from "@/lib/dates/calendar";
+import { cn } from "@/lib/utils";
 import { Reconnect } from "../today/schedule-card";
-import { DayEvents } from "./event-list";
+import { WeekCalendar, type WeekDay } from "./week-calendar";
 
 export const metadata: Metadata = { title: "Schedule" };
 
-const DAYS = 7;
-
-export default function SchedulePage() {
+export default function SchedulePage({ searchParams }: PageProps<"/schedule">) {
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-8 md:py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
-      <p className="mt-1 text-muted-foreground">The next 7 days from your Google Calendar.</p>
-
-      <div className="mt-8">
-        <Suspense fallback={<div aria-hidden className="h-96 animate-pulse rounded-2xl bg-muted" />}>
-          <Week />
-        </Suspense>
-      </div>
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 md:py-10">
+      <Suspense fallback={<div aria-hidden className="h-[32rem] animate-pulse rounded-2xl bg-muted" />}>
+        <Week searchParams={searchParams} />
+      </Suspense>
     </main>
   );
 }
 
-async function Week() {
+/** ?week=YYYY-MM-DD shows the week containing that date; anything else shows this week. */
+function weekFrom(param: unknown, today: string): string {
+  const valid = typeof param === "string" && /^\d{4}-\d{2}-\d{2}$/.test(param) && !Number.isNaN(Date.parse(param));
+  return mondayOf(valid ? param : today);
+}
+
+async function Week({ searchParams }: Pick<PageProps<"/schedule">, "searchParams">) {
   const user = await requireOnboardedUser();
   const today = todayIn(user.timezone);
-  const result = await getSchedule(user, today, DAYS);
+  const monday = weekFrom((await searchParams).week, today);
+  const thisWeek = monday === mondayOf(today);
+  const result = await getSchedule(user, monday, 7);
+
+  const header = (
+    <header className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
+        <p className="mt-1 text-sm text-muted-foreground">From your Google Calendar, read-only.</p>
+      </div>
+      {result.status !== "not-connected" && (
+        <nav aria-label="Week" className="flex items-center gap-2">
+          <Link
+            href="/schedule"
+            aria-disabled={thisWeek}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), thisWeek && "pointer-events-none opacity-50")}
+          >
+            Today
+          </Link>
+          <Link
+            href={`/schedule?week=${addDays(monday, -7)}`}
+            aria-label="Previous week"
+            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+          >
+            <ChevronLeft />
+          </Link>
+          <span className="min-w-36 text-center text-sm font-medium tabular-nums">{weekLabel(monday)}</span>
+          <Link
+            href={`/schedule?week=${addDays(monday, 7)}`}
+            aria-label="Next week"
+            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+          >
+            <ChevronRight />
+          </Link>
+        </nav>
+      )}
+    </header>
+  );
 
   if (result.status === "not-connected") {
     return (
-      <div className="rounded-2xl border border-dashed p-8 text-center">
-        <p className="font-medium">See your week here.</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Connect Google Calendar to see your events next to your habits and goals. Compound can only read it.
-        </p>
-        <a href="/api/calendar/connect" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
-          <CalendarDays />
-          Connect Google Calendar
-        </a>
-      </div>
+      <>
+        {header}
+        <div className="mt-8 rounded-2xl border border-dashed p-8 text-center">
+          <p className="font-medium">See your week here.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Connect Google Calendar to see your events next to your habits and goals. Compound can only read it.
+          </p>
+          <a href="/api/calendar/connect" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
+            <CalendarDays />
+            Connect Google Calendar
+          </a>
+        </div>
+      </>
     );
   }
-  if (result.status === "revoked") return <Reconnect />;
-  if (result.status === "unavailable") {
-    return <p className="text-muted-foreground">Google Calendar isn&apos;t answering right now. Try again later.</p>;
+  if (result.status !== "ok") {
+    return (
+      <>
+        {header}
+        <div className="mt-8">
+          {result.status === "revoked" ? (
+            <Reconnect />
+          ) : (
+            <p className="text-muted-foreground">Google Calendar isn&apos;t answering right now. Try again later.</p>
+          )}
+        </div>
+      </>
+    );
   }
 
-  const days = groupByDay(result.events, today, DAYS, user.timezone);
-  const next = nextEvent(days[0].timed, new Date());
+  const grouped = groupByDay(result.events, monday, 7, user.timezone);
+  const days: WeekDay[] = grouped.map((day) => ({
+    date: day.date,
+    allDay: day.allDay.map(({ id, title }) => ({ id, title })),
+    blocks: layoutDay(blocksForDay(result.events, day.date, user.timezone)),
+  }));
+  const hours = hourRange(days.flatMap((d) => d.blocks));
 
   return (
-    <ol className="flex flex-col gap-6">
-      {days.map((day, i) => {
-        const empty = day.allDay.length === 0 && day.timed.length === 0;
-        return (
-          <li key={day.date} aria-labelledby={`day-${day.date}`}>
-            <h2 id={`day-${day.date}`} className="text-sm font-semibold">
-              {i === 0 ? "Today" : i === 1 ? "Tomorrow" : formatLongDate(day.date).split(",")[0]}
-              <span className="ml-2 font-normal text-muted-foreground">{formatLongDate(day.date).split(", ")[1]}</span>
-            </h2>
-            <div className="mt-2">
-              {empty ? (
-                <p className="text-sm text-muted-foreground">Nothing planned.</p>
-              ) : (
-                <DayEvents
-                  day={day}
-                  timezone={user.timezone}
-                  highlight={
-                    i === 0 && next
-                      ? { id: next.event.id, label: next.minutes === 0 ? "Now" : `Next · ${describeStartsIn(next.minutes)}` }
-                      : undefined
-                  }
-                />
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+    <>
+      {header}
+      <div className="mt-6">
+        <WeekCalendar days={days} hours={hours} today={today} timezone={user.timezone} />
+      </div>
+    </>
   );
 }

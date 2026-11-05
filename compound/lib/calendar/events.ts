@@ -14,6 +14,7 @@ export type CalendarEvent = {
   end: string;
   location: string | null;
   link: string | null; // the event in Google Calendar
+  colorId: string | null; // the colour picked in Google Calendar ("1" to "11"), if any
 };
 
 type GoogleTime = { dateTime?: string; date?: string };
@@ -23,6 +24,7 @@ export type GoogleEvent = {
   summary?: string;
   location?: string;
   htmlLink?: string;
+  colorId?: string;
   start?: GoogleTime;
   end?: GoogleTime;
   attendees?: { self?: boolean; responseStatus?: string }[];
@@ -38,7 +40,18 @@ export function parseGoogleEvents(items: GoogleEvent[]): CalendarEvent[] {
     const end = item.end.dateTime ?? item.end.date;
     if (!start || !end) return [];
     const link = item.htmlLink?.startsWith("https://") ? item.htmlLink : null;
-    return [{ id: item.id, title: item.summary?.trim() || "(No title)", allDay, start, end, location: item.location ?? null, link }];
+    return [
+      {
+        id: item.id,
+        title: item.summary?.trim() || "(No title)",
+        allDay,
+        start,
+        end,
+        location: item.location ?? null,
+        link,
+        colorId: item.colorId ?? null,
+      },
+    ];
   });
 }
 
@@ -115,7 +128,10 @@ export function describeStartsIn(minutes: number): string {
   return m === 0 ? `in ${h} h` : `in ${h} h ${m} min`;
 }
 
-/** Demo mode (end-to-end tests, no Google): a believable day and week around `today`. */
+/**
+ * Demo mode (end-to-end tests, no Google): a believable few days starting
+ * from `today` (the first day asked for). Lunch and the design sync overlap.
+ */
 export function demoEvents(today: CalendarDate, timezone: string): CalendarEvent[] {
   const at = (date: CalendarDate, hour: number, minute = 0) =>
     new Date(startOfDayIn(date, timezone).getTime() + (hour * 60 + minute) * 60_000).toISOString();
@@ -127,12 +143,23 @@ export function demoEvents(today: CalendarDate, timezone: string): CalendarEvent
     end: at(date, ...to),
     location,
     link: null,
+    colorId: null,
   });
   return [
     timed("demo-1", "Team standup", today, [9, 30], [9, 45], "Google Meet"),
     timed("demo-2", "Lunch with Ana", today, [12, 30], [13, 30], "Salcedo Market"),
+    timed("demo-7", "Design sync", today, [13, 0], [13, 30]),
     timed("demo-3", "Portfolio review", today, [16, 0], [17, 0]),
-    { id: "demo-4", title: "Mom's birthday", allDay: true, start: addDays(today, 1), end: addDays(today, 2), location: null, link: null },
+    {
+      id: "demo-4",
+      title: "Mom's birthday",
+      allDay: true,
+      start: addDays(today, 1),
+      end: addDays(today, 2),
+      location: null,
+      link: null,
+      colorId: "4",
+    },
     timed("demo-5", "Dentist", addDays(today, 2), [10, 0], [11, 0], "Makati Medical Center"),
     timed("demo-6", "Run club", addDays(today, 3), [6, 0], [7, 0]),
   ];

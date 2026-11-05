@@ -42,13 +42,42 @@ test("today's events on Today, and the week on Schedule", async ({ page, context
   await expect(card.getByText("Salcedo Market")).toBeVisible();
   await expect(card.getByText("Mom's birthday")).toBeHidden(); // tomorrow
 
-  // The week: tomorrow's all-day event and later days.
+  // The week grid. The demo calendar starts on the week's Monday: four events
+  // that day (lunch and the design sync overlap), an all-day birthday on
+  // Tuesday, the dentist on Wednesday.
   await card.getByRole("link", { name: "This week" }).click();
   await expect(page).toHaveURL(/\/schedule$/);
+  await page.waitForLoadState("networkidle");
   const main = page.getByRole("main");
-  await expect(main.getByRole("listitem").filter({ has: page.getByRole("heading", { name: /^Tomorrow/ }) })).toContainText(
-    "Mom's birthday",
-  );
-  await expect(main.getByText("Dentist")).toBeVisible();
-  await expect(main.getByText("Run club")).toBeVisible();
+  const event = (name: RegExp) => main.getByRole("group", { name });
+
+  if (test.info().project.name === "mobile") {
+    // Phones: one day at a time, picked from the strip.
+    await main.getByRole("tab", { name: /^Monday/ }).click();
+    await expect(event(/^Team standup, 9:30 AM/)).toBeVisible();
+    await expect(event(/^Design sync/)).toBeVisible();
+    await main.getByRole("tab", { name: /^Tuesday/ }).click();
+    await expect(main.getByRole("list", { name: "All day" })).toContainText("Mom's birthday");
+    await main.getByRole("tab", { name: /^Wednesday/ }).click();
+    await expect(event(/^Dentist, 10:00 AM – 11:00 AM, Makati Medical Center$/)).toBeVisible();
+  } else {
+    await expect(event(/^Team standup, 9:30 AM – 9:45 AM/)).toBeVisible();
+    await expect(event(/^Dentist, 10:00 AM – 11:00 AM/)).toBeVisible();
+    await expect(main.getByRole("list", { name: "All day" }).filter({ hasText: "Mom's birthday" })).toBeVisible();
+
+    // Overlapping events share the width, side by side.
+    const lunch = await event(/^Lunch with Ana/).boundingBox();
+    const sync = await event(/^Design sync/).boundingBox();
+    expect(lunch && sync && sync.x > lunch.x && lunch.width < 120).toBeTruthy();
+  }
+
+  // Next week, and back with Today.
+  const range = main.getByRole("navigation", { name: "Week" });
+  const thisWeek = await range.textContent();
+  await range.getByRole("link", { name: "Next week" }).click();
+  await expect(page).toHaveURL(/\/schedule\?week=\d{4}-\d{2}-\d{2}$/);
+  await expect(range).not.toHaveText(thisWeek!);
+  await range.getByRole("link", { name: "Today" }).click();
+  await expect(page).toHaveURL(/\/schedule$/);
+  await expect(range).toHaveText(thisWeek!);
 });

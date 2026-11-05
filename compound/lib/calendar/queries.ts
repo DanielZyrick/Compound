@@ -44,7 +44,7 @@ export async function getSchedule(
       singleEvents: "true", // repeating events as separate days
       orderBy: "startTime",
       maxResults: "250",
-      fields: "items(id,status,summary,location,htmlLink,start,end,attendees(self,responseStatus))",
+      fields: "items(id,status,summary,location,htmlLink,colorId,start,end,attendees(self,responseStatus))",
     }).toString();
 
     const response = await fetch(url, {
