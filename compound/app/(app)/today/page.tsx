@@ -116,8 +116,9 @@ async function TodayContent() {
         )}
         <GoalsTable rows={goalRows} total={active.length} />
 
-        <div className="grid items-start gap-6 lg:grid-cols-2">
-          <div className="flex flex-col gap-6">
+        {/* grid-cols-1 and min-w-0: a long word (a pasted link) wraps instead of widening the page. */}
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-6">
             {habits.length > 0 ? (
               <HabitChecklist habits={habits} week={week} today={today} />
             ) : (
@@ -138,7 +139,7 @@ async function TodayContent() {
             <NotesCard notes={notes.notes} openCount={notes.openCount} />
           </div>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex min-w-0 flex-col gap-6">
             {/* Streams in on its own, so a slow Google Calendar never holds up the page. */}
             <Suspense fallback={null}>
               <ScheduleCard user={user} today={today} />

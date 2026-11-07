@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { open, signInFreshUser } from "./support";
+import { db, open, signInFreshUser } from "./support";
 
 test("a missing track shows the in-app 404", async ({ page, context }) => {
   await signInFreshUser(context);
@@ -28,4 +28,22 @@ test("the progress page shows stats and habit grids", async ({ page, context }) 
   await expect(page.getByText("Check-ins")).toBeVisible();
   await expect(page.getByText("Drink water", { exact: true })).toBeVisible();
   await expect(page.getByText(/done on 0 of \d+ scheduled days/)).toBeAttached();
+});
+
+test("Today fits the screen even with a long link in a habit or note", async ({ page, context }) => {
+  // A word with no spaces (a pasted link) once widened Today's columns past a phone's edge.
+  const user = await signInFreshUser(context, {
+    habits: [{ name: "https://www.tiktok.com/@someone/live-streak-reminder-every-day" }],
+  });
+  await db
+    .insertInto("notes")
+    .values({ user_id: user.id, title: "Check https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz/edit" })
+    .execute();
+  await open(page, "/today");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  const { page: width, screen } = await page.evaluate(() => ({
+    page: document.documentElement.scrollWidth,
+    screen: document.documentElement.clientWidth,
+  }));
+  expect(width).toBeLessThanOrEqual(screen);
 });
