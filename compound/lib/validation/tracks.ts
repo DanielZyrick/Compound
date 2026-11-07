@@ -32,3 +32,6 @@ export const newTrackSchema = z.discriminatedUnion("type", [aiTrackSchema, readi
 });
 
 export type NewTrackInput = z.input<typeof newTrackSchema>;
+
+/** Archiving a track (hidden, history kept) or restoring it. */
+export const setTrackArchivedSchema = z.object({ id: z.uuid(), archived: z.boolean() });

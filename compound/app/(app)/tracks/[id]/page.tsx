@@ -10,6 +10,7 @@ import { todayIn } from "@/lib/dates/calendar";
 import { isDayOpen } from "@/lib/lessons/rules";
 import { getTrack } from "@/lib/tracks/queries";
 import { cn } from "@/lib/utils";
+import { ArchiveTrack, RestoreTrack } from "../archive-track";
 import { TrackBadges } from "../track-badges";
 
 export const metadata: Metadata = { title: "Learning track" };
@@ -37,9 +38,16 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
   const user = await requireOnboardedUser();
   const track = await getTrack(user.id, id, todayIn(user.timezone));
   if (!track) notFound();
+  const archived = track.status === "archived";
 
   return (
     <>
+      {archived && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/40 p-3 text-sm">
+          <p>This track is archived. It doesn&apos;t show on Learn or Today.</p>
+          <RestoreTrack trackId={track.id} title={track.title} />
+        </div>
+      )}
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">{track.title}</h1>
       <p className="mt-1 text-muted-foreground tabular-nums">
         {track.completedDays.size} of {track.total_days} done
@@ -58,7 +66,7 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
           style={{ width: `${(track.completedDays.size / track.total_days) * 100}%` }}
         />
       </div>
-      {track.nextDay && (
+      {track.nextDay && !archived && (
         <Link
           href={`/tracks/${track.id}/day/${track.nextDay}`}
           className={buttonVariants({ className: "mt-4" })}
@@ -124,6 +132,12 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
           );
         })}
       </ol>
+
+      {!archived && (
+        <div className="mt-8 border-t pt-4">
+          <ArchiveTrack trackId={track.id} title={track.title} />
+        </div>
+      )}
     </>
   );
 }

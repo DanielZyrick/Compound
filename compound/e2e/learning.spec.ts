@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { open, signInFreshUser } from "./support";
+import { alerts, db, open, signInFreshUser } from "./support";
 
 // Learning tracks in AI demo mode (forced by playwright.config.ts), so these
 // run without an API key and cost nothing.
@@ -119,4 +119,57 @@ test("finishing a day opens the next one early, in order", async ({ page, contex
   await open(page, trackUrl);
   await expect(page.getByText("1 of 21 done")).toBeVisible();
   await expect(page.getByRole("link", { name: "Continue with day 2" })).toBeVisible();
+});
+
+test("the same track can't be created twice, and tracks can be archived and restored", async ({ page, context }) => {
+  test.setTimeout(60_000); // two tracks, an archive and a restore: more steps than most tests
+  const user = await signInFreshUser(context);
+
+  async function fillNewTrack(topic: string) {
+    await open(page, "/tracks/new");
+    await page.getByText("Skill", { exact: true }).click();
+    await page.getByLabel("What do you want to learn?").fill(topic);
+    await page.getByText("Beginner", { exact: true }).click();
+  }
+
+  // A double click while the plan is being drafted makes one track, not two.
+  await fillNewTrack("SQL for data analysis");
+  await page.getByRole("button", { name: "Create track" }).dblclick();
+  await expect(page).toHaveURL(/\/tracks\/[0-9a-f-]{36}$/);
+  const trackUrl = page.url();
+  const tracks = () => db.selectFrom("tracks").select("id").where("user_id", "=", user.id).execute();
+  expect(await tracks()).toHaveLength(1);
+
+  // The same topic again (any case or spacing) is refused, with a link to the one you have.
+  await fillNewTrack("  sql FOR data analysis. ");
+  await page.getByRole("button", { name: "Create track" }).click();
+  await expect(alerts(page)).toContainText("You already have an active track");
+  await alerts(page).getByRole("link", { name: "Open that track" }).click();
+  await expect(page).toHaveURL(trackUrl);
+  expect(await tracks()).toHaveLength(1);
+
+  // Archive it: gone from Learn, Today and Habits, listed under Archived.
+  await page.waitForLoadState("networkidle");
+  const title = (await page.getByRole("heading", { level: 1 }).textContent())!;
+  await page.getByRole("button", { name: "Archive track" }).click();
+  await page.getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(page.getByText("This track is archived.")).toBeVisible();
+
+  await open(page, "/tracks");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("link", { name: title, exact: true })).toBeHidden();
+  await main.locator("summary", { hasText: "Archived" }).click();
+  await expect(main.getByRole("button", { name: `Restore ${title}` })).toBeVisible();
+  await open(page, "/today");
+  await expect(page.getByRole("checkbox", { name: /Learn:/ })).toBeHidden();
+
+  // Restore it: back on Learn, with its habit.
+  await open(page, "/tracks");
+  await main.locator("summary", { hasText: "Archived" }).click();
+  await main.getByRole("button", { name: `Restore ${title}` }).click();
+  await expect(main.getByRole("button", { name: `Restore ${title}` })).toBeHidden();
+  await open(page, "/tracks");
+  await expect(main.getByRole("link", { name: new RegExp(title) }).first()).toBeVisible();
+  await open(page, "/today");
+  await expect(page.getByRole("checkbox", { name: /Learn:/ })).toBeVisible();
 });

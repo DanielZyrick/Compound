@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useState } from "react";
+import Link from "next/link";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { BookOpen, Sparkles } from "lucide-react";
 import { OptionGroup } from "@/components/option-group";
 import { Button } from "@/components/ui/button";
@@ -32,13 +33,25 @@ export function NewTrackForm({ demoMode, prefill }: { demoMode: boolean; prefill
   const parsed = newTrackSchema.safeParse(input);
   const clientErrors = parsed.success ? [] : [...new Set(parsed.error.issues.map((i) => i.message))];
 
+  const submitting = useRef(false);
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setTriedSubmit(true);
     // Instant feedback here; the server validates again.
     if (!parsed.success) return;
+    // A second click before the first answer is ignored: pending only flips on
+    // the next render, and the AI takes a while, so a fast double click would
+    // otherwise send two requests.
+    if (submitting.current) return;
+    submitting.current = true;
     startTransition(() => submit(input));
   }
+
+  // The answer came back (an error; success navigates away): allow another try.
+  useEffect(() => {
+    submitting.current = false;
+  }, [state]);
 
   const errors = triedSubmit && clientErrors.length > 0 ? clientErrors : state.errors;
 
@@ -129,6 +142,13 @@ export function NewTrackForm({ demoMode, prefill }: { demoMode: boolean; prefill
           {errors.map((error) => (
             <li key={error}>{error}</li>
           ))}
+          {state.existingTrackId && errors === state.errors && (
+            <li>
+              <Link href={`/tracks/${state.existingTrackId}`} className="font-medium underline underline-offset-4">
+                Open that track
+              </Link>
+            </li>
+          )}
         </ul>
       )}
 

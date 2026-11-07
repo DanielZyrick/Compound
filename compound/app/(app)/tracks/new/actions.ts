@@ -1,5 +1,6 @@
 "use server";
 
+import { sql } from "kysely";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AiError } from "@/lib/ai/errors";
@@ -11,11 +12,16 @@ import type { TrackLevel, TrackType } from "@/lib/db/types";
 import { getLearnerContext } from "@/lib/profile/queries";
 import { findReadingPlan } from "@/lib/reading/plans";
 import { shorten } from "@/lib/text";
+import { findDuplicate } from "@/lib/tracks/duplicate";
 import { demoPlan, PLAN_SYSTEM_PROMPT, planPrompt, trackPlanSchema } from "@/lib/tracks/plan";
 import { MAX_ACTIVE_HABITS } from "@/lib/validation/habits";
 import { MAX_ACTIVE_TRACKS, newTrackSchema } from "@/lib/validation/tracks";
 
-export type CreateTrackState = { errors: string[] };
+export type CreateTrackState = {
+  errors: string[];
+  /** Set when the same track already exists, so the form can link to it. */
+  existingTrackId?: string;
+};
 
 const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6] as const;
 
@@ -52,11 +58,17 @@ export async function createTrack(
   // Check the cheap limits first, so a request that can't be saved never
   // spends an AI call.
   const [activeTracks, activeHabits] = await Promise.all([
-    db.selectFrom("tracks").select("id").where("user_id", "=", user.id).where("status", "=", "active").execute(),
+    activeTracksOf(user.id),
     db.selectFrom("habits").select(["id", "name"]).where("user_id", "=", user.id).where("archived_at", "is", null).execute(),
   ]);
   if (activeTracks.length >= MAX_ACTIVE_TRACKS) {
     return { errors: [`You can have up to ${MAX_ACTIVE_TRACKS} active tracks. Finish or archive one first.`] };
+  }
+  // The same topic twice is almost always a double click while the AI was drafting.
+  const topic = request.type === "reading" ? findReadingPlan(request.readingPlan)?.title : request.topic;
+  const duplicate = topic ? findDuplicate(activeTracks, { topic, type: request.type }) : undefined;
+  if (duplicate) {
+    return { errors: [`You already have an active track for "${duplicate.title}".`], existingTrackId: duplicate.id };
   }
   if (request.addHabit && activeHabits.length >= MAX_ACTIVE_HABITS) {
     return {
@@ -118,12 +130,28 @@ export async function createTrack(
   redirect(`/tracks/${trackId}`);
 }
 
+/** The user's active tracks, for the limit and the duplicate check. */
+function activeTracksOf(userId: string, executor: Pick<typeof db, "selectFrom"> = db) {
+  return executor
+    .selectFrom("tracks")
+    .select(["id", "title", "topic", "type"])
+    .where("user_id", "=", userId)
+    .where("status", "=", "active")
+    .execute();
+}
+
 async function saveTrack(
   user: { id: string; timezone: string },
   draft: TrackDraft,
   activeHabits: { id: string; name: string }[],
 ): Promise<string> {
   return db.transaction().execute(async (trx) => {
+    // One create at a time per user, then check again: two requests sent at
+    // once (a double click) both passed the check above while the AI worked.
+    await sql`select pg_advisory_xact_lock(hashtext(${user.id}))`.execute(trx);
+    const twin = findDuplicate(await activeTracksOf(user.id, trx), draft);
+    if (twin) return twin.id;
+
     let habitId: string | null = null;
     if (draft.habitName) {
       // Reuse an active habit with the same name instead of adding a duplicate.

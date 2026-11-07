@@ -76,3 +76,14 @@ export async function getTrack(userId: string, trackId: string, today: CalendarD
     nextDay: nextTrackDay(track.total_days, completedDays),
   };
 }
+
+/** The user's archived tracks, newest first, for Learn's Archived list. */
+export function getArchivedTracks(userId: string) {
+  return db
+    .selectFrom("tracks")
+    .select(["id", "title"])
+    .where("user_id", "=", userId)
+    .where("status", "=", "archived")
+    .orderBy("created_at", "desc")
+    .execute();
+}
