@@ -36,7 +36,8 @@ export async function loadRecommendations(input?: unknown): Promise<LoadRecommen
 
   const [learner, tracks] = await Promise.all([
     getLearnerContext(user.id),
-    db.selectFrom("tracks").select("title").where("user_id", "=", user.id).where("status", "=", "active").execute(),
+    // Topics, as typed when each track was started: the closest match to the ideas.
+    db.selectFrom("tracks").select("topic").where("user_id", "=", user.id).where("status", "!=", "archived").execute(),
   ]);
   const avoid = fresh && state.saved ? state.saved.tracks.map((t) => t.topic) : [];
 
@@ -47,7 +48,7 @@ export async function loadRecommendations(input?: unknown): Promise<LoadRecommen
       tier: "smart",
       schema: recommendationsSchema,
       system: RECOMMEND_SYSTEM_PROMPT,
-      prompt: recommendPrompt({ learner: learner ?? "", current: tracks.map((t) => t.title), avoid }),
+      prompt: recommendPrompt({ learner: learner ?? "", current: tracks.map((t) => t.topic), avoid }),
       effort: "low",
       demo: () => demoRecommendations(avoid),
     });

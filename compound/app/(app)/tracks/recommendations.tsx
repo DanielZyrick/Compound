@@ -6,7 +6,9 @@ import { RefreshCw, Sparkles, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { RecommendationsState } from "@/lib/recommendations/queries";
+import type { TrackType } from "@/lib/db/types";
 import type { TrackIdea } from "@/lib/recommendations/recommend";
+import { findDuplicate } from "@/lib/tracks/duplicate";
 import { loadRecommendations } from "./recommendation-actions";
 import { TrackBadges } from "./track-badges";
 
@@ -26,7 +28,14 @@ function startHref(idea: TrackIdea) {
  * they're missing or older than the profile, the card asks for new ones once
  * it's on screen, so the AI is only called for a real visit.
  */
-export function Recommendations({ initial }: { initial: RecommendationsState }) {
+export function Recommendations({
+  initial,
+  started,
+}: {
+  initial: RecommendationsState;
+  /** The user's tracks (not archived), to mark ideas already started. */
+  started: { id: string; topic: string; type: TrackType }[];
+}) {
   const [saved, setSaved] = useState(initial.status === "no-profile" ? null : initial.saved);
   const [error, setError] = useState<string | null>(null);
   const [loading, startLoading] = useTransition();
@@ -99,25 +108,41 @@ export function Recommendations({ initial }: { initial: RecommendationsState }) 
 
       {saved ? (
         <ul aria-busy={loading} className="mt-4 flex flex-col gap-3">
-          {saved.tracks.map((idea) => (
-            <li key={idea.topic} className="flex flex-col gap-2 rounded-xl border p-4 sm:flex-row sm:items-center">
-              <div className="min-w-0 flex-1">
-                <p className="font-medium break-words">{idea.topic}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">{idea.reason}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <TrackBadges type={idea.type} level={idea.level} planSource="ai" />
-                  <Badge variant="secondary">{idea.totalDays} days</Badge>
+          {saved.tracks.map((idea) => {
+            const track = findDuplicate(started, idea);
+            return (
+              <li key={idea.topic} className="flex flex-col gap-2 rounded-xl border p-4 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium break-words">{idea.topic}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{idea.reason}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <TrackBadges type={idea.type} level={idea.level} planSource="ai" />
+                    <Badge variant="secondary">{idea.totalDays} days</Badge>
+                  </div>
                 </div>
-              </div>
-              <Link
-                href={startHref(idea)}
-                aria-label={`Start ${idea.topic}`}
-                className={buttonVariants({ variant: "outline", size: "sm", className: "self-start sm:self-center" })}
-              >
-                Start this
-              </Link>
-            </li>
-          ))}
+                {track ? (
+                  <span className="flex items-center gap-2 self-start text-sm sm:self-center">
+                    <Badge variant="secondary">Started</Badge>
+                    <Link
+                      href={`/tracks/${track.id}`}
+                      aria-label={`Open ${idea.topic}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Open
+                    </Link>
+                  </span>
+                ) : (
+                  <Link
+                    href={startHref(idea)}
+                    aria-label={`Start ${idea.topic}`}
+                    className={buttonVariants({ variant: "outline", size: "sm", className: "self-start sm:self-center" })}
+                  >
+                    Start this
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         !error && (

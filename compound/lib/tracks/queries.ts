@@ -11,6 +11,7 @@ export async function getTracks(userId: string) {
     .select((eb) => [
       "tracks.id",
       "tracks.title",
+      "tracks.topic",
       "tracks.type",
       "tracks.level",
       "tracks.total_days",

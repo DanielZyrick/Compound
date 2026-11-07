@@ -43,7 +43,10 @@ export default function TracksPage() {
 
 async function RecommendedTracks() {
   const user = await requireOnboardedUser();
-  return <Recommendations initial={await getRecommendations(user.id)} />;
+  const [initial, tracks] = await Promise.all([getRecommendations(user.id), getTracks(user.id)]);
+  // Ideas you've already started show as Started, so they can't be started twice.
+  const started = tracks.map(({ id, topic, type }) => ({ id, topic, type }));
+  return <Recommendations initial={initial} started={started} />;
 }
 
 async function TrackList() {

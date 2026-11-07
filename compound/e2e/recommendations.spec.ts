@@ -39,4 +39,11 @@ test("a recommended track opens the form filled in, and can be created", async (
   await expect(page.getByLabel("What do you want to learn?")).toHaveValue(topic);
   await page.getByRole("button", { name: "Create track" }).click();
   await expect(page).toHaveURL(/\/tracks\/[0-9a-f-]{36}$/);
+  const trackUrl = page.url();
+
+  // Back on Learn, that idea shows as Started and opens the track, so it can't be started twice.
+  await open(page, "/tracks");
+  await expect(card.getByRole("link", { name: `Start ${topic}` })).toBeHidden();
+  await expect(card.getByRole("link", { name: `Open ${topic}` })).toHaveAttribute("href", new URL(trackUrl).pathname);
+  await expect(starts).toHaveCount(2); // the other two ideas can still be started
 });
