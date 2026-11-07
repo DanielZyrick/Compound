@@ -30,14 +30,25 @@ test("create a skill track and finish its first lesson", async ({ page, context 
   expect(html).not.toContain("sampleAnswer");
 
   // Two multiple-choice questions, graded on the server.
-  for (const index of [0, 1]) {
-    const exercise = page.locator("section").filter({ hasText: `Exercise ${index + 1}` });
-    // Tap the first choice the way a person would: the whole card is its label.
-    await exercise.locator("label").first().click();
-    await expect(exercise.getByRole("radio").first()).toBeChecked();
-    await exercise.getByRole("button", { name: "Check answer" }).click();
-    await expect(exercise.getByText(/^(Correct|Not quite)$/)).toBeVisible();
-  }
+  const first = page.locator("section").filter({ hasText: "Exercise 1" });
+  // Clicking the circle itself selects the choice, and switching works.
+  await first.locator("label").nth(1).locator("span[aria-hidden]").click();
+  await expect(first.getByRole("radio").nth(1)).toBeChecked();
+  await first.locator("label").nth(0).locator("span[aria-hidden]").click();
+  await expect(first.getByRole("radio").nth(0)).toBeChecked();
+  await expect(first.getByRole("radio").nth(1)).not.toBeChecked();
+  await first.getByRole("button", { name: "Check answer" }).click();
+  await expect(first.getByText(/^(Correct|Not quite)$/)).toBeVisible();
+
+  // The second, with nothing chosen yet: the stuck case. The browser has filled
+  // a circle React doesn't know about (a click while the page was still
+  // loading); clicking it again must still choose it, and that's the answer sent.
+  const second = page.locator("section").filter({ hasText: "Exercise 2" });
+  await second.getByRole("radio").nth(2).evaluate((el) => ((el as HTMLInputElement).checked = true));
+  await second.locator("label").nth(2).locator("span[aria-hidden]").click();
+  await second.getByRole("button", { name: "Check answer" }).click();
+  await expect(second.getByText(/^(Correct|Not quite)$/)).toBeVisible();
+  await expect(second.getByRole("radio").nth(2)).toBeChecked(); // the answer that was sent
 
   // One written answer: in demo mode it's shown with an example, not graded.
   const written = page.locator("section").filter({ hasText: "Exercise 3" });

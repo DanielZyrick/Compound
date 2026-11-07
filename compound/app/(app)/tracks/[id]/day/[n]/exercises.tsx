@@ -46,19 +46,46 @@ export function MultipleChoiceExercise({ lessonId, index, question, choices, res
               key={i}
               className={cn(
                 "flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                !result && "hover:bg-muted has-checked:border-primary has-checked:bg-primary/5",
+                !result && "hover:bg-muted",
+                !result && isChosen && "border-primary bg-primary/5",
                 result && isAnswer && "border-success bg-success/10",
                 result && isChosen && !isAnswer && "border-destructive bg-destructive/5",
                 result && "cursor-default",
               )}
             >
+              {/*
+                The native radio stays for keyboards and screen readers, but the
+                circle on screen is drawn from React's state, so what you see is
+                always what "Check answer" sends. onClick as well as onChange: a
+                click on a circle the browser already filled (say, while the page
+                was loading) fires no change event, but must still select it.
+              */}
               <input
                 type="radio"
                 name={name}
                 checked={isChosen}
                 onChange={() => setSelected(i)}
-                className="size-4 accent-primary"
+                onClick={() => setSelected(i)}
+                className="sr-only"
               />
+              <span
+                aria-hidden
+                className={cn(
+                  "grid size-5 shrink-0 place-items-center rounded-full border-2 transition-colors",
+                  isChosen ? "border-primary" : "border-muted-foreground/40",
+                  result && isAnswer && "border-success",
+                  result && isChosen && !isAnswer && "border-destructive",
+                )}
+              >
+                {isChosen && (
+                  <span
+                    className={cn(
+                      "size-2.5 rounded-full",
+                      result ? (isAnswer ? "bg-success" : "bg-destructive") : "bg-primary",
+                    )}
+                  />
+                )}
+              </span>
               <span className="flex-1">{choice}</span>
               {result && isAnswer && <Check className="size-4 text-success" aria-label="Correct answer" />}
               {result && isChosen && !isAnswer && <X className="size-4 text-destructive" aria-label="Your answer" />}
