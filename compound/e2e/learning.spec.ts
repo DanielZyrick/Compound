@@ -172,4 +172,12 @@ test("the same track can't be created twice, and tracks can be archived and rest
   await expect(main.getByRole("link", { name: new RegExp(title) }).first()).toBeVisible();
   await open(page, "/today");
   await expect(page.getByRole("checkbox", { name: /Learn:/ })).toBeVisible();
+
+  // Archive straight from Learn, with the card's ⋯ menu.
+  await open(page, "/tracks");
+  await main.getByRole("button", { name: `More for ${title}` }).click();
+  await page.getByRole("menuitem", { name: "Archive" }).click();
+  await main.getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(main.getByRole("button", { name: `More for ${title}` })).toBeHidden(); // its card is gone
+  await expect(main.locator("summary", { hasText: "Archived" })).toBeVisible();
 });
