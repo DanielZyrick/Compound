@@ -13,7 +13,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-2 text-lg font-semibold", className)}>
+    <span className={cn("inline-flex items-center gap-2 font-heading text-xl font-semibold tracking-tight", className)}>
       <LogoMark />
       Compound
     </span>

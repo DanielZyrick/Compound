@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Page not found" };
 // Shown for any URL that doesn't exist, outside the signed-in app.
 export default function NotFound() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-muted bg-dots px-4 py-12">
+    <main className="flex flex-1 items-center justify-center bg-muted bg-grid px-4 py-12">
       <div className="w-full max-w-md rounded-[28px] border bg-card p-8 shadow-card">
         <div className="mb-6 flex justify-center">
           <Logo />

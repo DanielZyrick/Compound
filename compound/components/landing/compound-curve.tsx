@@ -23,7 +23,7 @@ export function CompoundCurve() {
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-      <div className="grid items-center gap-10 rounded-[28px] border bg-muted bg-dots p-8 md:grid-cols-2 md:p-14">
+      <div className="grid items-center gap-10 rounded-[28px] border bg-muted bg-grid p-8 md:grid-cols-2 md:p-14">
         <div>
           <p className="text-sm text-muted-foreground">Why it&apos;s called Compound</p>
           <p className="mt-2 text-7xl font-semibold tracking-tight text-primary tabular-nums">37×</p>

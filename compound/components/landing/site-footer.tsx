@@ -9,7 +9,7 @@ const REPO_URL = "https://github.com/DanielZyrick/Compound";
 export function SiteFooter() {
   return (
     <footer className="mx-auto w-full max-w-6xl px-4 pb-6 sm:px-6">
-      <div className="overflow-hidden rounded-[28px] border bg-muted bg-dots px-8 pt-12 md:px-14">
+      <div className="overflow-hidden rounded-[28px] border bg-muted bg-grid px-8 pt-12 md:px-14">
         <div className="flex flex-col justify-between gap-10 md:flex-row">
           <div>
             <Logo />

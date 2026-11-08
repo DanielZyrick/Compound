@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Sign in" };
 // reads the request (session and ?error=) waits, inside <Suspense>.
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <main className="flex flex-1 items-center justify-center bg-muted bg-dots px-4 py-12">
+    <main className="flex flex-1 items-center justify-center bg-muted bg-grid px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="rounded-[28px] border bg-card p-8 text-center shadow-card">
           <FloatingTile className="mx-auto">

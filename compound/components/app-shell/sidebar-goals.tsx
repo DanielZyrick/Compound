@@ -39,7 +39,7 @@ export async function SidebarGoals() {
 export function SidebarGoalsHeading() {
   return (
     <div className="flex items-center justify-between px-2.5 pb-1">
-      <h2 id="sidebar-goals" className="text-xs font-medium text-muted-foreground">
+      <h2 id="sidebar-goals" className="font-sans text-xs font-medium text-muted-foreground">
         Goals
       </h2>
       <Link

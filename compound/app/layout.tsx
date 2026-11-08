@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
-import { Caveat, Figtree } from "next/font/google";
+import { Caveat, Fraunces, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 
-// next/font downloads the font at build time and serves it from our own
+// next/font downloads the fonts at build time and serves them from our own
 // domain, so there's no request to Google when a page loads.
-const figtree = Figtree({
-  variable: "--font-figtree",
+
+// Text and UI.
+const instrument = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
+});
+
+// Headings: a soft serif, like a printed notebook.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT"],
 });
 
 // Handwriting, for sticky-note titles only.
@@ -23,7 +32,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${figtree.variable} ${caveat.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${instrument.variable} ${fraunces.variable} ${caveat.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

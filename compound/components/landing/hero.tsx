@@ -7,7 +7,7 @@ import { CheckItem, FloatingCard, FloatingTile, ProgressBar } from "./floating";
 export function Hero() {
   return (
     <section className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-      <div className="relative overflow-hidden rounded-[28px] border bg-muted bg-dots px-6 py-20 text-center md:py-28">
+      <div className="relative overflow-hidden rounded-[28px] border bg-muted bg-grid px-6 py-20 text-center md:py-28">
         <HeroDecorations />
 
         <div className="relative mx-auto flex max-w-3xl flex-col items-center">

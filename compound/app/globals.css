@@ -9,8 +9,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-figtree);
-  --font-heading: var(--font-figtree);
+  --font-sans: var(--font-instrument);
+  --font-heading: var(--font-fraunces);
   --font-hand: var(--font-caveat);
 
   --color-background: var(--background);
@@ -47,7 +47,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* --radius is 10px: buttons use rounded-lg, cards rounded-3xl (22px). */
+  /* --radius is 8px: buttons use rounded-lg, cards rounded-3xl (18px). */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -57,59 +57,62 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* Faint lift for cards; soft layered shadow for floating "3D" tiles. */
-  --shadow-card: 0 1px 2px rgb(11 11 15 / 0.04), 0 1px 1px rgb(11 11 15 / 0.02);
+  --shadow-card: 0 1px 2px rgb(27 26 23 / 0.04), 0 1px 1px rgb(27 26 23 / 0.02);
   --shadow-tile:
-    0 1px 1px rgb(11 11 15 / 0.04), 0 4px 8px -2px rgb(11 11 15 / 0.06),
-    0 16px 32px -12px rgb(11 11 15 / 0.18);
+    0 1px 1px rgb(27 26 23 / 0.04), 0 4px 8px -2px rgb(27 26 23 / 0.06),
+    0 16px 32px -12px rgb(27 26 23 / 0.18);
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  --background: #ffffff;
-  --foreground: #0b0b0f;
+  /* Paper and ink: a warm notebook page, not a white screen. */
+  --background: #fbfaf6;
+  --foreground: #1b1a17;
   --card: #ffffff;
-  --card-foreground: #0b0b0f;
+  --card-foreground: #1b1a17;
   --popover: #ffffff;
-  --popover-foreground: #0b0b0f;
+  --popover-foreground: #1b1a17;
 
-  --primary: #1f6bff; /* Compound blue: main buttons and links */
+  --primary: #1d5c41; /* Compound green, for growth: main buttons and links */
   --primary-foreground: #ffffff;
-  --secondary: #f3f3f5;
-  --secondary-foreground: #0b0b0f;
-  --muted: #f6f6f7; /* panels */
-  --muted-foreground: #6b6b72; /* secondary text, passes WCAG AA on white */
-  --subtle: #8a8a92; /* large grey headline text only */
-  --accent: #f3f3f5;
-  --accent-foreground: #0b0b0f;
+  --secondary: #f1eee6;
+  --secondary-foreground: #1b1a17;
+  --muted: #f3f0e8; /* panels */
+  --muted-foreground: #68645a; /* secondary text, passes WCAG AA on paper and panels */
+  --subtle: #8a8578; /* large text only */
+  --accent: #f1eee6;
+  --accent-foreground: #1b1a17;
 
-  --success: #16a34a; /* streaks, done */
-  --destructive: #e5484d;
-  --border: #ececee;
-  --input: #e4e4e7;
-  --ring: #1f6bff;
+  --success: #2b7449; /* done and streaks: a lighter leaf green than the primary */
+  --destructive: #c2412d;
+  --border: #e6e1d6;
+  --input: #ddd7ca;
+  --ring: #1d5c41;
 
   /* Data colors: charts, progress bars, tags. */
-  --chart-1: #1f6bff;
-  --chart-2: #19b5fe;
-  --chart-3: #ffb020;
-  --chart-4: #16a34a;
-  --chart-5: #e5484d;
+  --chart-1: #1d5c41;
+  --chart-2: #3e8e9b;
+  --chart-3: #d99a2b;
+  --chart-4: #2b7449;
+  --chart-5: #c2412d;
 
-  --sidebar: #fafafa;
-  --sidebar-foreground: #0b0b0f;
-  --sidebar-primary: #1f6bff;
+  --sidebar: #f6f3ec;
+  --sidebar-foreground: #1b1a17;
+  --sidebar-primary: #1d5c41;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f3f3f5;
-  --sidebar-accent-foreground: #0b0b0f;
-  --sidebar-border: #ececee;
-  --sidebar-ring: #1f6bff;
+  --sidebar-accent: #ebe6da;
+  --sidebar-accent-foreground: #1b1a17;
+  --sidebar-border: #e6e1d6;
+  --sidebar-ring: #1d5c41;
 }
 
-/* Dotted grid texture for panels, as in the hero and footer. */
-@utility bg-dots {
-  background-image: radial-gradient(circle at 1px 1px, rgb(11 11 15 / 0.08) 1px, transparent 0);
-  background-size: 16px 16px;
+/* Graph-paper lines for panels, like a page in a notebook. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(27 26 23 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(27 26 23 / 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 @layer base {
@@ -121,5 +124,10 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Page and section headings are set in the serif. */
+  h1,
+  h2 {
+    @apply font-heading;
   }
 }

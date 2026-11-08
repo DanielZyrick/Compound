@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Welcome" };
 
 export default function OnboardingPage() {
   return (
-    <main className="flex flex-1 justify-center bg-muted bg-dots px-4 py-10 sm:py-16">
+    <main className="flex flex-1 justify-center bg-muted bg-grid px-4 py-10 sm:py-16">
       <div className="w-full max-w-xl">
         <div className="mb-6 flex justify-center">
           <Logo />

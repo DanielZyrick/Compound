@@ -60,7 +60,7 @@ function BentoCard({
 }) {
   return (
     <article className={cn("flex flex-col rounded-3xl border bg-card p-3 shadow-card", className)}>
-      <div aria-hidden className="grid min-h-48 place-items-center rounded-2xl bg-muted bg-dots p-5">
+      <div aria-hidden className="grid min-h-48 place-items-center rounded-2xl bg-muted bg-grid p-5">
         {preview}
       </div>
       <div className="p-4">
