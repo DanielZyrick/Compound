@@ -30,7 +30,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 | **Recommended for you** | **About you, with "fill in from your resume"** |
 | ![Learn: a track in progress and three recommended tracks, each with a reason](docs/screenshots/learn.png) | ![The About you form with the resume box and the time-per-day choice](docs/screenshots/profile.png) |
 | **A contact, with touchpoints** | **The week from Google Calendar** |
-| ![A contact page: follow-up date, last contacted, where you met, notes and touchpoints](docs/screenshots/contact.png) | ![The Schedule page: the next seven days of events](docs/screenshots/schedule.png) |
+| ![A contact page: follow-up date, last contacted, where you met, notes and touchpoints](docs/screenshots/contact.png) | ![The Schedule page: a week grid of calendar events, with each day's load under its date](docs/screenshots/schedule.png) |
 | **Sticky notes** | **Habits, with the last week to fill in** |
 | ![The Notes page: a board of coloured sticky notes, one pinned](docs/screenshots/notes.png) | ![The Habits page: each habit with streaks and a row of the last seven days](docs/screenshots/habits.png) |
 | **Progress** | **Landing page** |
