@@ -44,7 +44,8 @@ export function weekLabel(monday: CalendarDate): string {
   return `${fmt(monday, { month: "short", day: "numeric" })} – ${fmt(sunday, { month: "short", day: "numeric" })}, ${year}`;
 }
 
-// Soft card colours, like Google Calendar's own palette but pastel.
+// Event colours, named after Google's. The calendar draws them as muted inks
+// that sit well on Compound's paper.
 export const EVENT_COLORS = ["blue", "violet", "green", "amber", "cyan", "rose"] as const;
 export type EventColor = (typeof EVENT_COLORS)[number];
 
@@ -146,4 +147,31 @@ export function hourRange(blocks: { startMin: number; endMin: number }[]): { fro
     to = Math.max(to, Math.ceil(b.endMin / 60));
   }
   return { from: Math.max(0, from), to: Math.min(24, to) };
+}
+
+/** "45m", "2h", "2h 30m". */
+function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+/**
+ * How full a day is, under its date: "Free", "1 event", "3 events · 2h 30m".
+ * The time is how long the day is busy, so overlapping events count once.
+ */
+export function dayLoad(blocks: { startMin: number; endMin: number }[], allDayCount: number): string {
+  const count = blocks.length + allDayCount;
+  if (count === 0) return "Free";
+  const events = count === 1 ? "1 event" : `${count} events`;
+
+  let busy = 0;
+  let end = -1;
+  for (const b of [...blocks].sort((x, y) => x.startMin - y.startMin)) {
+    if (b.endMin <= end) continue;
+    busy += b.endMin - Math.max(b.startMin, end);
+    end = b.endMin;
+  }
+  return busy > 0 ? `${events} · ${formatMinutes(busy)}` : events;
 }

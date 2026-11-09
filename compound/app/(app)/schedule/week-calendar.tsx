@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CalendarEvent } from "@/lib/calendar/events";
-import type { Block, EventColor } from "@/lib/calendar/week";
+import { dayLoad, type Block, type EventColor } from "@/lib/calendar/week";
 import type { CalendarDate } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
 
@@ -12,19 +12,29 @@ export type WeekDay = { date: CalendarDate; allDay: Pick<CalendarEvent, "id" | "
 const HOUR_PX = 64;
 const PX_PER_MIN = HOUR_PX / 60;
 
-// Soft cards with a strong left edge, in the event's colour.
-const CARD: Record<EventColor, string> = {
-  blue: "bg-blue-50 border-blue-500 text-blue-950 hover:bg-blue-100",
-  violet: "bg-violet-50 border-violet-500 text-violet-950 hover:bg-violet-100",
-  green: "bg-emerald-50 border-emerald-500 text-emerald-950 hover:bg-emerald-100",
-  amber: "bg-amber-50 border-amber-500 text-amber-950 hover:bg-amber-100",
-  cyan: "bg-cyan-50 border-cyan-500 text-cyan-950 hover:bg-cyan-100",
-  rose: "bg-rose-50 border-rose-500 text-rose-950 hover:bg-rose-100",
+// Muted inks, like coloured pens on paper. Each event is a white card with a
+// faint wash of its ink and a dot before the title.
+const INK: Record<EventColor, string> = {
+  blue: "#4a6a9c",
+  violet: "#7b5a9b",
+  green: "#2b7449",
+  amber: "#b7801d",
+  cyan: "#2f8291",
+  rose: "#b0544a",
 };
 
 const WEEKDAY = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" });
 const LONG_DAY = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
 const asDate = (date: CalendarDate) => new Date(`${date}T00:00:00Z`);
+/** Saturday or Sunday. */
+const isWeekend = (date: CalendarDate) => [0, 6].includes(asDate(date).getUTCDay());
+
+/** "2:41 PM", from minutes since midnight. */
+function clockLabel(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = String(minutes % 60).padStart(2, "0");
+  return `${h % 12 === 0 ? 12 : h % 12}:${m} ${h < 12 ? "AM" : "PM"}`;
+}
 
 function hourLabel(hour: number) {
   if (hour === 0 || hour === 24) return "12 AM";
@@ -92,7 +102,7 @@ export function WeekCalendar({
         <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b bg-muted/40">
           <div />
           {days.map((day) => (
-            <DayHeading key={day.date} date={day.date} isToday={day.date === today} />
+            <DayHeading key={day.date} day={day} isToday={day.date === today} />
           ))}
         </div>
         {anyAllDay && (
@@ -105,7 +115,7 @@ export function WeekCalendar({
         )}
         <div ref={scroller} className="max-h-[calc(100vh-17rem)] min-h-80 overflow-y-auto">
           <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]" style={{ height }}>
-            <HourLabels hours={hourList} />
+            <HourLabels hours={hourList} now={hasToday ? now : null} />
             {days.map((day) => (
               <DayColumn
                 key={day.date}
@@ -137,8 +147,14 @@ export function WeekCalendar({
                   isSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
-                <span className={cn("text-[11px]", !isSelected && "text-muted-foreground")}>
-                  {WEEKDAY.format(asDate(day.date))}
+                <span
+                  className={cn(
+                    "text-[11px]",
+                    day.date === today ? "font-medium" : !isSelected && "text-muted-foreground",
+                    day.date === today && !isSelected && "text-primary",
+                  )}
+                >
+                  {day.date === today ? "Today" : WEEKDAY.format(asDate(day.date))}
                 </span>
                 <span className={cn("text-sm font-semibold", day.date === today && !isSelected && "text-primary")}>
                   {Number(day.date.slice(8))}
@@ -154,11 +170,16 @@ export function WeekCalendar({
             );
           })}
         </div>
-        <h2 className="mt-4 text-sm font-semibold">{LONG_DAY.format(asDate(selectedDay.date))}</h2>
+        <h2 className="mt-4 flex flex-wrap items-baseline gap-x-2 text-base font-semibold">
+          {LONG_DAY.format(asDate(selectedDay.date))}
+          <span className="font-sans text-sm font-normal text-muted-foreground">
+            {dayLoad(selectedDay.blocks, selectedDay.allDay.length)}
+          </span>
+        </h2>
         {selectedDay.allDay.length > 0 && <AllDay events={selectedDay.allDay} className="mt-2" />}
         <div ref={phoneScroller} className="mt-2 max-h-[calc(100vh-20rem)] min-h-80 overflow-y-auto rounded-2xl border">
           <div className="grid grid-cols-[3.5rem_minmax(0,1fr)]" style={{ height }}>
-            <HourLabels hours={hourList} />
+            <HourLabels hours={hourList} now={selectedDay.date === today ? now : null} />
             <DayColumn
               day={selectedDay}
               hours={hours}
@@ -167,31 +188,29 @@ export function WeekCalendar({
             />
           </div>
         </div>
-        {selectedDay.blocks.length === 0 && selectedDay.allDay.length === 0 && (
-          <p className="mt-3 text-sm text-muted-foreground">Nothing planned.</p>
-        )}
       </div>
     </>
   );
 }
 
-function DayHeading({ date, isToday }: { date: CalendarDate; isToday: boolean }) {
+function DayHeading({ day, isToday }: { day: WeekDay; isToday: boolean }) {
   return (
     <div
-      aria-label={LONG_DAY.format(asDate(date))}
+      aria-label={LONG_DAY.format(asDate(day.date))}
       aria-current={isToday ? "date" : undefined}
-      className={cn("flex flex-col items-center gap-0.5 border-l py-2", isToday && "bg-primary/5")}
+      className={cn(
+        "flex min-w-0 flex-col items-start gap-0.5 border-l px-2.5 py-2",
+        isToday ? "bg-primary/[0.06]" : isWeekend(day.date) && "bg-foreground/[0.025]",
+      )}
     >
       <span className={cn("text-xs", isToday ? "font-medium text-primary" : "text-muted-foreground")}>
-        {WEEKDAY.format(asDate(date))}
+        {isToday ? "Today" : WEEKDAY.format(asDate(day.date))}
       </span>
-      <span
-        className={cn(
-          "grid size-7 place-items-center rounded-full text-sm font-semibold tabular-nums",
-          isToday && "bg-primary text-primary-foreground",
-        )}
-      >
-        {Number(date.slice(8))}
+      <span className={cn("font-heading text-xl leading-none font-semibold tabular-nums", isToday && "text-primary")}>
+        {Number(day.date.slice(8))}
+      </span>
+      <span className="mt-1 w-full truncate text-[11px] text-muted-foreground">
+        {dayLoad(day.blocks, day.allDay.length)}
       </span>
     </div>
   );
@@ -209,7 +228,9 @@ function AllDay({ events, className }: { events: WeekDay["allDay"]; className?: 
   );
 }
 
-function HourLabels({ hours }: { hours: number[] }) {
+function HourLabels({ hours, now }: { hours: number[]; now: number | null }) {
+  const offset = hours[0] * 60;
+  const showNow = now !== null && now >= offset && now <= (hours[hours.length - 1] + 1) * 60;
   return (
     <div aria-hidden className="relative">
       {hours.map((hour, i) => (
@@ -221,6 +242,14 @@ function HourLabels({ hours }: { hours: number[] }) {
           {i === 0 ? "" : hourLabel(hour)}
         </span>
       ))}
+      {showNow && (
+        <span
+          className="absolute right-1 z-10 -translate-y-1/2 rounded bg-background px-1 text-[10px] font-semibold text-primary tabular-nums"
+          style={{ top: (now - offset) * PX_PER_MIN }}
+        >
+          {clockLabel(now)}
+        </span>
+      )}
     </div>
   );
 }
@@ -239,7 +268,13 @@ function DayColumn({
   const offset = hours.from * 60;
   const showNow = now !== null && now >= offset && now <= hours.to * 60;
   return (
-    <div aria-label={`Events on ${LONG_DAY.format(asDate(day.date))}`} className="relative border-l">
+    <div
+      aria-label={`Events on ${LONG_DAY.format(asDate(day.date))}`}
+      className={cn(
+        "relative border-l",
+        now !== null ? "bg-primary/[0.04]" : isWeekend(day.date) && "bg-foreground/[0.025]",
+      )}
+    >
       {hourList.map((hour, i) => (
         <div key={hour} aria-hidden className="absolute inset-x-0 border-t border-border/70" style={{ top: i * HOUR_PX }} />
       ))}
@@ -249,21 +284,23 @@ function DayColumn({
         const shown = Math.max(tall, 22);
         const card = (
           <>
-            <span className="block truncate font-medium">{b.title}</span>
-            {shown >= 40 && <span className="block truncate opacity-75">{b.timeLabel}</span>}
-            {shown >= 60 && b.location && <span className="block truncate opacity-75">{b.location}</span>}
+            <span className="flex items-center gap-1.5 font-medium">
+              <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-(--ink)" />
+              <span className="truncate">{b.title}</span>
+            </span>
+            {shown >= 40 && <span className="block truncate pl-3 text-muted-foreground">{b.timeLabel}</span>}
+            {shown >= 60 && b.location && <span className="block truncate pl-3 text-muted-foreground">{b.location}</span>}
           </>
         );
-        const className = cn(
-          "absolute overflow-hidden rounded-md border-l-[3px] px-1.5 py-1 text-[11px] leading-tight shadow-sm transition-colors",
-          CARD[b.color],
-        );
+        const className =
+          "absolute overflow-hidden rounded-lg border border-[color-mix(in_srgb,var(--ink)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_7%,white)] px-1.5 py-1 text-[11px] leading-tight text-foreground shadow-card transition-colors hover:bg-[color-mix(in_srgb,var(--ink)_14%,white)]";
         const style = {
+          "--ink": INK[b.color],
           top: top + 1,
           height: shown - 2,
           left: `calc(${(b.col / b.cols) * 100}% + 2px)`,
           width: `calc(${100 / b.cols}% - 4px)`,
-        };
+        } as React.CSSProperties;
         const label = `${b.title}, ${b.timeLabel}${b.location ? `, ${b.location}` : ""}`;
         return b.link ? (
           <a key={b.id} href={b.link} target="_blank" rel="noopener noreferrer" aria-label={label} className={className} style={style}>
@@ -276,10 +313,11 @@ function DayColumn({
         );
       })}
       {showNow && (
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 z-10" style={{ top: (now - offset) * PX_PER_MIN }}>
-          <div className="absolute -top-[4px] -left-[5px] size-2.5 rounded-full bg-primary" />
-          <div className="h-0.5 bg-primary" />
-        </div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 z-10 h-px bg-primary"
+          style={{ top: (now - offset) * PX_PER_MIN }}
+        />
       )}
     </div>
   );

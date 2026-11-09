@@ -57,7 +57,7 @@ export function SettingsLinkView({ pathname }: { pathname: string | null }) {
 
 function SidebarLink({ item, active, alert }: { item: NavItem; active: boolean; alert: boolean }) {
   const { href, label, icon: Icon, ready } = item;
-  const base = "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm";
+  const base = "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm";
 
   if (!ready) {
     return (
@@ -82,7 +82,9 @@ function SidebarLink({ item, active, alert }: { item: NavItem; active: boolean; 
           : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
       )}
     >
-      <Icon className="size-4" />
+      {/* The current page gets a green marker on its left edge, like a ribbon bookmark. */}
+      {active && <span aria-hidden className="absolute inset-y-2 -left-3 w-1 rounded-r-full bg-primary" />}
+      <Icon className={cn("size-4", active && "text-primary")} />
       {label}
       {alert && <AttentionDot className="ml-auto" />}
     </Link>

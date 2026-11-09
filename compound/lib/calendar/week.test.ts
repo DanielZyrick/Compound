@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CalendarEvent } from "./events";
-import { blocksForDay, colorFor, EVENT_COLORS, hourRange, layoutDay, mondayOf, weekLabel } from "./week";
+import { EVENT_COLORS, blocksForDay, colorFor, dayLoad, hourRange, layoutDay, mondayOf, weekLabel } from "./week";
 
 const tz = "Asia/Manila"; // UTC+8, no daylight saving
 const event = (id: string, start: string, end: string): CalendarEvent => ({
@@ -114,5 +114,29 @@ describe("hourRange", () => {
 
   it("widens to fit early and late events", () => {
     expect(hourRange([block("run", 6 * 60, 7 * 60), block("late", 20 * 60, 21 * 60 + 30)])).toEqual({ from: 6, to: 22 });
+  });
+});
+
+describe("dayLoad", () => {
+  const block = (startMin: number, endMin: number) => ({ startMin, endMin });
+
+  it("says Free on an empty day", () => {
+    expect(dayLoad([], 0)).toBe("Free");
+  });
+
+  it("counts events and adds up the busy time", () => {
+    expect(dayLoad([block(540, 585)], 0)).toBe("1 event · 45m");
+    expect(dayLoad([block(540, 600), block(720, 810)], 0)).toBe("2 events · 2h 30m");
+    expect(dayLoad([block(540, 660)], 0)).toBe("1 event · 2h");
+  });
+
+  it("counts overlapping time once", () => {
+    // 12:00–1:00 and 12:30–1:30 are busy 12:00–1:30; 1:00–1:10 sits inside.
+    expect(dayLoad([block(720, 780), block(750, 810), block(780, 790)], 0)).toBe("3 events · 1h 30m");
+  });
+
+  it("counts all-day events, without time", () => {
+    expect(dayLoad([], 1)).toBe("1 event");
+    expect(dayLoad([block(600, 660)], 1)).toBe("2 events · 1h");
   });
 });

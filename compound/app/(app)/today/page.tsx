@@ -74,7 +74,8 @@ async function TodayContent() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">{formatLongDate(today)}</p>
+          {/* Written like the date at the top of a notebook page. */}
+          <p className="font-hand text-xl leading-none text-primary">{formatLongDate(today)}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
             {greetingFor(hourIn(user.timezone))}
             {name ? `, ${name}` : ""}
