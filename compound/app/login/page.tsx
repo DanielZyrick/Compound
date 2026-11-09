@@ -4,7 +4,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { SignInWithGitHub, SignInWithGoogle } from "@/components/auth-buttons";
-import { FloatingTile } from "@/components/landing/floating";
 import { LogoMark } from "@/components/logo";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { loginErrorMessage } from "@/lib/auth/login-errors";
@@ -17,10 +16,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="flex flex-1 items-center justify-center bg-muted bg-grid px-4 py-12">
       <div className="w-full max-w-sm">
-        <div className="rounded-[28px] border bg-card p-8 text-center shadow-card">
-          <FloatingTile className="mx-auto">
-            <LogoMark className="size-8" />
-          </FloatingTile>
+        <div className="rounded-3xl border bg-card p-8 text-center shadow-card">
+          <LogoMark className="mx-auto size-12" />
 
           <h1 className="mt-6 text-2xl font-semibold tracking-tight">Welcome to Compound</h1>
           <p className="mt-2 text-muted-foreground">Small daily steps, compounding growth.</p>
@@ -33,7 +30,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
             <SignInWithGoogle />
             <SignInWithGitHub />
           </div>
-          <p className="mt-4 text-xs text-subtle">
+          <p className="mt-4 text-xs text-muted-foreground">
             New here? Signing in creates your account. See how your data is used in our{" "}
             <Link href="/privacy" className="underline hover:text-foreground">
               privacy policy

@@ -14,7 +14,7 @@ export default function OnboardingPage() {
         <div className="mb-6 flex justify-center">
           <Logo />
         </div>
-        <div className="rounded-[28px] border bg-card p-6 shadow-card sm:p-10">
+        <div className="rounded-3xl border bg-card p-6 shadow-card sm:p-10">
           <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
             <OnboardingGate />
           </Suspense>

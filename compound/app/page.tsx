@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { CompoundCurve } from "@/components/landing/compound-curve";
-import { DashboardPreview } from "@/components/landing/dashboard-preview";
+import { AppPreview } from "@/components/landing/app-preview";
+import { Features } from "@/components/landing/features";
 import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
-import { ModulesBento } from "@/components/landing/modules-bento";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
+import { WhyCompound } from "@/components/landing/why-compound";
 
 export const metadata: Metadata = { title: { absolute: "Compound · Small daily steps, compounding growth" } };
 
@@ -17,10 +17,10 @@ export default function HomePage() {
       <SiteHeader />
       <main className="flex flex-col gap-24 pt-2 pb-24 md:gap-32">
         <Hero />
-        <DashboardPreview />
-        <ModulesBento />
+        <AppPreview />
+        <Features />
         <HowItWorks />
-        <CompoundCurve />
+        <WhyCompound />
       </main>
       <SiteFooter />
     </>

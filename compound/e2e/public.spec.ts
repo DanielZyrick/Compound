@@ -7,7 +7,19 @@ test("the landing page introduces Compound", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/Compound/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Small daily steps");
-  await expect(page.getByRole("link", { name: /Get started/ }).first()).toBeVisible();
+  await expect(page.getByRole("img", { name: /improving 1% a day/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^The Today page/ })).toBeVisible();
+  for (const name of ["Habits that keep score honestly.", "A short lesson every day.", "Start small. Keep going."]) {
+    await expect(page.getByRole("heading", { name })).toBeVisible();
+  }
+
+  // Fits a phone screen: nothing makes the page scroll sideways.
+  const width = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(width).toBeLessThanOrEqual(0);
+
+  // Signed-out visitors who start are asked to sign in.
+  await page.getByRole("link", { name: /Get started/ }).first().click();
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 test("signed-out visitors are sent to the login page", async ({ page }) => {
