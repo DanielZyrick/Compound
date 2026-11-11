@@ -181,3 +181,28 @@ test("the same track can't be created twice, and tracks can be archived and rest
   await expect(main.getByRole("button", { name: `More for ${title}` })).toBeHidden(); // its card is gone
   await expect(main.locator("summary", { hasText: "Archived" })).toBeVisible();
 });
+
+test("restoring two tracks on the same topic at once keeps only one active", async ({ page, context }) => {
+  const user = await signInFreshUser(context);
+  // Twins that are both archived, as after the old duplicate bug.
+  const twin = { user_id: user.id, topic: "Building RAG apps", type: "skill", level: "beginner", total_days: 7, start_date: "2026-01-05", status: "archived", plan_source: "demo" } as const;
+  await db.insertInto("tracks").values([{ ...twin, title: "Twin one" }, { ...twin, title: "Twin two" }]).execute();
+
+  // Two tabs, each restoring a different twin at the same moment.
+  const other = await context.newPage();
+  const restores = [];
+  for (const [tab, title] of [[page, "Twin one"], [other, "Twin two"]] as const) {
+    await open(tab, "/tracks");
+    await tab.locator("summary", { hasText: "Archived" }).click();
+    restores.push(tab.getByRole("button", { name: `Restore ${title}` }));
+  }
+  await Promise.all(restores.map((button) => button.click()));
+
+  // One comes back; the other is told why it can't.
+  const refused = async () =>
+    (await alerts(page).filter({ hasText: "already have an active track" }).count()) +
+    (await alerts(other).filter({ hasText: "already have an active track" }).count());
+  await expect.poll(refused).toBe(1);
+  const active = await db.selectFrom("tracks").select("title").where("user_id", "=", user.id).where("status", "!=", "archived").execute();
+  expect(active).toHaveLength(1);
+});

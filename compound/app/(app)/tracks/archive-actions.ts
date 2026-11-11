@@ -1,5 +1,6 @@
 "use server";
 
+import { sql } from "kysely";
 import { refresh, revalidatePath } from "next/cache";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -51,27 +52,38 @@ export async function setTrackArchived(input: unknown): Promise<ArchiveTrackResu
       }
     });
   } else {
-    if (track.status !== "archived") return { errors: [] };
-    const active = await db
-      .selectFrom("tracks")
-      .select(["id", "title", "topic", "type"])
-      .where("user_id", "=", user.id)
-      .where("status", "=", "active")
-      .execute();
-    const duplicate = findDuplicate(active, track);
-    if (duplicate) return { errors: [`You already have an active track for "${duplicate.title}". Archive it first.`] };
+    // One restore or create at a time per user (the same lock as creating a
+    // track), and every check runs inside it: two restores sent at once would
+    // otherwise both pass the checks and bring back two tracks on one topic.
+    const error = await db.transaction().execute(async (trx) => {
+      await sql`select pg_advisory_xact_lock(hashtext(${user.id}))`.execute(trx);
+      const current = await trx
+        .selectFrom("tracks")
+        .select("status")
+        .where("id", "=", id)
+        .where("user_id", "=", user.id)
+        .executeTakeFirst();
+      if (current?.status !== "archived") return null; // restored or deleted meanwhile
 
-    const { count: doneDays } = await db
-      .selectFrom("track_days")
-      .select((eb) => eb.fn.count<string>("completed_at").as("count"))
-      .where("track_id", "=", id)
-      .executeTakeFirstOrThrow();
-    const finished = Number(doneDays) >= track.total_days;
-    if (!finished && active.length >= MAX_ACTIVE_TRACKS) {
-      return { errors: [`You can have up to ${MAX_ACTIVE_TRACKS} active tracks. Archive one first.`] };
-    }
+      const active = await trx
+        .selectFrom("tracks")
+        .select(["id", "title", "topic", "type"])
+        .where("user_id", "=", user.id)
+        .where("status", "=", "active")
+        .execute();
+      const duplicate = findDuplicate(active, track);
+      if (duplicate) return `You already have an active track for "${duplicate.title}". Archive it first.`;
 
-    await db.transaction().execute(async (trx) => {
+      const { count: doneDays } = await trx
+        .selectFrom("track_days")
+        .select((eb) => eb.fn.count<string>("completed_at").as("count"))
+        .where("track_id", "=", id)
+        .executeTakeFirstOrThrow();
+      const finished = Number(doneDays) >= track.total_days;
+      if (!finished && active.length >= MAX_ACTIVE_TRACKS) {
+        return `You can have up to ${MAX_ACTIVE_TRACKS} active tracks. Archive one first.`;
+      }
+
       await trx
         .updateTable("tracks")
         .set({ status: finished ? "completed" : "active" })
@@ -89,7 +101,9 @@ export async function setTrackArchived(input: unknown): Promise<ArchiveTrackResu
           await trx.updateTable("habits").set({ archived_at: null }).where("id", "=", track.habit_id).execute();
         }
       }
+      return null;
     });
+    if (error) return { errors: [error] };
   }
 
   revalidatePath("/tracks");
