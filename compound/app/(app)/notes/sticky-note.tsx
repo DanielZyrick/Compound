@@ -1,7 +1,9 @@
 "use client";
 
-import { Check, Pin } from "lucide-react";
+import { CalendarClock, Check, Pin } from "lucide-react";
+import type { CalendarDate } from "@/lib/db/types";
 import { NOTE_PAPER, tiltFor } from "@/lib/notes/colors";
+import { describeDue } from "@/lib/notes/due";
 import type { Note } from "@/lib/notes/queries";
 import { cn } from "@/lib/utils";
 
@@ -50,12 +52,16 @@ export function StickyNote({
   onToggle,
   actions,
   small = false,
+  today,
 }: {
   note: Note;
   onToggle: () => void;
   actions?: React.ReactNode;
   small?: boolean;
+  /** Today in the user's timezone, to word the due date ("Due tomorrow"). */
+  today: CalendarDate;
 }) {
+  const due = note.dueOn ? describeDue(note.dueOn, today, note.done) : null;
   return (
     <Paper note={note} small={small} className={cn(note.done && "opacity-60")}>
       <h3
@@ -79,7 +85,20 @@ export function StickyNote({
         </p>
       )}
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+      {due && (
+        <p
+          className={cn(
+            "mt-auto flex items-center gap-1 pt-2 text-xs",
+            due.tone === "overdue" && "font-semibold text-red-700",
+            due.tone === "today" && "font-semibold text-foreground",
+            (due.tone === "upcoming" || due.tone === "done") && "text-foreground/60",
+          )}
+        >
+          <CalendarClock aria-hidden className="size-3.5 shrink-0" />
+          {due.label}
+        </p>
+      )}
+      <div className={cn("flex items-center justify-between gap-2", due ? "pt-2" : "mt-auto pt-3")}>
         <button
           type="button"
           role="checkbox"

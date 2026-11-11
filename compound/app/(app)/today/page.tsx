@@ -139,7 +139,7 @@ async function TodayContent() {
                 </Link>
               </div>
             )}
-            <NotesCard notes={notes.notes} openCount={notes.openCount} />
+            <NotesCard notes={notes.notes} openCount={notes.openCount} dueCount={notes.dueCount} today={today} />
           </div>
 
           <div className="flex min-w-0 flex-col gap-6">

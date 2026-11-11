@@ -216,6 +216,7 @@ export interface NotesTable {
   pinned: ColumnType<boolean, boolean | undefined, boolean>;
   color: ColumnType<NoteColor, NoteColor | undefined, NoteColor>; // sticky-note paper
   done_at: Timestamp | null; // when it was ticked off; null while open
+  due_on: CalendarDate | null; // optional: the day a to-do should be done by
   created_at: CreatedAt;
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }

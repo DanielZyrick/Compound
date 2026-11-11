@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Pencil, Pin, PinOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { CalendarDate } from "@/lib/db/types";
 import { NOTE_COLORS, NOTE_PAPER, type NoteColor } from "@/lib/notes/colors";
 import type { Note } from "@/lib/notes/queries";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,7 @@ import { useNotes } from "./use-notes";
 const ICON_BUTTON = "text-foreground/60 hover:bg-black/5 hover:text-foreground";
 
 /** The Notes page board: tick, pin, recolour, edit and delete. */
-export function NotesManager({ notes }: { notes: Note[] }) {
+export function NotesManager({ notes, today }: { notes: Note[]; today: CalendarDate }) {
   const { shown, error, toggleDone, togglePinned } = useNotes(notes);
   const [editing, setEditing] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export function NotesManager({ notes }: { notes: Note[] }) {
             ) : (
               <StickyNote
                 note={note}
+                today={today}
                 onToggle={() => toggleDone(note)}
                 actions={
                   <>
@@ -104,6 +106,7 @@ function NoteEditor({ note, onDone }: { note: Note; onDone: () => void }) {
   const [title, setTitle] = useState(note.title);
   const [body, setBody] = useState(note.body ?? "");
   const [color, setColor] = useState<NoteColor>(note.color);
+  const [dueOn, setDueOn] = useState(note.dueOn ?? "");
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
 
@@ -114,7 +117,7 @@ function NoteEditor({ note, onDone }: { note: Note; onDone: () => void }) {
         onSubmit={(e) => {
           e.preventDefault();
           startTransition(async () => {
-            const result = await saveNote({ id: note.id, title, body, color });
+            const result = await saveNote({ id: note.id, title, body, color, dueOn: dueOn || null });
             setErrors(result.errors);
             if (result.errors.length === 0) onDone();
           });
@@ -137,6 +140,22 @@ function NoteEditor({ note, onDone }: { note: Note; onDone: () => void }) {
           rows={4}
           className="w-full flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-foreground/40"
         />
+        <div className="flex items-center gap-2 text-xs text-foreground/70">
+          <label className="flex min-w-0 flex-1 items-center gap-2">
+            Due
+            <input
+              type="date"
+              value={dueOn}
+              onChange={(e) => setDueOn(e.target.value)}
+              className="min-w-0 flex-1 rounded border border-foreground/20 bg-white/50 px-1.5 py-1 text-sm text-foreground outline-none focus:border-foreground/50"
+            />
+          </label>
+          {dueOn && (
+            <button type="button" onClick={() => setDueOn("")} className="font-medium underline hover:text-foreground">
+              Clear
+            </button>
+          )}
+        </div>
         <div role="radiogroup" aria-label="Colour" className="flex gap-1.5">
           {NOTE_COLORS.map((c) => (
             <button

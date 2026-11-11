@@ -52,8 +52,8 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
 - money_categories (id, user_id, kind: expense | income, name, icon, position, monthly_budget_cents (expense only, applies every month), archived_at) — budget left, over and pace in lib/money/budget.ts
   — unique per (user_id, kind, lower(name)); defaults are seeded on first use
 - transactions (id, user_id, kind, amount_cents, category_id, note, occurred_on, goal_id)
-- notes (id, user_id, title, body, pinned, color, done_at, created_at, updated_at) — quick notes
-  and to-dos shown as sticky notes; color is the paper (lib/notes/colors.ts); done_at set when ticked off
+- notes (id, user_id, title, body, pinned, color, done_at, due_on, created_at, updated_at) — quick notes
+  and to-dos shown as sticky notes; color is the paper (lib/notes/colors.ts); done_at set when ticked off; due_on is an optional due date (labels and "is it due" in lib/notes/due.ts)
 - profiles (user_id PK, role, improve, skills, interests, daily_minutes 10|20|30|60, recommendations jsonb, recommended_at, updated_at) — "About you"; every field optional
 - contacts (id, user_id, name, company, role, where_met, email, phone, linkedin https only, notes, follow_up_on, goal_id set null on goal delete, created_at, updated_at) — never sent to the AI
 - contact_touchpoints (id, contact_id, happened_on, note <= 280, created_at) — "last contacted" is the newest happened_on, never stored
@@ -84,7 +84,7 @@ Rules:
 - /goals, /goals/new, /goals/[id] — goals, the AI plan, step editing, savings
 - /money — quick add (`?add=expense|income`; after a budgeted expense it says what's left in that category), month view (`?month=YYYY-MM`) with a Budget summary and budget bars. Today's stats pill shows what's left this month.
 - /money/categories — add, rename, change icon, set a monthly budget (expenses), archive, restore categories
-- /notes — quick notes and to-dos (`?filter=open|done|all`); also a Notes card on Today.
+- /notes — quick notes and to-dos (`?filter=open|done|all`), with an optional due date; open notes sort pinned first, then by due date. Today's Notes card puts overdue and due-today notes first with a "2 due" count, and the sidebar shows an attention dot on Notes.
 - /contacts — networking contacts (`?filter=all|due|goal`, `?q=` search); /contacts/[id] shows, edits and deletes one. Sidebar only; on phones, sidebar-only pages are in the account menu.
   A contact page logs touchpoints and sets the next follow-up (lib/contacts/follow-up.ts). Today shows a Follow up card (Done logs a touchpoint, Snooze adds a week); the goal page lists linked contacts.
   In the desktop sidebar only; phones reach it from the Today card

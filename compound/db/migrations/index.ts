@@ -16,6 +16,7 @@ import * as m014 from "./014_contacts";
 import * as m015 from "./015_contact_touchpoints";
 import * as m016 from "./016_calendar_connections";
 import * as m017 from "./017_category_budgets";
+import * as m018 from "./018_note_due_on";
 
 // Every migration, listed by name. Kysely runs them in name order and records
 // which ones are done in the kysely_migration table.
@@ -38,4 +39,5 @@ export const migrations: Record<string, Migration> = {
   "015_contact_touchpoints": m015,
   "016_calendar_connections": m016,
   "017_category_budgets": m017,
+  "018_note_due_on": m018,
 };

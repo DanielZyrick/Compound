@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireOnboardedUser } from "@/lib/auth/dal";
+import { todayIn } from "@/lib/dates/calendar";
 import { getNotes, type NoteFilter } from "@/lib/notes/queries";
 import { cn } from "@/lib/utils";
 import { NotesManager } from "./notes-manager";
@@ -62,7 +63,7 @@ async function NotesList({ searchParams }: Pick<PageProps<"/notes">, "searchPara
             {filter === "done" ? "Nothing ticked off yet." : "No notes yet. Write one above."}
           </p>
         ) : (
-          <NotesManager key={filter} notes={notes} />
+          <NotesManager key={filter} notes={notes} today={todayIn(user.timezone)} />
         )}
       </div>
     </>
