@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test";
-import { db, open, signInFreshUser } from "./support";
+import { demoEvents } from "../lib/calendar/events";
+import { biggestFreeGap, clockLabel, minutesNowIn } from "../lib/calendar/free";
+import { blocksForDay } from "../lib/calendar/week";
+import { todayIn } from "../lib/dates/calendar";
+import { db, open, signInFreshUser, TEST_TIMEZONE } from "./support";
+
+/**
+ * The free block Today should point out right now ("5:00 PM – 9:00 PM"), or
+ * null for none. Undefined when the clock is about to change the answer, so
+ * the test can't be sure which one the server saw.
+ */
+function freeBlockNow(): string | null | undefined {
+  const today = todayIn(TEST_TIMEZONE);
+  const blocks = blocksForDay(demoEvents(today, TEST_TIMEZONE), today, TEST_TIMEZONE);
+  const at = (ms: number) => {
+    const gap = biggestFreeGap(blocks, minutesNowIn(TEST_TIMEZONE, new Date(Date.now() + ms)));
+    return gap && `${clockLabel(gap.startMin)} – ${clockLabel(gap.endMin)}`;
+  };
+  return at(-60_000) === at(60_000) ? at(0) : undefined;
+}
 
 // The test server runs with CALENDAR_DEMO_MODE=1: connecting makes a demo
 // connection instead of going to Google.
@@ -41,6 +60,11 @@ test("today's events on Today, and the week on Schedule", async ({ page, context
   await expect(card.getByText("Lunch with Ana")).toBeVisible();
   await expect(card.getByText("Salcedo Market")).toBeVisible();
   await expect(card.getByText("Mom's birthday")).toBeHidden(); // tomorrow
+
+  // The longest free block still ahead today, if there is one at this hour.
+  const free = freeBlockNow();
+  if (free) await expect(card).toContainText(`Free ${free}`);
+  if (free === null) await expect(card).not.toContainText("Free ");
 
   // The week grid. The demo calendar starts on the week's Monday: four events
   // that day (lunch and the design sync overlap), an all-day birthday on

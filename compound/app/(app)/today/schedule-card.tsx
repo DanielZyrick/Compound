@@ -1,15 +1,28 @@
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Coffee } from "lucide-react";
 import { describeStartsIn, groupByDay, nextEvent } from "@/lib/calendar/events";
+import { biggestFreeGap, clockLabel, minutesNowIn } from "@/lib/calendar/free";
 import { getSchedule } from "@/lib/calendar/queries";
+import { blocksForDay, formatMinutes } from "@/lib/calendar/week";
 import type { CalendarDate } from "@/lib/db/types";
 import { DayEvents } from "../schedule/event-list";
+
+/** Today's first lesson that isn't done yet, to suggest for a free block. */
+type NextLesson = { href: string } | null;
 
 /**
  * Today's events from Google Calendar. Shown only once the user has
  * connected it; streams in on its own, so a slow Google never holds up Today.
  */
-export async function ScheduleCard({ user, today }: { user: { id: string; timezone: string }; today: CalendarDate }) {
+export async function ScheduleCard({
+  user,
+  today,
+  lesson = null,
+}: {
+  user: { id: string; timezone: string };
+  today: CalendarDate;
+  lesson?: NextLesson;
+}) {
   const result = await getSchedule(user, today, 1);
   if (result.status === "not-connected") return null;
 
@@ -28,7 +41,7 @@ export async function ScheduleCard({ user, today }: { user: { id: string; timezo
         </Link>
       </div>
       <div className="mt-3">
-        <ScheduleBody result={result} user={user} today={today} />
+        <ScheduleBody result={result} user={user} today={today} lesson={lesson} />
       </div>
     </section>
   );
@@ -38,10 +51,12 @@ function ScheduleBody({
   result,
   user,
   today,
+  lesson,
 }: {
   result: Exclude<Awaited<ReturnType<typeof getSchedule>>, { status: "not-connected" }>;
   user: { timezone: string };
   today: CalendarDate;
+  lesson: NextLesson;
 }) {
   if (result.status === "revoked") return <Reconnect />;
   if (result.status === "unavailable") {
@@ -54,7 +69,32 @@ function ScheduleBody({
   }
   const next = nextEvent(day.timed, new Date());
   const highlight = next ? { id: next.event.id, label: next.minutes === 0 ? "Now" : `Next · ${describeStartsIn(next.minutes)}` } : undefined;
-  return <DayEvents day={day} timezone={user.timezone} highlight={highlight} />;
+  // The longest free block still ahead today, as a nudge to use it.
+  const free = biggestFreeGap(blocksForDay(result.events, today, user.timezone), minutesNowIn(user.timezone));
+  return (
+    <>
+      <DayEvents day={day} timezone={user.timezone} highlight={highlight} />
+      {free && (
+        <p className="mt-3 flex items-start gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/[0.04] px-3 py-2.5 text-sm">
+          <Coffee aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span>
+            <span className="font-medium">
+              Free {clockLabel(free.startMin)} – {clockLabel(free.endMin)}
+            </span>{" "}
+            <span className="text-muted-foreground">· {formatMinutes(free.endMin - free.startMin)}.</span>
+            {lesson && (
+              <>
+                {" "}
+                <Link href={lesson.href} className="font-medium text-primary hover:underline">
+                  Good time for today&apos;s lesson
+                </Link>
+              </>
+            )}
+          </span>
+        </p>
+      )}
+    </>
+  );
 }
 
 /** Google stopped accepting the connection (access removed in their Google account). */

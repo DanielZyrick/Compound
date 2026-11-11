@@ -69,6 +69,8 @@ async function TodayContent() {
     step: g.nextStep ? { id: g.nextStep.id, title: g.nextStep.title } : null,
   }));
   const name = firstName(user.name);
+  const todo = lessons.find((lesson) => !lesson.done);
+  const nextLesson = todo ? { href: `/tracks/${todo.trackId}/day/${todo.dayNumber}` } : null;
 
   return (
     <>
@@ -143,7 +145,7 @@ async function TodayContent() {
           <div className="flex min-w-0 flex-col gap-6">
             {/* Streams in on its own, so a slow Google Calendar never holds up the page. */}
             <Suspense fallback={null}>
-              <ScheduleCard user={user} today={today} />
+              <ScheduleCard user={user} today={today} lesson={nextLesson} />
             </Suspense>
             <TodayLessons lessons={lessons} />
             {followUps.total > 0 && (

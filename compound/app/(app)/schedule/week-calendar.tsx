@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CalendarEvent } from "@/lib/calendar/events";
-import { dayLoad, type Block, type EventColor } from "@/lib/calendar/week";
+import { biggestFreeGap, clockLabel, minutesNowIn } from "@/lib/calendar/free";
+import { dayLoad, formatMinutes, type Block, type EventColor } from "@/lib/calendar/week";
 import type { CalendarDate } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
 
@@ -29,25 +30,10 @@ const asDate = (date: CalendarDate) => new Date(`${date}T00:00:00Z`);
 /** Saturday or Sunday. */
 const isWeekend = (date: CalendarDate) => [0, 6].includes(asDate(date).getUTCDay());
 
-/** "2:41 PM", from minutes since midnight. */
-function clockLabel(minutes: number) {
-  const h = Math.floor(minutes / 60);
-  const m = String(minutes % 60).padStart(2, "0");
-  return `${h % 12 === 0 ? 12 : h % 12}:${m} ${h < 12 ? "AM" : "PM"}`;
-}
-
 function hourLabel(hour: number) {
   if (hour === 0 || hour === 24) return "12 AM";
   if (hour === 12) return "12 PM";
   return hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
-}
-
-/** Minutes since local midnight in the user's timezone, right now. */
-function nowMinutes(timezone: string) {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: timezone, hourCycle: "h23", hour: "2-digit", minute: "2-digit" })
-    .formatToParts(new Date());
-  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
-  return get("hour") * 60 + get("minute");
 }
 
 /**
@@ -74,7 +60,7 @@ export function WeekCalendar({
 
   useEffect(() => {
     if (!hasToday) return;
-    const tick = () => setNow(nowMinutes(timezone));
+    const tick = () => setNow(minutesNowIn(timezone));
     tick();
     const timer = setInterval(tick, 60_000);
     return () => clearInterval(timer);
@@ -83,7 +69,7 @@ export function WeekCalendar({
   // Open near the current time (or the first event), not at the top of the day.
   useEffect(() => {
     const firstEvent = Math.min(...days.flatMap((d) => d.blocks.map((b) => b.startMin)), Infinity);
-    const focus = hasToday ? nowMinutes(timezone) : firstEvent;
+    const focus = hasToday ? minutesNowIn(timezone) : firstEvent;
     if (!Number.isFinite(focus)) return;
     const top = Math.max(0, (focus - hours.from * 60 - 60) * PX_PER_MIN);
     scroller.current?.scrollTo({ top });
@@ -267,6 +253,9 @@ function DayColumn({
 }) {
   const offset = hours.from * 60;
   const showNow = now !== null && now >= offset && now <= hours.to * 60;
+  // Today only: the longest free block still ahead, cut to the hours shown.
+  const gap = now === null ? null : biggestFreeGap(day.blocks, now);
+  const free = gap && { ...gap, top: Math.max(gap.startMin, offset), bottom: Math.min(gap.endMin, hours.to * 60) };
   return (
     <div
       aria-label={`Events on ${LONG_DAY.format(asDate(day.date))}`}
@@ -278,6 +267,21 @@ function DayColumn({
       {hourList.map((hour, i) => (
         <div key={hour} aria-hidden className="absolute inset-x-0 border-t border-border/70" style={{ top: i * HOUR_PX }} />
       ))}
+      {free && free.bottom - free.top >= 30 && (
+        <div
+          role="note"
+          aria-label={`Free, ${clockLabel(free.startMin)} – ${clockLabel(free.endMin)}, ${formatMinutes(free.endMin - free.startMin)}`}
+          className="pointer-events-none absolute inset-x-1 rounded-lg border border-dashed border-primary/40 bg-primary/[0.05] px-1.5 py-1 text-[11px] leading-tight font-medium text-primary"
+          style={{ top: (free.top - offset) * PX_PER_MIN + 2, height: (free.bottom - free.top) * PX_PER_MIN - 4 }}
+        >
+          Free · {formatMinutes(free.endMin - free.startMin)}
+          {free.bottom - free.top >= 45 && (
+            <span className="block font-normal opacity-80">
+              {clockLabel(free.startMin)} – {clockLabel(free.endMin)}
+            </span>
+          )}
+        </div>
+      )}
       {day.blocks.map((b) => {
         const top = (b.startMin - offset) * PX_PER_MIN;
         const tall = (b.endMin - b.startMin) * PX_PER_MIN;

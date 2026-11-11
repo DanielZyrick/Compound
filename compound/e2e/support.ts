@@ -16,7 +16,7 @@ try {
 }
 
 export const TEST_EMAIL = "e2e-test@compound.local";
-const TEST_TIMEZONE = "Asia/Manila";
+export const TEST_TIMEZONE = "Asia/Manila";
 
 /**
  * The dev database, or an error. The tests create and delete rows, so they
