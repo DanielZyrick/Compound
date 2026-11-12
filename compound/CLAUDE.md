@@ -140,6 +140,7 @@ Rules:
 - Form actions return `{ errors: string[] }` with messages written for the user.
 - Batch inserts where possible; avoid one round trip per row.
 - Unit tests sit next to the code (`*.test.ts`). E2E tests live in `e2e/`.
+- The `shadcn` package is not installed: its base styles are copied into `app/shadcn.css` (from 4.22.1), and components are added with `npx shadcn@<version> add`. `package.json` overrides `minimatch` to 11 for the ESLint TypeScript tooling (an audit fix); remove the override once typescript-eslint asks for 11 itself.
 
 ## Database and deploy safety
 - `.env.local` points BOTH DATABASE_URL and DATABASE_URL_UNPOOLED at the Neon `dev`
