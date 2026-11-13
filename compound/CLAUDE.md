@@ -35,7 +35,9 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
 - habits (id, user_id, name, schedule, created_at, archived_at)
 - habit_checkins (id, habit_id, date, created_at) — unique (habit_id, date)
 - tracks (id, user_id, title, topic, type: skill | reading | thinking, level, reading_plan,
-  total_days, start_date, habit_id nullable, status, plan_source)
+  total_days, start_date, habit_id nullable, status, plan_source, details nullable)
+  — details: the learner's optional specifics (≤ 500 chars, from "Anything specific?"),
+  passed in <details> tags to the plan prompt and every lesson prompt; shown on the track page
 - track_days (id, track_id, day_number, title, summary, completed_at)
 - lessons (id, track_day_id, content, source, created_at)
 - attempts (id, lesson_id, user_id, exercise_index, answer, is_correct, feedback,
