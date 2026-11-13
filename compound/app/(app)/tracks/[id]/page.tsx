@@ -53,6 +53,11 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
         {track.completedDays.size} of {track.total_days} done
         {track.habit_name && <> · Habit: {track.habit_name}</>}
       </p>
+      {track.details && (
+        <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
+          <span className="font-medium text-foreground">Your focus:</span> {track.details}
+        </p>
+      )}
       <div
         role="progressbar"
         aria-label="Days done"

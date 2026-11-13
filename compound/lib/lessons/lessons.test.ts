@@ -72,6 +72,12 @@ describe("prompts", () => {
     expect(lessonPrompt({ ...base, earlierDays: [] })).not.toContain("<earlier_days>");
     expect(lessonPrompt({ ...base, dayNumber: 2, earlierDays: ["SELECT"] })).toContain("<earlier_days>SELECT</earlier_days>");
   });
+
+  it("includes the track's details only when there are some", () => {
+    const base = { trackTitle: "SQL", topic: "SQL", type: "skill" as const, level: "beginner" as const, dayNumber: 1, totalDays: 7, dayTitle: "SELECT", daySummary: "Read data.", earlierDays: [] };
+    expect(lessonPrompt({ ...base, details: "Sales reports in Postgres" })).toContain("<details>Sales reports in Postgres</details>");
+    expect(lessonPrompt({ ...base, details: null })).not.toContain("<details>");
+  });
 });
 
 describe("rules", () => {

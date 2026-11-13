@@ -4,6 +4,7 @@ import { READING_PLAN_IDS } from "@/lib/reading/plans";
 import { TRACK_LENGTHS } from "@/lib/tracks/plan";
 
 export const MAX_ACTIVE_TRACKS = 5;
+export const MAX_TRACK_DETAILS = 500;
 
 // Skill and thinking tracks: the AI writes a plan for the learner's topic.
 const aiTrackSchema = z.object({
@@ -13,6 +14,13 @@ const aiTrackSchema = z.object({
     .trim()
     .min(3, { error: "Tell us what you want to learn (at least 3 characters)." })
     .max(120, { error: "Keep the topic under 120 characters." }),
+  // Optional specifics: what to focus on, what to skip, why. Blank means none.
+  details: z
+    .string()
+    .trim()
+    .max(MAX_TRACK_DETAILS, { error: `Keep the details under ${MAX_TRACK_DETAILS} characters.` })
+    .optional()
+    .transform((text) => text || null),
   level: z.enum(TRACK_LEVELS, { error: "Choose your level." }),
   totalDays: z
     .number({ error: "Choose a length." })
