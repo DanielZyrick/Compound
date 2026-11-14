@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { codeBlockTitle, languageName } from "./code";
 import { demoCodeBlocks, demoFeedback, demoLesson } from "./demo";
-import { feedbackPrompt, lessonPrompt } from "./prompts";
+import { FEEDBACK_SYSTEM_PROMPT, feedbackPrompt, LESSON_SYSTEM_PROMPT, lessonPrompt } from "./prompts";
 import { canComplete, isDayOpen, shouldCheckHabit, unlockDate } from "./rules";
 import { codeBlockSchema, feedbackSchema, lessonSchema, toPublicLesson, upgradeLesson, type LessonContent } from "./schema";
 
@@ -10,11 +10,12 @@ const section = { heading: "The idea", paragraphs: ["Some text."], blocks: [bloc
 const mc = (answerIndex = 1) => ({
   type: "multiple_choice" as const,
   question: "Which is right?",
+  code: null as { language: string; filename: string | null; code: string } | null,
   choices: ["A", "B", "C"],
   answerIndex,
   explanation: "B is right because of the rule.",
 });
-const open = { type: "open" as const, question: "Explain why.", hint: null, sampleAnswer: "Because of the rule." };
+const open = { type: "open" as const, question: "Explain why.", code: null, hint: null, sampleAnswer: "Because of the rule." };
 const skillLesson = (exercises: unknown[]) => ({ title: "Day one", minutes: 10, sections: [section, section], exercises });
 
 describe("lessonSchema", () => {
@@ -145,13 +146,17 @@ describe("code blocks", () => {
 
 describe("upgradeLesson", () => {
   const oldSection = (code: string | null) => ({ heading: "The idea", paragraphs: ["Some text."], code });
-  const oldLesson = { title: "Day one", minutes: 10, sections: [oldSection("x = 1"), oldSection(null)], exercises: [mc(), mc(), open] };
+  // As saved before: no blocks on sections, and no code field on exercises.
+  const withoutCode = (exercise: object) => Object.fromEntries(Object.entries(exercise).filter(([key]) => key !== "code"));
+  const [oldMc, oldOpen] = [withoutCode(mc()), withoutCode(open)];
+  const oldLesson = { title: "Day one", minutes: 10, sections: [oldSection("x = 1"), oldSection(null)], exercises: [oldMc, oldMc, oldOpen] };
 
   it("turns a saved lesson's plain code into a block, so old lessons still open", () => {
     const parsed = lessonSchema("skill").safeParse(upgradeLesson(oldLesson));
     expect(parsed.success).toBe(true);
     expect(parsed.data?.sections[0].blocks).toEqual([{ language: "text", filename: null, code: "x = 1", output: null, result: null }]);
     expect(parsed.data?.sections[1].blocks).toEqual([]);
+    expect(parsed.data?.exercises.map((e) => e.code)).toEqual([null, null, null]);
   });
 
   it("leaves new lessons and non-lessons alone", () => {
@@ -163,5 +168,33 @@ describe("upgradeLesson", () => {
 
   it("without the upgrade, an old lesson would be rejected", () => {
     expect(lessonSchema("skill").safeParse(oldLesson).success).toBe(false);
+  });
+});
+
+describe("code in exercises", () => {
+  const snippet = { language: "python", filename: null, code: "print(len('abc'))" };
+
+  it("lets a question carry the code it asks about, and shows it to the learner", () => {
+    const lesson = lessonSchema("skill").parse(skillLesson([{ ...mc(), code: snippet }, mc(), open])) as LessonContent;
+    expect(lesson.exercises[0].code).toEqual(snippet);
+    expect(toPublicLesson(lesson).exercises[0].code).toEqual(snippet);
+  });
+
+  it("drops an output smuggled into a question's code, which would give the answer away", () => {
+    const lesson = lessonSchema("skill").parse(skillLesson([{ ...mc(), code: { ...snippet, output: "3" } }, mc(), open]));
+    expect(JSON.stringify(lesson.exercises[0].code)).not.toContain("output");
+  });
+
+  it("tells the AI how to write code, in lessons and in feedback", () => {
+    expect(LESSON_SYSTEM_PROMPT).toContain("single backticks");
+    expect(LESSON_SYSTEM_PROMPT).toContain("fenced block");
+    expect(FEEDBACK_SYSTEM_PROMPT).toContain("fenced block");
+  });
+
+  it("shows inline code in demo lessons that have an example", () => {
+    const lesson = demoLesson({ type: "skill", topic: "Python basics", dayTitle: "Day one", daySummary: "Learn one small thing." });
+    expect(lesson.sections[0].paragraphs.at(-1)).toContain('`steps = ["read", "practise", "review"]`');
+    const plain = demoLesson({ type: "skill", topic: "Public speaking", dayTitle: "Day one", daySummary: "Learn one small thing." });
+    expect(plain.sections[0].paragraphs.join(" ")).not.toContain("`");
   });
 });

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { sql } from "kysely";
 import { alerts, db, open, signInFreshUser } from "./support";
 
 // Learning tracks in AI demo mode (forced by playwright.config.ts), so these
@@ -215,4 +216,102 @@ test("restoring two tracks on the same topic at once keeps only one active", asy
   await expect.poll(refused).toBe(1);
   const active = await db.selectFrom("tracks").select("title").where("user_id", "=", user.id).where("status", "!=", "archived").execute();
   expect(active).toHaveLength(1);
+});
+
+test("code in questions, choices and answers is shown as code", async ({ page, context }) => {
+  test.setTimeout(60_000);
+  const user = await signInFreshUser(context);
+  await open(page, "/tracks/new");
+  await page.getByText("Skill", { exact: true }).click();
+  await page.getByLabel("What do you want to learn?").fill("Python basics");
+  await page.getByText("Beginner", { exact: true }).click();
+  await page.getByText("7 days", { exact: true }).click();
+  await page.getByRole("button", { name: "Create track" }).click();
+  await expect(page).toHaveURL(/\/tracks\/[0-9a-f-]{36}$/);
+  await page.getByRole("main").getByRole("listitem").first().getByRole("link").click();
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Start lesson" }).click();
+
+  // The demo lesson shows printed output, and code inside a sentence.
+  const example = page.getByRole("figure").filter({ hasText: "steps.py" });
+  await expect(example.getByText("Expected output")).toBeVisible();
+  await expect(example.locator("samp")).toHaveText("1 read\n2 practise\n3 review");
+  await expect(page.locator("article code").filter({ hasText: 'steps = ["read", "practise", "review"]' }).first()).toBeVisible();
+
+  // Swap in a lesson the way the AI writes one: code on a question, backticks
+  // in sentences and choices, and a fenced block as the sample answer.
+  const fence = "```";
+  const lesson = {
+    title: "Lengths",
+    minutes: 10,
+    sections: [
+      { heading: "Counting", paragraphs: ["Use `len(x)` to count the items in `x`."], blocks: [] },
+      { heading: "Why", paragraphs: ["It works on strings and lists."], blocks: [] },
+    ],
+    exercises: [
+      {
+        type: "multiple_choice",
+        question: "What does this print?",
+        code: { language: "python", filename: "count.py", code: "print(len('abc'))" },
+        choices: ["`3`", "`abc`", "Nothing"],
+        answerIndex: 0,
+        explanation: "`len` counts the three characters.",
+      },
+      {
+        type: "multiple_choice",
+        question: "Which call counts the items in `items`?",
+        code: null,
+        choices: ["`len(items)`", "`items.len`", "`count(items)`"],
+        answerIndex: 0,
+        explanation: "`len(items)` is the built-in way.",
+      },
+      {
+        type: "open",
+        question: "Write a line that prints the length of `name`.",
+        code: null,
+        hint: "Start with `print(`.",
+        sampleAnswer: `One line is enough:\n${fence}python\nprint(len(name))\n${fence}`,
+      },
+    ],
+  };
+  await sql`
+    update lessons set content = ${JSON.stringify(lesson)}::jsonb
+    where track_day_id in (
+      select track_days.id from track_days join tracks on tracks.id = track_days.track_id where tracks.user_id = ${user.id}
+    )
+  `.execute(db);
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+
+  // Inline code in a paragraph, with no stray backticks left on the page.
+  const main = page.getByRole("main");
+  await expect(main.locator("article code", { hasText: /^len\(x\)$/ })).toBeVisible();
+  await expect(main).not.toContainText("`");
+
+  // The question's code is a block with no output, and the choices are code chips.
+  const first = page.locator("section").filter({ hasText: "Exercise 1" });
+  const asked = first.getByRole("figure");
+  await expect(asked.locator("figcaption")).toHaveText("count.py");
+  await expect(asked).toContainText("print(len('abc'))");
+  await expect(asked).not.toContainText("Expected output");
+  await expect(first.locator("label code").first()).toHaveText("3");
+  await first.locator("label").first().click();
+  await first.getByRole("button", { name: "Check answer" }).click();
+  await expect(first.getByText("Correct", { exact: true })).toBeVisible();
+  await expect(first.locator("code", { hasText: /^len$/ })).toBeVisible(); // in the explanation
+
+  // The open exercise: a code font to type in, and a sample answer with a code block.
+  const third = page.locator("section").filter({ hasText: "Exercise 3" });
+  await expect(third.getByRole("heading").locator("code")).toHaveText("name");
+  await expect(third.locator("code", { hasText: "print(" }).first()).toBeVisible(); // the hint
+  const box = third.getByLabel("Your answer");
+  await expect(box).toHaveCSS("font-family", /mono/i);
+  await box.fill("print( len(name) )");
+  await third.getByRole("button", { name: "Get feedback" }).click();
+  await third.getByText("Show an example answer").click();
+  const sample = third.locator("details");
+  await expect(sample).toContainText("One line is enough:");
+  await expect(sample.getByRole("figure").locator("figcaption")).toHaveText("Python");
+  await expect(sample.getByRole("figure")).toContainText("print(len(name))");
+  await expect(third).not.toContainText("`");
 });

@@ -106,7 +106,7 @@ Rules:
 ## AI features
 1. Track plan: from a topic, duration, and level, return JSON
    { title, days: [{ day, title, summary }] }. Validate and save to track_days.
-2. Lesson: the first time a day is opened, generate the lesson and exercises as JSON (code goes in each section's `blocks`: language, optional file name, and either the exact printed `output` or a one-line `result`; shown by `components/code-block.tsx` with Shiki, labelled "Expected output" because the code is never run) and
+2. Lesson: the first time a day is opened, generate the lesson and exercises as JSON (code goes in each section's `blocks`: language, optional file name, and either the exact printed `output` or a one-line `result`; shown by `components/code-block.tsx` with Shiki, labelled "Expected output" because the code is never run; an exercise can carry `code` the question is about, without output; text may hold `inline code` and fenced blocks, parsed by `lib/lessons/rich-text.ts` and shown by `InlineText` / `RichText`, never as HTML) and
    save to lessons. Load from the database after that.
 3. Feedback: from the exercise and the user's answer, return JSON
    { isCorrect, feedback, betterVersion }. Save to attempts.

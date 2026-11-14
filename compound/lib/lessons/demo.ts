@@ -52,9 +52,9 @@ export function demoCodeBlocks(topic: string): CodeBlockContent[] {
 export function demoLesson({ type, topic, dayTitle, daySummary }: DemoLessonInput): LessonContent {
   const name = topic.trim().replace(/[.!?]+$/, "");
   const multipleChoice = (question: string, choices: string[], answerIndex: number, explanation: string) =>
-    ({ type: "multiple_choice", question, choices, answerIndex, explanation }) as const;
+    ({ type: "multiple_choice", question, code: null, choices, answerIndex, explanation }) as const;
   const open = (question: string, sampleAnswer: string) =>
-    ({ type: "open", question, hint: "There's no single right answer. Be specific.", sampleAnswer }) as const;
+    ({ type: "open", question, code: null, hint: "There's no single right answer. Be specific.", sampleAnswer }) as const;
 
   const first = multipleChoice(
     `What is the main goal of today's lesson, "${dayTitle}"?`,
@@ -77,6 +77,10 @@ export function demoLesson({ type, topic, dayTitle, daySummary }: DemoLessonInpu
     "I'd ask what result they want in a month, how much time they really have each day, and what they've already tried, because the best choice depends on their goal and constraints, not on what's popular.",
   );
 
+  const blocks = demoCodeBlocks(topic);
+  // With an example on the page, show how code inside a sentence looks too.
+  const firstLine = blocks[0]?.code.split("\n")[0];
+
   return {
     title: dayTitle,
     minutes: 10,
@@ -86,8 +90,9 @@ export function demoLesson({ type, topic, dayTitle, daySummary }: DemoLessonInpu
         paragraphs: [
           daySummary,
           "This is an example lesson: AI isn't connected, so the content is generic. With AI connected, each lesson is written for your topic, level and goal.",
+          ...(firstLine ? ["The example below starts with `" + firstLine + "`. Code inside a sentence looks like that."] : []),
         ],
-        blocks: demoCodeBlocks(topic),
+        blocks,
       },
       {
         heading: "Why small steps work",

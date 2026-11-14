@@ -2,24 +2,31 @@
 
 import { useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
+import { InlineText } from "@/components/inline-text";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { plainText } from "@/lib/lessons/rich-text";
 import { cn } from "@/lib/utils";
 import { answerMultipleChoice, submitOpenAnswer } from "./actions";
 
 // The exercise props only ever contain what the learner may see: answers,
 // explanations and sample answers arrive from the server after an attempt.
+// Text may hold `inline code`, shown by <InlineText>. Anything that can hold a
+// whole code block (the question's code, feedback, sample answers) arrives as
+// a node the server has already rendered and coloured.
 
 export type MultipleChoiceProps = {
   lessonId: string;
   index: number;
   question: string;
+  /** The code the question is about, already rendered. */
+  code?: React.ReactNode;
   choices: string[];
   result: { chosen: number; correctIndex: number; isCorrect: boolean; explanation: string } | null;
 };
 
-export function MultipleChoiceExercise({ lessonId, index, question, choices, result }: MultipleChoiceProps) {
+export function MultipleChoiceExercise({ lessonId, index, question, code, choices, result }: MultipleChoiceProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
@@ -35,9 +42,9 @@ export function MultipleChoiceExercise({ lessonId, index, question, choices, res
   }
 
   return (
-    <ExerciseCard index={index} question={question}>
+    <ExerciseCard index={index} question={question} code={code}>
       <fieldset disabled={result !== null || pending} className="flex flex-col gap-2">
-        <legend className="sr-only">{question}</legend>
+        <legend className="sr-only">{plainText(question)}</legend>
         {choices.map((choice, i) => {
           const isChosen = result ? result.chosen === i : selected === i;
           const isAnswer = result?.correctIndex === i;
@@ -86,7 +93,9 @@ export function MultipleChoiceExercise({ lessonId, index, question, choices, res
                   />
                 )}
               </span>
-              <span className="flex-1">{choice}</span>
+              <span className="min-w-0 flex-1">
+                <InlineText text={choice} />
+              </span>
               {result && isAnswer && <Check className="size-4 text-success" aria-label="Correct answer" />}
               {result && isChosen && !isAnswer && <X className="size-4 text-destructive" aria-label="Your answer" />}
             </label>
@@ -95,7 +104,11 @@ export function MultipleChoiceExercise({ lessonId, index, question, choices, res
       </fieldset>
 
       {result ? (
-        <ResultNote correct={result.isCorrect}>{result.explanation}</ResultNote>
+        <ResultNote correct={result.isCorrect}>
+          <p className="whitespace-pre-line">
+            <InlineText text={result.explanation} />
+          </p>
+        </ResultNote>
       ) : (
         <Button onClick={check} disabled={pending} variant="outline" className="mt-3 self-start">
           {pending ? "Checking…" : "Check answer"}
@@ -109,22 +122,37 @@ export function MultipleChoiceExercise({ lessonId, index, question, choices, res
 export type OpenAttempt = {
   answer: string;
   isCorrect: boolean | null; // null: not graded (demo mode)
-  feedback: string | null;
-  betterVersion: string | null;
+  /** Rendered on the server; null when there's none to show. */
+  feedback: React.ReactNode;
+  betterVersion: React.ReactNode;
 };
 
 export type OpenProps = {
   lessonId: string;
   index: number;
   question: string;
+  /** The code the question is about, already rendered. */
+  code?: React.ReactNode;
   hint: string | null;
+  /** The lesson has code in it: type and show answers in a code font. */
+  codeAnswers?: boolean;
   attempts: OpenAttempt[];
   remaining: number;
-  /** Revealed by the server after the first attempt. */
-  sampleAnswer: string | null;
+  /** Revealed by the server after the first attempt, already rendered. */
+  sampleAnswer: React.ReactNode;
 };
 
-export function OpenExercise({ lessonId, index, question, hint, attempts, remaining, sampleAnswer }: OpenProps) {
+export function OpenExercise({
+  lessonId,
+  index,
+  question,
+  code,
+  hint,
+  codeAnswers = false,
+  attempts,
+  remaining,
+  sampleAnswer,
+}: OpenProps) {
   const [answer, setAnswer] = useState(attempts.at(-1)?.answer ?? "");
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
@@ -139,21 +167,28 @@ export function OpenExercise({ lessonId, index, question, hint, attempts, remain
   }
 
   return (
-    <ExerciseCard index={index} question={question}>
-      {hint && <p className="-mt-1 mb-3 text-sm text-muted-foreground">Hint: {hint}</p>}
+    <ExerciseCard index={index} question={question} code={code}>
+      {hint && (
+        <p className="-mt-1 mb-3 text-sm text-muted-foreground">
+          Hint: <InlineText text={hint} />
+        </p>
+      )}
 
       {attempts.map((attempt, i) => (
         <div key={i} className="mb-3 rounded-xl border bg-muted/40 p-3 text-sm">
           <p className="text-xs font-medium text-muted-foreground">Your answer {attempts.length > 1 ? i + 1 : ""}</p>
-          <p className="mt-1 whitespace-pre-line">{attempt.answer}</p>
+          {/* Code answers keep their spaces and line breaks. */}
+          <p className={cn("mt-1", codeAnswers ? "font-mono text-[13px] break-words whitespace-pre-wrap" : "whitespace-pre-line")}>
+            {attempt.answer}
+          </p>
           {attempt.feedback && (
             <ResultNote correct={attempt.isCorrect}>
               {attempt.feedback}
-              {attempt.betterVersion && attempt.isCorrect !== null && (
-                <span className="mt-2 block">
-                  <span className="font-medium">A stronger version: </span>
+              {attempt.betterVersion && (
+                <div className="mt-3">
+                  <p className="mb-1 font-medium">A stronger version:</p>
                   {attempt.betterVersion}
-                </span>
+                </div>
               )}
             </ResultNote>
           )}
@@ -163,7 +198,7 @@ export function OpenExercise({ lessonId, index, question, hint, attempts, remain
       {sampleAnswer && (
         <details className="mb-3 text-sm">
           <summary className="cursor-pointer font-medium">Show an example answer</summary>
-          <p className="mt-2 whitespace-pre-line text-muted-foreground">{sampleAnswer}</p>
+          <div className="mt-2 text-muted-foreground">{sampleAnswer}</div>
         </details>
       )}
 
@@ -179,7 +214,8 @@ export function OpenExercise({ lessonId, index, question, hint, attempts, remain
             placeholder="Write your answer…"
             maxLength={2000}
             disabled={pending}
-            className="min-h-24"
+            spellCheck={!codeAnswers}
+            className={cn("min-h-24", codeAnswers && "font-mono text-[13px]")}
           />
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">
@@ -198,11 +234,24 @@ export function OpenExercise({ lessonId, index, question, hint, attempts, remain
   );
 }
 
-function ExerciseCard({ index, question, children }: { index: number; question: string; children: React.ReactNode }) {
+function ExerciseCard({
+  index,
+  question,
+  code,
+  children,
+}: {
+  index: number;
+  question: string;
+  code?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="flex flex-col rounded-2xl border p-5">
+    <section className="flex min-w-0 flex-col rounded-2xl border p-5">
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Exercise {index + 1}</p>
-      <h3 className="mt-1 mb-4 font-medium whitespace-pre-line">{question}</h3>
+      <h3 className="mt-1 mb-4 font-medium whitespace-pre-line">
+        <InlineText text={question} />
+      </h3>
+      {code && <div className="-mt-1 mb-4">{code}</div>}
       {children}
     </section>
   );
@@ -228,7 +277,7 @@ function ResultNote({ correct, children }: { correct: boolean | null; children: 
       >
         {label}
       </p>
-      <p className="mt-1 whitespace-pre-line">{children}</p>
+      <div className="mt-1">{children}</div>
     </div>
   );
 }

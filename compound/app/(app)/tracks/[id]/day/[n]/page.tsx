@@ -6,6 +6,8 @@ import { Suspense } from "react";
 import { ArrowLeft, BookOpen, Clock, ExternalLink, Lock } from "lucide-react";
 import { z } from "zod";
 import { CodeBlock } from "@/components/code-block";
+import { InlineText } from "@/components/inline-text";
+import { RichText } from "@/components/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/ai/config";
@@ -157,6 +159,12 @@ function LessonBody({
   lessonId: string;
   attempts: LessonAttempt[];
 }) {
+  // A lesson with code in it: answers are typed and shown in a code font.
+  const hasCode = lesson.sections.some((s) => s.blocks.length > 0) || lesson.exercises.some((e) => e.code !== null);
+  // The code a question is about. No output: that would give the answer away.
+  const questionCode = (exercise: LessonContent["exercises"][number]) =>
+    exercise.code && <CodeBlock block={{ ...exercise.code, output: null, result: null }} />;
+
   return (
     <>
       <article className="flex flex-col gap-6">
@@ -165,7 +173,7 @@ function LessonBody({
             <h2 className="text-lg font-semibold">{section.heading}</h2>
             {section.paragraphs.map((paragraph, j) => (
               <p key={j} className="mt-2 leading-relaxed">
-                {paragraph}
+                <InlineText text={paragraph} />
               </p>
             ))}
             {section.blocks.map((block, j) => (
@@ -196,6 +204,7 @@ function LessonBody({
                 lessonId={lessonId}
                 index={index}
                 question={exercise.question}
+                code={questionCode(exercise)}
                 choices={exercise.choices}
                 result={result}
               />
@@ -207,15 +216,19 @@ function LessonBody({
               lessonId={lessonId}
               index={index}
               question={exercise.question}
+              code={questionCode(exercise)}
               hint={exercise.hint}
+              codeAnswers={hasCode}
+              // Feedback and answers can hold code blocks, which are coloured
+              // on the server and handed to the exercise ready to show.
               attempts={mine.map((a) => ({
                 answer: a.answer,
                 isCorrect: a.is_correct,
-                feedback: a.feedback,
-                betterVersion: a.better_version,
+                feedback: a.feedback && <RichText text={a.feedback} />,
+                betterVersion: a.better_version && a.is_correct !== null && <RichText text={a.better_version} />,
               }))}
               remaining={Math.max(0, MAX_FEEDBACK_PER_EXERCISE - mine.length)}
-              sampleAnswer={mine.length > 0 ? exercise.sampleAnswer : null}
+              sampleAnswer={mine.length > 0 ? <RichText text={exercise.sampleAnswer} /> : null}
             />
           );
         })}

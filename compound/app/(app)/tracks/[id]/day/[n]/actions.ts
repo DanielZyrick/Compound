@@ -183,7 +183,9 @@ export async function submitOpenAnswer(input: unknown): Promise<Result> {
       prompt: feedbackPrompt({
         type: lesson.type,
         level: lesson.level,
-        question: exercise.question,
+        question: exercise.code
+          ? exercise.question + "\n```" + exercise.code.language + "\n" + exercise.code.code + "\n```"
+          : exercise.question,
         reference: exercise.sampleAnswer,
         answer,
       }),

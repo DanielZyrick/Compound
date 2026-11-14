@@ -36,9 +36,16 @@ const sectionSchema = z.object({
   blocks: z.array(codeBlockSchema).max(3).describe("Code examples for this section, in order; empty if none"),
 });
 
+/** Code a question asks about. No output here: that would give the answer away. */
+const questionCodeSchema = codeBlockSchema
+  .pick({ language: true, filename: true, code: true })
+  .nullable()
+  .describe("Code the question refers to, or null. Never put the code inside the question text.");
+
 const multipleChoiceSchema = z.object({
   type: z.literal("multiple_choice"),
   question: z.string().trim().min(5).max(300),
+  code: questionCodeSchema,
   choices: z.array(z.string().trim().min(1).max(160)).min(3).max(4),
   answerIndex: z.int().min(0).max(3).describe("0-based index of the one correct choice"),
   explanation: z.string().trim().min(10).max(400).describe("Why the correct choice is right"),
@@ -47,6 +54,7 @@ const multipleChoiceSchema = z.object({
 const openSchema = z.object({
   type: z.literal("open"),
   question: z.string().trim().min(5).max(500),
+  code: questionCodeSchema,
   hint: z.string().trim().max(200).nullable(),
   sampleAnswer: z.string().trim().min(10).max(800).describe("A strong example answer"),
 });
@@ -82,16 +90,24 @@ export type LessonContent = z.infer<ReturnType<typeof lessonSchema>>;
 
 /**
  * Lessons saved before code blocks had a language and output kept one plain
- * `code` string per section. This rewrites that shape into `blocks`, so old
- * lessons still open (without output, which was never written for them).
- * Anything else is returned as it is, for the schema to judge.
+ * `code` string per section, and their exercises had no code of their own.
+ * This rewrites that shape into `blocks` and adds the missing `code: null`,
+ * so old lessons still open (without output, which was never written for
+ * them). Anything else is returned as it is, for the schema to judge.
  */
 export function upgradeLesson(content: unknown): unknown {
   if (typeof content !== "object" || content === null) return content;
-  const lesson = content as { sections?: unknown };
+  const lesson = content as { sections?: unknown; exercises?: unknown };
   if (!Array.isArray(lesson.sections)) return content;
   return {
     ...lesson,
+    ...(Array.isArray(lesson.exercises) && {
+      exercises: lesson.exercises.map((exercise: unknown) =>
+        typeof exercise === "object" && exercise !== null && !("code" in exercise)
+          ? { ...exercise, code: null }
+          : exercise,
+      ),
+    }),
     sections: lesson.sections.map((section: unknown) => {
       if (typeof section !== "object" || section === null || "blocks" in section) return section;
       const { code, ...rest } = section as { code?: unknown };
@@ -114,8 +130,8 @@ export function toPublicLesson(lesson: LessonContent) {
     ...lesson,
     exercises: lesson.exercises.map((e) =>
       e.type === "multiple_choice"
-        ? { type: e.type, question: e.question, choices: e.choices }
-        : { type: e.type, question: e.question, hint: e.hint },
+        ? { type: e.type, question: e.question, code: e.code, choices: e.choices }
+        : { type: e.type, question: e.question, code: e.code, hint: e.hint },
     ),
   };
 }
