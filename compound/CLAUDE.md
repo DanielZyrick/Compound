@@ -106,7 +106,7 @@ Rules:
 ## AI features
 1. Track plan: from a topic, duration, and level, return JSON
    { title, days: [{ day, title, summary }] }. Validate and save to track_days.
-2. Lesson: the first time a day is opened, generate the lesson and exercises as JSON and
+2. Lesson: the first time a day is opened, generate the lesson and exercises as JSON (code goes in each section's `blocks`: language, optional file name, and either the exact printed `output` or a one-line `result`; shown by `components/code-block.tsx` with Shiki, labelled "Expected output" because the code is never run) and
    save to lessons. Load from the database after that.
 3. Feedback: from the exercise and the user's answer, return JSON
    { isCorrect, feedback, betterVersion }. Save to attempts.
@@ -122,7 +122,7 @@ Rules:
   Use the fast model for feedback and the smart model for plan generation.
 - Every AI response must be JSON, validated with a Zod schema. On invalid output,
   retry once, then show a clear error.
-- Never regenerate content that is already cached (lessons, daily principles).
+- Never regenerate content that is already cached (lessons, daily principles). Lessons saved in the older shape (one plain `code` string per section) are upgraded on read by `upgradeLesson` in `lib/lessons/schema.ts`.
 - A per-user daily limit on AI calls (`lib/ai/config.ts`), logged in ai_calls.
 - Demo mode: with no ANTHROPIC_API_KEY, or AI_DEMO_MODE=1, use labelled example content
   instead of calling Claude. The e2e tests always run in demo mode.

@@ -4,12 +4,12 @@ import type { CalendarDate } from "@/lib/db/types";
 import { todayIn } from "@/lib/dates/calendar";
 import { completedDayNumbers } from "@/lib/tracks/queries";
 import { currentTrackDay, nextTrackDay } from "@/lib/tracks/progress";
-import { lessonSchema, type LessonContent } from "./schema";
+import { lessonSchema, upgradeLesson, type LessonContent } from "./schema";
 
 /** Reads stored lesson JSON, validating it again. Bad data is treated as missing. */
 export function parseLesson(type: string, content: unknown): LessonContent | null {
   if (type !== "skill" && type !== "thinking") return null;
-  const parsed = lessonSchema(type).safeParse(content);
+  const parsed = lessonSchema(type).safeParse(upgradeLesson(content));
   if (!parsed.success) {
     console.error("[lessons] stored lesson failed validation:", parsed.error.message);
     return null;

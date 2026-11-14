@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { demoFeedback, demoLesson } from "./demo";
+import { codeBlockTitle, languageName } from "./code";
+import { demoCodeBlocks, demoFeedback, demoLesson } from "./demo";
 import { feedbackPrompt, lessonPrompt } from "./prompts";
 import { canComplete, isDayOpen, shouldCheckHabit, unlockDate } from "./rules";
-import { feedbackSchema, lessonSchema, toPublicLesson, type LessonContent } from "./schema";
+import { codeBlockSchema, feedbackSchema, lessonSchema, toPublicLesson, upgradeLesson, type LessonContent } from "./schema";
 
-const section = { heading: "The idea", paragraphs: ["Some text."], code: null };
+const block = { language: "python", filename: null, code: "print(1 + 1)", output: "2", result: null };
+const section = { heading: "The idea", paragraphs: ["Some text."], blocks: [block] };
 const mc = (answerIndex = 1) => ({
   type: "multiple_choice" as const,
   question: "Which is right?",
@@ -106,5 +108,60 @@ describe("rules", () => {
     expect(shouldCheckHabit({ archived: false, schedule: [1, 2] }, wednesday)).toBe(false);
     expect(shouldCheckHabit({ archived: true, schedule: [3] }, wednesday)).toBe(false);
     expect(shouldCheckHabit(null, wednesday)).toBe(false);
+  });
+});
+
+describe("code blocks", () => {
+  it("accepts printed output, or a result sentence, or neither", () => {
+    expect(codeBlockSchema.safeParse(block).success).toBe(true);
+    expect(codeBlockSchema.safeParse({ ...block, output: null, result: "Defines a layout." }).success).toBe(true);
+    expect(codeBlockSchema.safeParse({ ...block, output: null }).success).toBe(true);
+  });
+
+  it("rejects empty code and more than three blocks in a section", () => {
+    expect(codeBlockSchema.safeParse({ ...block, code: "" }).success).toBe(false);
+    const crowded = { ...section, blocks: [block, block, block, block] };
+    expect(lessonSchema("skill").safeParse({ ...skillLesson([mc(), mc(), open]), sections: [crowded, section] }).success).toBe(false);
+  });
+
+  it("names a block by its file, or else its language", () => {
+    expect(codeBlockTitle({ language: "tsx", filename: "app/layout.tsx" })).toBe("app/layout.tsx");
+    expect(codeBlockTitle({ language: "python", filename: null })).toBe("Python");
+    expect(languageName("SQL")).toBe("SQL");
+    expect(languageName("elixir")).toBe("Elixir");
+    expect(languageName(" ")).toBe("Code");
+  });
+
+  it("gives demo lessons an example for common coding topics only", () => {
+    expect(demoCodeBlocks("Python basics")[0]).toMatchObject({ language: "python", output: "1 read\n2 practise\n3 review" });
+    expect(demoCodeBlocks("SQL for data analysis")[0]).toMatchObject({ language: "sql", output: null });
+    expect(demoCodeBlocks("Public speaking")).toEqual([]);
+    for (const topic of ["Python basics", "SQL for data analysis", "React hooks"]) {
+      const lesson = demoLesson({ type: "skill", topic, dayTitle: "Day one", daySummary: "Learn one small thing." });
+      expect(lessonSchema("skill").safeParse(lesson).success).toBe(true);
+    }
+  });
+});
+
+describe("upgradeLesson", () => {
+  const oldSection = (code: string | null) => ({ heading: "The idea", paragraphs: ["Some text."], code });
+  const oldLesson = { title: "Day one", minutes: 10, sections: [oldSection("x = 1"), oldSection(null)], exercises: [mc(), mc(), open] };
+
+  it("turns a saved lesson's plain code into a block, so old lessons still open", () => {
+    const parsed = lessonSchema("skill").safeParse(upgradeLesson(oldLesson));
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.sections[0].blocks).toEqual([{ language: "text", filename: null, code: "x = 1", output: null, result: null }]);
+    expect(parsed.data?.sections[1].blocks).toEqual([]);
+  });
+
+  it("leaves new lessons and non-lessons alone", () => {
+    const lesson = skillLesson([mc(), mc(), open]);
+    expect(upgradeLesson(lesson)).toEqual(lesson);
+    expect(upgradeLesson(null)).toBeNull();
+    expect(upgradeLesson("nope")).toBe("nope");
+  });
+
+  it("without the upgrade, an old lesson would be rejected", () => {
+    expect(lessonSchema("skill").safeParse(oldLesson).success).toBe(false);
   });
 });

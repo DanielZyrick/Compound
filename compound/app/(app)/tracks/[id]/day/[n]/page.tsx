@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { ArrowLeft, BookOpen, Clock, ExternalLink, Lock } from "lucide-react";
 import { z } from "zod";
+import { CodeBlock } from "@/components/code-block";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/ai/config";
@@ -167,11 +168,9 @@ function LessonBody({
                 {paragraph}
               </p>
             ))}
-            {section.code && (
-              <pre className="mt-3 overflow-x-auto rounded-lg bg-muted p-3 text-sm">
-                <code>{section.code}</code>
-              </pre>
-            )}
+            {section.blocks.map((block, j) => (
+              <CodeBlock key={j} block={block} className="mt-4" />
+            ))}
           </section>
         ))}
       </article>

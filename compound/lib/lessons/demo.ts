@@ -1,4 +1,4 @@
-import type { Feedback, LessonContent } from "./schema";
+import type { CodeBlockContent, Feedback, LessonContent } from "./schema";
 import { EXERCISE_MIX } from "./schema";
 
 // Demo mode (no API key): a generic lesson built from the day's plan, and
@@ -10,6 +10,44 @@ type DemoLessonInput = {
   dayTitle: string;
   daySummary: string;
 };
+
+/** A small example for a few common coding topics, so demo lessons show how code and its output look. */
+export function demoCodeBlocks(topic: string): CodeBlockContent[] {
+  if (/python/i.test(topic)) {
+    return [
+      {
+        language: "python",
+        filename: "steps.py",
+        code: 'steps = ["read", "practise", "review"]\nfor number, step in enumerate(steps, start=1):\n    print(number, step)',
+        output: "1 read\n2 practise\n3 review",
+        result: null,
+      },
+    ];
+  }
+  if (/sql/i.test(topic)) {
+    return [
+      {
+        language: "sql",
+        filename: null,
+        code: "SELECT name, city\nFROM customers\nWHERE city = 'Manila'\nORDER BY name;",
+        output: null,
+        result: "Returns the name and city of every customer in Manila, sorted by name.",
+      },
+    ];
+  }
+  if (/javascript|typescript|react|next\.?js|node/i.test(topic)) {
+    return [
+      {
+        language: "javascript",
+        filename: "steps.js",
+        code: 'const steps = ["read", "practise", "review"];\nconsole.log(steps.map((step) => step.toUpperCase()).join(" > "));',
+        output: "READ > PRACTISE > REVIEW",
+        result: null,
+      },
+    ];
+  }
+  return [];
+}
 
 export function demoLesson({ type, topic, dayTitle, daySummary }: DemoLessonInput): LessonContent {
   const name = topic.trim().replace(/[.!?]+$/, "");
@@ -49,14 +87,14 @@ export function demoLesson({ type, topic, dayTitle, daySummary }: DemoLessonInpu
           daySummary,
           "This is an example lesson: AI isn't connected, so the content is generic. With AI connected, each lesson is written for your topic, level and goal.",
         ],
-        code: null,
+        blocks: demoCodeBlocks(topic),
       },
       {
         heading: "Why small steps work",
         paragraphs: [
           `Learning ${name} is easier in small pieces. One focused idea a day, practised right away, adds up faster than you expect.`,
         ],
-        code: null,
+        blocks: [],
       },
     ],
     exercises: type === "skill" ? [first, second, reflect] : [first, decide, reflect],

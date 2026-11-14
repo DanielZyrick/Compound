@@ -5,10 +5,35 @@ import type { TrackType } from "@/lib/db/types";
 // must return, what's stored in lessons.content, and what's checked again
 // every time a lesson is read from the database.
 
+/** One code example: the code, what to call it, and what it prints or does. */
+export const codeBlockSchema = z.object({
+  language: z
+    .string()
+    .trim()
+    .min(1)
+    .max(30)
+    .describe('Lowercase language id, e.g. "python", "typescript", "sql", "bash". Use "text" if it is not code.'),
+  filename: z.string().trim().max(60).nullable().describe("A file name to show above the code, or null"),
+  code: z.string().min(1).max(1500),
+  output: z
+    .string()
+    .max(800)
+    .nullable()
+    .describe("Exactly what running the code prints. null if it prints nothing, or if you are not certain."),
+  result: z
+    .string()
+    .trim()
+    .max(200)
+    .nullable()
+    .describe("Only when output is null: one sentence on what the code does or produces. Otherwise null."),
+});
+
+export type CodeBlockContent = z.infer<typeof codeBlockSchema>;
+
 const sectionSchema = z.object({
   heading: z.string().trim().min(2).max(80),
   paragraphs: z.array(z.string().trim().min(1).max(800)).min(1).max(4),
-  code: z.string().max(1500).nullable().describe("A short code example, or null"),
+  blocks: z.array(codeBlockSchema).max(3).describe("Code examples for this section, in order; empty if none"),
 });
 
 const multipleChoiceSchema = z.object({
@@ -54,6 +79,30 @@ export function lessonSchema(trackType: Exclude<TrackType, "reading">) {
 }
 
 export type LessonContent = z.infer<ReturnType<typeof lessonSchema>>;
+
+/**
+ * Lessons saved before code blocks had a language and output kept one plain
+ * `code` string per section. This rewrites that shape into `blocks`, so old
+ * lessons still open (without output, which was never written for them).
+ * Anything else is returned as it is, for the schema to judge.
+ */
+export function upgradeLesson(content: unknown): unknown {
+  if (typeof content !== "object" || content === null) return content;
+  const lesson = content as { sections?: unknown };
+  if (!Array.isArray(lesson.sections)) return content;
+  return {
+    ...lesson,
+    sections: lesson.sections.map((section: unknown) => {
+      if (typeof section !== "object" || section === null || "blocks" in section) return section;
+      const { code, ...rest } = section as { code?: unknown };
+      const blocks =
+        typeof code === "string" && code.trim() !== ""
+          ? [{ language: "text", filename: null, code, output: null, result: null }]
+          : [];
+      return { ...rest, blocks };
+    }),
+  };
+}
 export type Exercise = z.infer<typeof exerciseSchema>;
 
 /**

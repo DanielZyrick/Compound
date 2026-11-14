@@ -29,6 +29,16 @@ test("create a skill track and finish its first lesson", async ({ page, context 
   expect(html).not.toContain("answerIndex");
   expect(html).not.toContain("sampleAnswer");
 
+  // Code is in its own block: named, coloured, with a copy button and what it gives.
+  const code = page.getByRole("figure").filter({ hasText: "SELECT name, city" });
+  await expect(code.locator("figcaption")).toHaveText("SQL");
+  await expect(code.locator("pre.shiki span[style*='color']").first()).toBeVisible();
+  await expect(code.getByRole("button", { name: "Copy SQL" })).toBeVisible();
+  await expect(code.getByText("Result")).toBeVisible();
+  await expect(code).toContainText("every customer in Manila");
+  // A long line scrolls inside the block instead of widening the page.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+
   // Two multiple-choice questions, graded on the server.
   const first = page.locator("section").filter({ hasText: "Exercise 1" });
   // Clicking the circle itself selects the choice, and switching works.
