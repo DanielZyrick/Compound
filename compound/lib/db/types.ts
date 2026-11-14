@@ -64,6 +64,9 @@ export interface TracksTable {
   user_id: string;
   title: string;
   topic: string; // what the user asked to learn, in their words
+  // Optional specifics in their words (what to focus on or skip). Sent to the
+  // AI with the plan and every lesson. Null for reading tracks and old tracks.
+  details: ColumnType<string | null, string | null | undefined, string | null>;
   type: TrackType;
   level: TrackLevel | null; // null for reading tracks
   reading_plan: string | null; // reading tracks: the fixed plan's id (lib/reading/plans.ts)

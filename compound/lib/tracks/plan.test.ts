@@ -53,4 +53,10 @@ describe("planPrompt", () => {
     const prompt = planPrompt({ topic: "Excel", type: "skill", level: "beginner", totalDays: 7, focus: null });
     expect(prompt).not.toContain("<learner>");
   });
+
+  it("includes the learner's details only when given", () => {
+    const base = { topic: "Python", type: "skill" as const, level: "beginner" as const, totalDays: 7 };
+    expect(planPrompt({ ...base, details: "Automate Excel reports" })).toContain("<details>Automate Excel reports</details>");
+    expect(planPrompt({ ...base, details: null })).not.toContain("<details>");
+  });
 });

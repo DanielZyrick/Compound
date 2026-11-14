@@ -48,6 +48,7 @@ export async function getTrack(userId: string, trackId: string, today: CalendarD
       "tracks.id",
       "tracks.title",
       "tracks.topic",
+      "tracks.details",
       "tracks.type",
       "tracks.level",
       "tracks.total_days",

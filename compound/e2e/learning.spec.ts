@@ -11,12 +11,14 @@ test("create a skill track and finish its first lesson", async ({ page, context 
 
   await page.getByText("Skill", { exact: true }).click();
   await page.getByLabel("What do you want to learn?").fill("SQL for data analysis");
+  await page.getByLabel("Anything specific?").fill("Monthly sales reports, skip the basics of SELECT.");
   await page.getByText("Beginner", { exact: true }).click();
   await page.getByText("7 days", { exact: true }).click();
   await page.getByRole("button", { name: "Create track" }).click();
 
-  // The plan: 7 days, today's open, the rest locked.
+  // The plan: 7 days, today's open, the rest locked, and the details kept.
   await expect(page).toHaveURL(/\/tracks\/[0-9a-f-]{36}$/);
+  await expect(page.getByText("Monthly sales reports, skip the basics of SELECT.")).toBeVisible();
   await expect(page.getByText("Example plan", { exact: true })).toBeVisible();
   const days = page.getByRole("main").getByRole("listitem");
   await expect(days).toHaveCount(7);

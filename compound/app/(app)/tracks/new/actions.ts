@@ -29,6 +29,7 @@ const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6] as const;
 type TrackDraft = {
   title: string;
   topic: string;
+  details: string | null;
   type: TrackType;
   level: TrackLevel | null;
   readingPlan: string | null;
@@ -83,6 +84,7 @@ export async function createTrack(
     draft = {
       title: plan.title,
       topic: plan.title,
+      details: null,
       type: "reading",
       level: null,
       readingPlan: plan.id,
@@ -95,8 +97,8 @@ export async function createTrack(
       habitName: request.addHabit ? `Read: ${plan.title}` : null,
     };
   } else {
-    const { topic, type, level, totalDays } = request;
-    const planRequest = { topic, type, level, totalDays, focus: await getLearnerContext(user.id) };
+    const { topic, details, type, level, totalDays } = request;
+    const planRequest = { topic, details, type, level, totalDays, focus: await getLearnerContext(user.id) };
 
     try {
       const { data: plan, source } = await runAiTask({
@@ -111,6 +113,7 @@ export async function createTrack(
       draft = {
         title: plan.title,
         topic,
+        details,
         type,
         level,
         readingPlan: null,
@@ -174,6 +177,7 @@ async function saveTrack(
         user_id: user.id,
         title: draft.title,
         topic: draft.topic,
+        details: draft.details,
         type: draft.type,
         level: draft.level,
         reading_plan: draft.readingPlan,

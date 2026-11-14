@@ -33,7 +33,7 @@ export async function startLesson(input: unknown): Promise<Result> {
 
   const track = await db
     .selectFrom("tracks")
-    .select(["title", "topic", "type", "level", "total_days", "start_date"])
+    .select(["title", "topic", "details", "type", "level", "total_days", "start_date"])
     .where("id", "=", trackId)
     .where("user_id", "=", user.id)
     .executeTakeFirst();
@@ -72,6 +72,7 @@ export async function startLesson(input: unknown): Promise<Result> {
       prompt: lessonPrompt({
         trackTitle: track.title,
         topic: track.topic,
+        details: track.details,
         type: track.type,
         level: track.level,
         dayNumber,

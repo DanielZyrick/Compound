@@ -7,9 +7,10 @@ import { OptionGroup } from "@/components/option-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { TrackLevel, TrackType } from "@/lib/db/types";
 import { READING_PLANS, type ReadingPlanId } from "@/lib/reading/plans";
-import { newTrackSchema } from "@/lib/validation/tracks";
+import { MAX_TRACK_DETAILS, newTrackSchema } from "@/lib/validation/tracks";
 import { createTrack } from "./actions";
 
 /** A suggestion from "Recommended for you", passed in the link. */
@@ -18,6 +19,7 @@ export type TrackPrefill = { topic: string; type: "skill" | "thinking"; level: T
 export function NewTrackForm({ demoMode, prefill }: { demoMode: boolean; prefill: TrackPrefill | null }) {
   const [type, setType] = useState<TrackType | null>(prefill?.type ?? null);
   const [topic, setTopic] = useState(prefill?.topic ?? "");
+  const [details, setDetails] = useState("");
   const [level, setLevel] = useState<TrackLevel | null>(prefill?.level ?? null);
   const [totalDays, setTotalDays] = useState<number | null>(prefill?.totalDays ?? 14);
   const [readingPlan, setReadingPlan] = useState<ReadingPlanId | null>(null);
@@ -29,7 +31,7 @@ export function NewTrackForm({ demoMode, prefill }: { demoMode: boolean; prefill
   const reading = type === "reading";
   const input = reading
     ? { type, readingPlan, addHabit }
-    : { type, topic, level, totalDays, addHabit };
+    : { type, topic, details, level, totalDays, addHabit };
   const parsed = newTrackSchema.safeParse(input);
   const clientErrors = parsed.success ? [] : [...new Set(parsed.error.issues.map((i) => i.message))];
 
@@ -91,6 +93,26 @@ export function NewTrackForm({ demoMode, prefill }: { demoMode: boolean; prefill
               maxLength={120}
               className="h-10"
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="details">
+              Anything specific? <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea
+              id="details"
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              placeholder="e.g. I want to automate Excel reports at work. I know loops already, so focus on pandas."
+              maxLength={MAX_TRACK_DETAILS}
+              aria-describedby="details-hint"
+            />
+            <p id="details-hint" className="flex justify-between gap-3 text-xs text-muted-foreground">
+              <span>What to focus on, what to skip, or what you want to be able to do.</span>
+              <span className="tabular-nums">
+                {details.length}/{MAX_TRACK_DETAILS}
+              </span>
+            </p>
           </div>
 
           <OptionGroup

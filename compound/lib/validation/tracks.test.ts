@@ -35,6 +35,15 @@ describe("newTrackSchema", () => {
     );
   });
 
+  it("keeps details trimmed, turns blank details into null and caps their length", () => {
+    const base = { type: "skill", topic: "SQL", level: "beginner", totalDays: 14, addHabit: true };
+    const parse = (details: unknown) => newTrackSchema.parse({ ...base, details });
+    expect(parse("  Sales reports  ")).toMatchObject({ details: "Sales reports" });
+    expect(parse("   ")).toMatchObject({ details: null });
+    expect(parse(undefined)).toMatchObject({ details: null });
+    expect(messages({ ...base, details: "a".repeat(501) })).toContain("Keep the details under 500 characters.");
+  });
+
   it("rejects a length that isn't offered", () => {
     expect(messages({ type: "skill", topic: "SQL", level: "beginner", totalDays: 10, addHabit: true })).toContain("Choose a length.");
   });
