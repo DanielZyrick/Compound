@@ -13,6 +13,13 @@ Longer code never goes in a paragraph. Put each example in the section's blocks 
 - If it prints nothing (a definition, a layout, a query, configuration) or you are not certain, set output to null and put one sentence in result saying what the code does or produces.
 A section without code has an empty blocks list. Lessons on topics that are not about code have no blocks at all.
 
+A section may have one diagram in its figure field, when a picture explains the idea faster than words. You only choose the kind and write short labels; the app draws it. Use it for any topic, not only code:
+- steps: a process or flow in order. headers is empty. 2 to 5 rows, one per step: a short label, then an optional second cell with a short note.
+- compare: two things side by side. headers holds their two names. 1 to 4 rows, one per aspect: the first thing's point, then the second thing's point on the same aspect.
+- table: a small grid of facts or data, such as the rows a query returns. headers holds 2 to 4 column names. 1 to 6 rows, each with exactly one cell per column.
+Every cell is short, a few words at most, and never empty.
+The caption is one short line saying what the diagram shows. The diagram must add something the paragraphs do not already show, and its labels must be accurate. Use at most two diagrams in a lesson; most sections have none, so set figure to null there.
+
 Write exactly 3 exercises, in this order:
 - skill tracks: ${EXERCISE_MIX.skill.join(", ")}
 - thinking tracks: ${EXERCISE_MIX.thinking.join(", ")}
@@ -41,6 +48,8 @@ type LessonRequest = {
 export function lessonPrompt(r: LessonRequest): string {
   return [
     `Write day ${r.dayNumber} of ${r.totalDays} of a ${r.type} track for a ${r.level} learner.`,
+    // Said again here, per request: the system prompt lists the order for both kinds of track.
+    `The 3 exercises, in this order: ${EXERCISE_MIX[r.type].join(", ")}.`,
     `<track>${r.trackTitle} (topic: ${r.topic})</track>`,
     r.details ? `<details>${r.details}</details>` : null,
     `<today>${r.dayTitle}: ${r.daySummary}</today>`,

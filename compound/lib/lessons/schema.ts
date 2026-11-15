@@ -30,10 +30,53 @@ export const codeBlockSchema = z.object({
 
 export type CodeBlockContent = z.infer<typeof codeBlockSchema>;
 
+const figureText = z.string().trim().min(1).max(90);
+
+/**
+ * A small diagram. The AI never draws: it picks a kind and writes the labels,
+ * and the app draws it (components/lesson-figure.tsx).
+ *
+ * All three kinds share one flat shape, a grid of text. A union with one
+ * shape per kind reads better, but the API rejects it: added to the rest of
+ * the lesson, its grammar is too large for structured outputs.
+ *
+ *   steps    headers: []                each row: [label] or [label, note]
+ *   compare  headers: [left, right]     each row: [left point, right point]
+ *   table    headers: the column names  each row: one cell per column
+ */
+export const figureSchema = z
+  .object({
+    kind: z.enum(["steps", "compare", "table"]),
+    caption: z.string().trim().min(3).max(120).describe("One short line saying what the diagram shows"),
+    headers: z
+      .array(figureText)
+      .max(4)
+      .describe("steps: empty. compare: the names of the two things. table: the column names."),
+    rows: z
+      .array(z.array(figureText).min(1).max(4))
+      .min(1)
+      .max(6)
+      .describe(
+        "steps: one row per step, a short label then an optional note. compare: one row per aspect, the left thing's point then the right thing's. table: one cell per column.",
+      ),
+  })
+  .refine(
+    ({ kind, headers, rows }) => {
+      // Headers on a flow are harmless, so they are ignored and never shown.
+      if (kind === "steps") return rows.length >= 2 && rows.length <= 5 && rows.every((row) => row.length <= 2);
+      if (kind === "compare") return headers.length === 2 && rows.length <= 4 && rows.every((row) => row.length === 2);
+      return headers.length >= 2 && rows.every((row) => row.length === headers.length);
+    },
+    { error: "The diagram's headers and rows don't fit its kind." },
+  );
+
+export type FigureContent = z.infer<typeof figureSchema>;
+
 const sectionSchema = z.object({
   heading: z.string().trim().min(2).max(80),
   paragraphs: z.array(z.string().trim().min(1).max(800)).min(1).max(4),
   blocks: z.array(codeBlockSchema).max(3).describe("Code examples for this section, in order; empty if none"),
+  figure: figureSchema.nullable().describe("One diagram for this section, only when it makes the idea clearer; otherwise null"),
 });
 
 /** Code a question asks about. No output here: that would give the answer away. */
@@ -91,9 +134,10 @@ export type LessonContent = z.infer<ReturnType<typeof lessonSchema>>;
 /**
  * Lessons saved before code blocks had a language and output kept one plain
  * `code` string per section, and their exercises had no code of their own.
- * This rewrites that shape into `blocks` and adds the missing `code: null`,
- * so old lessons still open (without output, which was never written for
- * them). Anything else is returned as it is, for the schema to judge.
+ * Lessons saved before diagrams have no `figure` on their sections. This
+ * rewrites the old shape into `blocks` and adds the missing `code: null` and
+ * `figure: null`, so old lessons still open (without output, which was never
+ * written for them). Anything else is returned as it is, for the schema to judge.
  */
 export function upgradeLesson(content: unknown): unknown {
   if (typeof content !== "object" || content === null) return content;
@@ -109,8 +153,11 @@ export function upgradeLesson(content: unknown): unknown {
       ),
     }),
     sections: lesson.sections.map((section: unknown) => {
-      if (typeof section !== "object" || section === null || "blocks" in section) return section;
-      const { code, ...rest } = section as { code?: unknown };
+      if (typeof section !== "object" || section === null) return section;
+      // Lessons saved before diagrams existed have no figure.
+      const withFigure = "figure" in section ? section : { ...section, figure: null };
+      if ("blocks" in withFigure) return withFigure;
+      const { code, ...rest } = withFigure as { code?: unknown };
       const blocks =
         typeof code === "string" && code.trim() !== ""
           ? [{ language: "text", filename: null, code, output: null, result: null }]

@@ -93,6 +93,7 @@ export function demoLesson({ type, topic, dayTitle, daySummary }: DemoLessonInpu
           ...(firstLine ? ["The example below starts with `" + firstLine + "`. Code inside a sentence looks like that."] : []),
         ],
         blocks,
+        figure: null,
       },
       {
         heading: "Why small steps work",
@@ -100,6 +101,17 @@ export function demoLesson({ type, topic, dayTitle, daySummary }: DemoLessonInpu
           `Learning ${name} is easier in small pieces. One focused idea a day, practised right away, adds up faster than you expect.`,
         ],
         blocks: [],
+        // Every demo lesson shows one diagram, so the format can be seen without AI.
+        figure: {
+          kind: "steps",
+          caption: "One small loop, repeated every day.",
+          headers: [],
+          rows: [
+            ["Learn one idea", "About ten minutes"],
+            ["Practise it", "Three short exercises"],
+            ["Come back tomorrow", "The next day builds on this one"],
+          ],
+        },
       },
     ],
     exercises: type === "skill" ? [first, second, reflect] : [first, decide, reflect],

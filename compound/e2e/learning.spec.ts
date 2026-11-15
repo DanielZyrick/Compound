@@ -220,7 +220,7 @@ test("restoring two tracks on the same topic at once keeps only one active", asy
   expect(active).toHaveLength(1);
 });
 
-test("code in questions, choices and answers is shown as code", async ({ page, context }) => {
+test("code and diagrams in a lesson are drawn, not shown as plain text", async ({ page, context }) => {
   test.setTimeout(60_000);
   const user = await signInFreshUser(context);
   await open(page, "/tracks/new");
@@ -240,6 +240,11 @@ test("code in questions, choices and answers is shown as code", async ({ page, c
   await expect(example.locator("samp")).toHaveText("1 read\n2 practise\n3 review");
   await expect(page.locator("article code").filter({ hasText: 'steps = ["read", "practise", "review"]' }).first()).toBeVisible();
 
+  // The demo lesson has one diagram: a flow of numbered steps with a caption.
+  const loop = page.getByRole("figure").filter({ hasText: "One small loop, repeated every day." });
+  await expect(loop.getByRole("listitem")).toHaveCount(3);
+  await expect(loop.getByRole("listitem").nth(1)).toContainText("Practise it");
+
   // Swap in a lesson the way the AI writes one: code on a question, backticks
   // in sentences and choices, and a fenced block as the sample answer.
   const fence = "```";
@@ -247,8 +252,28 @@ test("code in questions, choices and answers is shown as code", async ({ page, c
     title: "Lengths",
     minutes: 10,
     sections: [
-      { heading: "Counting", paragraphs: ["Use `len(x)` to count the items in `x`."], blocks: [] },
-      { heading: "Why", paragraphs: ["It works on strings and lists."], blocks: [] },
+      {
+        heading: "Counting",
+        paragraphs: ["Use `len(x)` to count the items in `x`."],
+        blocks: [],
+        figure: {
+          kind: "table",
+          caption: "What `len` gives for each value.",
+          headers: ["Value", "Result"],
+          rows: [["`'abc'`", "3"], ["`[1, 2]`", "2"]],
+        },
+      },
+      {
+        heading: "Why",
+        paragraphs: ["It works on strings and lists."],
+        blocks: [],
+        figure: {
+          kind: "compare",
+          caption: "Two things you can count.",
+          headers: ["A string", "A list"],
+          rows: [["Counts characters", "Counts items"], ["Empty gives `0`", "Empty gives `0`"]],
+        },
+      },
     ],
     exercises: [
       {
@@ -289,6 +314,15 @@ test("code in questions, choices and answers is shown as code", async ({ page, c
   const main = page.getByRole("main");
   await expect(main.locator("article code", { hasText: /^len\(x\)$/ })).toBeVisible();
   await expect(main).not.toContainText("`");
+
+  // The diagrams: a real table with code in its cells, and two sides to compare.
+  const grid = main.getByRole("figure").filter({ hasText: "What len gives for each value." });
+  await expect(grid.getByRole("columnheader")).toHaveText(["Value", "Result"]);
+  await expect(grid.getByRole("row")).toHaveCount(3);
+  await expect(grid.getByRole("cell").first().locator("code")).toHaveText("'abc'");
+  const sides = main.getByRole("figure").filter({ hasText: "Two things you can count." });
+  await expect(sides.getByText("A string", { exact: true })).toBeVisible();
+  await expect(sides.getByRole("listitem")).toHaveCount(4);
 
   // The question's code is a block with no output, and the choices are code chips.
   const first = page.locator("section").filter({ hasText: "Exercise 1" });

@@ -3,10 +3,10 @@ import { codeBlockTitle, languageName } from "./code";
 import { demoCodeBlocks, demoFeedback, demoLesson } from "./demo";
 import { FEEDBACK_SYSTEM_PROMPT, feedbackPrompt, LESSON_SYSTEM_PROMPT, lessonPrompt } from "./prompts";
 import { canComplete, isDayOpen, shouldCheckHabit, unlockDate } from "./rules";
-import { codeBlockSchema, feedbackSchema, lessonSchema, toPublicLesson, upgradeLesson, type LessonContent } from "./schema";
+import { codeBlockSchema, feedbackSchema, figureSchema, lessonSchema, toPublicLesson, upgradeLesson, type LessonContent } from "./schema";
 
 const block = { language: "python", filename: null, code: "print(1 + 1)", output: "2", result: null };
-const section = { heading: "The idea", paragraphs: ["Some text."], blocks: [block] };
+const section = { heading: "The idea", paragraphs: ["Some text."], blocks: [block], figure: null as unknown };
 const mc = (answerIndex = 1) => ({
   type: "multiple_choice" as const,
   question: "Which is right?",
@@ -174,6 +174,52 @@ describe("upgradeLesson", () => {
 
   it("without the upgrade, an old lesson would be rejected", () => {
     expect(lessonSchema("skill").safeParse(oldLesson).success).toBe(false);
+  });
+});
+
+describe("diagrams", () => {
+  const steps = { kind: "steps", caption: "How a request travels.", headers: [], rows: [["Browser"], ["Server", "Runs the code"]] };
+  const compare = { kind: "compare", caption: "Two ways to declare.", headers: ["let", "const"], rows: [["Can change", "Cannot be reassigned"]] };
+  const table = { kind: "table", caption: "What the query returns.", headers: ["name", "city"], rows: [["Ana", "Manila"], ["Ben", "Cebu"]] };
+
+  it("accepts the three kinds, on a section of a lesson", () => {
+    for (const figure of [steps, compare, table]) {
+      expect(figureSchema.safeParse(figure).success).toBe(true);
+      const lesson = { ...skillLesson([mc(), mc(), open]), sections: [{ ...section, figure }, section] };
+      expect(lessonSchema("skill").safeParse(lesson).success).toBe(true);
+    }
+  });
+
+  it("rejects an unknown kind, and rows that don't fit the kind", () => {
+    expect(figureSchema.safeParse({ ...steps, kind: "svg" }).success).toBe(false);
+    // A flow needs at least two steps, and a step is a label plus at most one note.
+    expect(figureSchema.safeParse({ ...steps, rows: [["Browser"]] }).success).toBe(false);
+    expect(figureSchema.safeParse({ ...steps, rows: [["Browser", "a", "b"], ["Server"]] }).success).toBe(false);
+    // A comparison has exactly two sides.
+    expect(figureSchema.safeParse({ ...compare, headers: ["let"] }).success).toBe(false);
+    expect(figureSchema.safeParse({ ...compare, rows: [["Can change"]] }).success).toBe(false);
+    // A table row has one cell per column, and no cell is empty.
+    expect(figureSchema.safeParse({ ...table, rows: [["Ana", "Manila", "extra"]] }).success).toBe(false);
+    expect(figureSchema.safeParse({ ...table, rows: [["Ana", "Manila"], ["Ben"]] }).success).toBe(false);
+    expect(figureSchema.safeParse({ ...table, rows: [["Ana", " "]] }).success).toBe(false);
+  });
+
+  it("ignores headers on a flow, which has none to show", () => {
+    expect(figureSchema.safeParse({ ...steps, headers: ["Step", "Note"] }).success).toBe(true);
+  });
+
+  it("opens lessons saved before diagrams existed", () => {
+    const saved = { ...skillLesson([mc(), mc(), open]), sections: [{ heading: "The idea", paragraphs: ["Some text."], blocks: [block] }, section] };
+    expect(lessonSchema("skill").safeParse(saved).success).toBe(false);
+    const parsed = lessonSchema("skill").safeParse(upgradeLesson(saved));
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.sections[0]).toMatchObject({ blocks: [block], figure: null });
+  });
+
+  it("shows one diagram in every demo lesson, and tells the AI how to use them", () => {
+    const lesson = demoLesson({ type: "thinking", topic: "Public speaking", dayTitle: "Day one", daySummary: "Learn one small thing." });
+    expect(lesson.sections.map((s) => s.figure?.kind ?? null)).toEqual([null, "steps"]);
+    expect(LESSON_SYSTEM_PROMPT).toContain("figure field");
   });
 });
 

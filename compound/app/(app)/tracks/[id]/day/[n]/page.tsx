@@ -7,6 +7,7 @@ import { ArrowLeft, BookOpen, Clock, ExternalLink, Lock } from "lucide-react";
 import { z } from "zod";
 import { CodeBlock } from "@/components/code-block";
 import { InlineText } from "@/components/inline-text";
+import { LessonFigure } from "@/components/lesson-figure";
 import { RichText } from "@/components/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -179,6 +180,7 @@ function LessonBody({
             {section.blocks.map((block, j) => (
               <CodeBlock key={j} block={block} className="mt-4" />
             ))}
+            {section.figure && <LessonFigure figure={section.figure} className="mt-4" />}
           </section>
         ))}
       </article>
