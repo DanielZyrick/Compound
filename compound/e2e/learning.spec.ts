@@ -336,14 +336,39 @@ test("code and diagrams in a lesson are drawn, not shown as plain text", async (
   await expect(first.getByText("Correct", { exact: true })).toBeVisible();
   await expect(first.locator("code", { hasText: /^len$/ })).toBeVisible(); // in the explanation
 
-  // The open exercise: a code font to type in, and a sample answer with a code block.
+  // The open exercise: its sample answer is code, so the answer is typed in a code box.
   const third = page.locator("section").filter({ hasText: "Exercise 3" });
   await expect(third.getByRole("heading").locator("code")).toHaveText("name");
   await expect(third.locator("code", { hasText: "print(" }).first()).toBeVisible(); // the hint
   const box = third.getByLabel("Your answer");
   await expect(box).toHaveCSS("font-family", /mono/i);
-  await box.fill("print( len(name) )");
+  await expect(third.getByText("Tab indents.")).toHaveCount(1); // hidden on touch screens
+  // Enter after a colon indents the next line (four spaces in Python), and keeps it there.
+  await box.click();
+  await box.pressSequentially("if name:");
+  await box.press("Enter");
+  await box.pressSequentially("print(len(name))");
+  await box.press("Enter");
+  await box.pressSequentially("done()");
+  await expect(box).toHaveValue("if name:\n    print(len(name))\n    done()");
+  // Shift+Tab moves the line back out, Tab indents again, and Ctrl+Z still undoes.
+  await box.press("Shift+Tab");
+  await expect(box).toHaveValue("if name:\n    print(len(name))\ndone()");
+  await box.press("Tab");
+  await expect(box).toHaveValue("if name:\n    print(len(name))\ndone()    ");
+  await box.press("ControlOrMeta+z");
+  await expect(box).toHaveValue("if name:\n    print(len(name))\ndone()");
+  // Esc, then Tab, leaves the box instead of indenting.
+  await box.press("Escape");
+  await box.press("Tab");
+  await expect(box).not.toBeFocused();
+  await expect(box).toHaveValue("if name:\n    print(len(name))\ndone()");
+
   await third.getByRole("button", { name: "Get feedback" }).click();
+  // The answer comes back as a coloured code block, with its indentation.
+  const mine = third.getByRole("figure").filter({ hasText: "if name:" });
+  await expect(mine.locator("figcaption")).toHaveText("Python");
+  await expect(mine.locator("pre")).toContainText("    print(len(name))");
   await third.getByText("Show an example answer").click();
   const sample = third.locator("details");
   await expect(sample).toContainText("One line is enough:");

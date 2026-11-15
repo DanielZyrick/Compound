@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
+import { CodeInput } from "@/components/code-input";
 import { InlineText } from "@/components/inline-text";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -121,6 +122,8 @@ export function MultipleChoiceExercise({ lessonId, index, question, code, choice
 
 export type OpenAttempt = {
   answer: string;
+  /** A code answer as a coloured block, rendered on the server; null for prose. */
+  answerCode?: React.ReactNode;
   isCorrect: boolean | null; // null: not graded (demo mode)
   /** Rendered on the server; null when there's none to show. */
   feedback: React.ReactNode;
@@ -134,8 +137,8 @@ export type OpenProps = {
   /** The code the question is about, already rendered. */
   code?: React.ReactNode;
   hint: string | null;
-  /** The lesson has code in it: type and show answers in a code font. */
-  codeAnswers?: boolean;
+  /** Set when the answer is code: it is typed in a code box, in this language. */
+  answerLanguage?: string | null;
   attempts: OpenAttempt[];
   remaining: number;
   /** Revealed by the server after the first attempt, already rendered. */
@@ -148,7 +151,7 @@ export function OpenExercise({
   question,
   code,
   hint,
-  codeAnswers = false,
+  answerLanguage = null,
   attempts,
   remaining,
   sampleAnswer,
@@ -177,10 +180,11 @@ export function OpenExercise({
       {attempts.map((attempt, i) => (
         <div key={i} className="mb-3 rounded-xl border bg-muted/40 p-3 text-sm">
           <p className="text-xs font-medium text-muted-foreground">Your answer {attempts.length > 1 ? i + 1 : ""}</p>
-          {/* Code answers keep their spaces and line breaks. */}
-          <p className={cn("mt-1", codeAnswers ? "font-mono text-[13px] break-words whitespace-pre-wrap" : "whitespace-pre-line")}>
-            {attempt.answer}
-          </p>
+          {attempt.answerCode ? (
+            <div className="mt-2">{attempt.answerCode}</div>
+          ) : (
+            <p className="mt-1 whitespace-pre-line">{attempt.answer}</p>
+          )}
           {attempt.feedback && (
             <ResultNote correct={attempt.isCorrect}>
               {attempt.feedback}
@@ -207,16 +211,19 @@ export function OpenExercise({
           <Label htmlFor={id} className="sr-only">
             Your answer
           </Label>
-          <Textarea
-            id={id}
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Write your answer…"
-            maxLength={2000}
-            disabled={pending}
-            spellCheck={!codeAnswers}
-            className={cn("min-h-24", codeAnswers && "font-mono text-[13px]")}
-          />
+          {answerLanguage ? (
+            <CodeInput id={id} value={answer} onChange={setAnswer} language={answerLanguage} maxLength={2000} disabled={pending} />
+          ) : (
+            <Textarea
+              id={id}
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Write your answer…"
+              maxLength={2000}
+              disabled={pending}
+              className="min-h-24"
+            />
+          )}
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">
               {remaining} {remaining === 1 ? "review" : "reviews"} left

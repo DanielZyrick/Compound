@@ -14,6 +14,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/ai/config";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatLongDate, todayIn } from "@/lib/dates/calendar";
+import { answerLanguage } from "@/lib/lessons/code-editing";
 import { getLessonPage, getReflection, type LessonAttempt } from "@/lib/lessons/queries";
 import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE, unlockDate } from "@/lib/lessons/rules";
 import type { LessonContent } from "@/lib/lessons/schema";
@@ -160,8 +161,6 @@ function LessonBody({
   lessonId: string;
   attempts: LessonAttempt[];
 }) {
-  // A lesson with code in it: answers are typed and shown in a code font.
-  const hasCode = lesson.sections.some((s) => s.blocks.length > 0) || lesson.exercises.some((e) => e.code !== null);
   // The code a question is about. No output: that would give the answer away.
   const questionCode = (exercise: LessonContent["exercises"][number]) =>
     exercise.code && <CodeBlock block={{ ...exercise.code, output: null, result: null }} />;
@@ -212,6 +211,9 @@ function LessonBody({
               />
             );
           }
+          // The answer is code when the sample answer is: then it is typed in a
+          // code box, and shown back as a coloured block.
+          const language = answerLanguage(exercise.sampleAnswer);
           return (
             <OpenExercise
               key={index}
@@ -220,11 +222,14 @@ function LessonBody({
               question={exercise.question}
               code={questionCode(exercise)}
               hint={exercise.hint}
-              codeAnswers={hasCode}
+              answerLanguage={language}
               // Feedback and answers can hold code blocks, which are coloured
               // on the server and handed to the exercise ready to show.
               attempts={mine.map((a) => ({
                 answer: a.answer,
+                answerCode: language && (
+                  <CodeBlock block={{ language, filename: null, code: a.answer, output: null, result: null }} />
+                ),
                 isCorrect: a.is_correct,
                 feedback: a.feedback && <RichText text={a.feedback} />,
                 betterVersion: a.better_version && a.is_correct !== null && <RichText text={a.better_version} />,
