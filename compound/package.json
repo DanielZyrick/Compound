@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "next build && playwright test",
-    "demo:seed": "tsx db/seed-demo.ts"
+    "demo:seed": "tsx db/seed-demo.ts",
+    "eval:lessons": "tsx evals/lessons.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
