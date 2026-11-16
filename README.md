@@ -144,6 +144,7 @@ Run these from the `compound/` folder.
 | `npm run build` / `npm start` | Production build and server |
 | `npm test` / `npm run test:watch` | Run the Vitest unit tests |
 | `npm run test:e2e` | Build, then run the Playwright end-to-end tests (desktop and phone) |
+| `npm run eval:lessons` | Ask the real AI for 8 lessons and score them (see [AI evals](#ai-evals)) |
 | `npm run typecheck` | Type-check with `tsc` |
 | `npm run lint` | Run ESLint |
 | `npm run db:migrate` | Apply pending migrations |
@@ -159,7 +160,7 @@ rm .env.migrate-main
 
 ### End-to-end tests
 
-The 28 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
+The 34 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
 
 - **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
 - force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;
@@ -167,6 +168,32 @@ The 28 Playwright tests in `e2e/` sign in as a dedicated test user and walk thro
 - use your installed **Microsoft Edge**, so no browser download is needed.
 
 Running `npm start` locally also needs `AUTH_TRUST_HOST=true`. Vercel sets it automatically, and `npm run dev` doesn't need it.
+
+### AI evals
+
+The schema proves a lesson has the right shape. It can't prove the lesson is right: that the code prints what the lesson says, or that a question doesn't give its own answer away. The evals check that.
+
+`npm run eval:lessons` asks the real AI for 8 fixed lessons (Python, SQL, JavaScript, TypeScript, Bash, HTTP, and two thinking tracks) through the same code the app uses, and scores the first answer of each. The latest run, on the fast model:
+
+| Check | Passed |
+| --- | --- |
+| Fits the schema on the first try | 8 / 8 |
+| Exercises in the right order for the track | 8 / 8 |
+| Multiple choice is sound (no repeated choices, the answer is one of them) | 8 / 8 |
+| No stray backticks or code fences in sentences | 8 / 8 |
+| Code is in blocks, each saying what it prints or does | 5 / 5 |
+| Diagrams fit their kind and repeat nothing | 8 / 8 |
+| Code on a question never shows its output | 4 / 4 |
+| Printed output is true when the example is run (JavaScript and TypeScript) | 2 / 2 |
+| Lesson delivered, counting the app's one retry | 8 / 8 |
+
+A check only counts the lessons it applies to, so the totals differ: three of the lessons aren't about code, and two had JavaScript or TypeScript examples to run.
+
+- **The checks are pure functions** in [`lib/lessons/evals.ts`](compound/lib/lessons/evals.ts), unit-tested with hand-made good and bad lessons. Those tests are free and run with `npm test`.
+- **AI-written code runs in a sandbox.** For the output check, each example runs in a separate Node process with the permission model on: no files, no network, no other programs, none of the environment (so no API key), and a five-second limit ([`evals/run-code.ts`](compound/evals/run-code.ts)). This needs Node 25; on older versions the examples are skipped. `--no-run` skips them too.
+- **It only runs when asked.** It spends API credits (a few cents on the fast model), so it's never part of the tests or a deploy. `--smart` uses the model lessons use live, and a case name such as `sql-joins` runs one lesson. Each lesson is saved to the gitignored `evals/out/` to read afterwards.
+
+The evals have already paid for themselves in the other direction: their first failures were two checks that were too strict (they treated `['ana']` and `['ANA']` as the same choice, and rejected a flow that returns to the browser). Reading the saved lessons showed the AI was right, and the checks were fixed.
 
 ## Deploying
 
@@ -217,6 +244,7 @@ compound/
     migrations/     Kysely migrations, listed in index.ts
     migrate.ts      migration runner (npm run db:migrate)
   e2e/              Playwright tests and their helpers
+  evals/            lesson evals against the real AI (npm run eval:lessons)
   lib/
     ai/             Claude client, demo mode, daily limits, call logging
     auth/           data access layer, server actions, login errors
@@ -246,9 +274,10 @@ compound/
 7. ✅ Money module: expenses and income, categories, savings toward goals
 8. ✅ Google sign-in, a dashboard redesign, own-pace learning, sticky notes, filling in missed habit days
 9. ✅ About you (with a resume), recommended tracks, Contacts with follow-ups, Google Calendar (read-only)
-10. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
+10. ✅ Monthly budgets, due dates on to-dos, its own design, and lessons with code blocks, diagrams, a code box for answers, and AI evals
+11. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
 
-Later: monthly budgets, due dates on to-dos, email reminders, AI feedback evals.
+Later: email reminders, evals for AI feedback on answers.
 
 ---
 

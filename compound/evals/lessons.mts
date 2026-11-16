@@ -4,16 +4,19 @@
 //   npm run eval:lessons                 every case, on MODEL_FAST
 //   npm run eval:lessons -- --smart      on MODEL_SMART, the model lessons use live
 //   npm run eval:lessons -- sql-joins    only the named cases
+//   npm run eval:lessons -- --no-run     skip running the JavaScript and TypeScript examples
 //
 // This spends API credits (a few cents on the fast model), so it only runs
 // when asked: never in the tests and never on deploy. It doesn't touch the
-// database. Each lesson is saved to evals/out/ (gitignored) to read afterwards.
+// database. JavaScript and TypeScript examples are run in a locked-down
+// process (see run-code.ts) to check what they print. Each lesson is saved to evals/out/ (gitignored) to read afterwards.
 import { mkdirSync, writeFileSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import { generateJson, type MessagesClient } from "../lib/ai/generate";
-import { checkLesson, EVAL_CASES, summarise, type CheckResult, type EvalCase } from "../lib/lessons/evals";
+import { checkLesson, EVAL_CASES, outputCheck, runnableBlocks, summarise, type CheckResult, type EvalCase } from "../lib/lessons/evals";
 import { LESSON_SYSTEM_PROMPT, lessonPrompt } from "../lib/lessons/prompts";
 import { lessonSchema } from "../lib/lessons/schema";
+import { runBlock } from "./run-code";
 
 try {
   process.loadEnvFile(".env.local");
@@ -23,6 +26,7 @@ try {
 
 const args = process.argv.slice(2);
 const smart = args.includes("--smart");
+const runCode = !args.includes("--no-run");
 const wanted = args.filter((arg) => !arg.startsWith("--"));
 const modelVariable = smart ? "MODEL_SMART" : "MODEL_FAST";
 const model = process.env[modelVariable];
@@ -91,6 +95,8 @@ async function run(testCase: EvalCase): Promise<Outcome> {
       // Not JSON at all: every check fails on null.
     }
     checks = checkLesson(first, testCase);
+    // Run the examples that say what they print, and compare.
+    if (runCode) checks.push(outputCheck(runnableBlocks(first).map(runBlock)));
     writeFileSync(`${OUT}/${testCase.id}.json`, JSON.stringify({ model, checks, lesson: first ?? answers[0] }, null, 2));
   }
   return { testCase, checks, delivered, outputTokens, seconds: (Date.now() - started) / 1000, error };
@@ -110,7 +116,11 @@ await Promise.all(
       const status = !outcome.checks ? "ERROR" : failed.length === 0 ? "ok" : `${failed.length} failed`;
       console.log(`  ${outcome.testCase.id.padEnd(14)} ${status.padEnd(9)} ${outcome.seconds.toFixed(0)}s, ${outcome.outputTokens} output tokens`);
       if (outcome.error) console.log(`      ${outcome.error}`);
-      for (const check of failed) for (const note of check.notes) console.log(`      ${check.check}: ${note}`);
+      // Notes on checks that failed, and on examples that couldn't be run.
+      for (const check of outcome.checks ?? []) {
+        if (check.passed !== false && check.check !== "output") continue;
+        for (const note of check.notes) console.log(`      ${check.check}: ${note}`);
+      }
     }
   }),
 );

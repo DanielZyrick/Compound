@@ -42,6 +42,8 @@ export const EVAL_CHECKS = [
   { id: "blocks", label: "Code is in blocks, with what it gives" },
   { id: "figures", label: "Diagrams fit their kind" },
   { id: "questions", label: "Question code hides the answer" },
+  // Not part of checkLesson: it needs the code to be run (see outputCheck).
+  { id: "output", label: "Printed output is true (JS and TS)" },
 ] as const;
 
 export type CheckId = (typeof EVAL_CHECKS)[number]["id"];
@@ -85,7 +87,8 @@ export function checkLesson(raw: unknown, testCase: Pick<EvalCase, "type" | "cod
   const multipleChoice = exercises.filter((exercise) => exercise.type === "multiple_choice");
   const choiceNotes: string[] = [];
   multipleChoice.forEach((exercise, i) => {
-    const choices = strings(exercise.choices).map((choice) => choice.trim().toLowerCase());
+    // In code, `['ana']` and `['ANA']` are different answers; in prose, "Yes" and "yes" are not.
+    const choices = strings(exercise.choices).map((choice) => (choice.includes("`") ? choice.trim() : choice.trim().toLowerCase()));
     if (new Set(choices).size !== choices.length) choiceNotes.push(`multiple choice ${i + 1}: two choices are the same`);
     const answer = exercise.answerIndex;
     if (typeof answer !== "number" || answer < 0 || answer >= choices.length) {
@@ -152,8 +155,10 @@ export function checkLesson(raw: unknown, testCase: Pick<EvalCase, "type" | "cod
       return;
     }
     const { kind, headers, rows } = parsedFigure.data;
-    const firstCells = rows.map((row) => row[0].toLowerCase());
-    if (kind === "steps" && new Set(firstCells).size !== firstCells.length) figureNotes.push(`diagram ${i + 1}: two steps have the same label`);
+    // A flow may come back to where it began (Browser, Server, Browser), so a
+    // label can repeat. Two steps that say the same thing in full cannot.
+    const steps = rows.map((row) => row.join(" | ").toLowerCase());
+    if (kind === "steps" && new Set(steps).size !== steps.length) figureNotes.push(`diagram ${i + 1}: two steps are the same`);
     if (kind !== "steps" && new Set(headers.map((header) => header.toLowerCase())).size !== headers.length) {
       figureNotes.push(`diagram ${i + 1}: two headers are the same`);
     }
@@ -201,6 +206,71 @@ export function looksLikeCode(paragraph: string): boolean {
 /** A comment that says what the code prints, e.g. `# Output: 3` or `// prints 3`. */
 export function revealsOutput(code: string): boolean {
   return /(#|\/\/|--)\s*(expected\s+)?(output|prints?|result|returns?)\b|(#|\/\/)\s*(=>|->|→)/i.test(code);
+}
+
+/** A code example that says what it prints, in a language the eval can run. */
+export type RunnableBlock = { label: string; inputType: "module" | "module-typescript"; code: string; expected: string };
+
+const INPUT_TYPES: Record<string, RunnableBlock["inputType"]> = {
+  javascript: "module",
+  js: "module",
+  typescript: "module-typescript",
+  ts: "module-typescript",
+};
+
+/** The lesson's JavaScript and TypeScript examples that claim an output. */
+export function runnableBlocks(raw: unknown): RunnableBlock[] {
+  const found: RunnableBlock[] = [];
+  objects(isObject(raw) ? raw.sections : []).forEach((section, i) => {
+    objects(section.blocks).forEach((block, j) => {
+      const inputType = INPUT_TYPES[(text(block.language) ?? "").trim().toLowerCase()];
+      const code = text(block.code);
+      const expected = text(block.output);
+      if (inputType && code !== null && expected !== null) {
+        found.push({ label: `section ${i + 1} block ${j + 1}`, inputType, code, expected });
+      }
+    });
+  });
+  return found;
+}
+
+/** What running a block gave: what it printed, or why it couldn't be run. */
+export type BlockRun = { block: RunnableBlock; printed: string | null; problem?: string };
+
+/** Line endings and trailing spaces don't count as a different output. */
+export function sameOutput(expected: string, printed: string): boolean {
+  const tidy = (value: string) =>
+    value
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((line) => line.trimEnd())
+      .join("\n")
+      // Blank lines before and after don't matter; indentation does.
+      .replace(/^\n+|\n+$/g, "");
+  return tidy(expected) === tidy(printed);
+}
+
+/**
+ * The output check for one lesson: every example that ran printed what the
+ * lesson says it prints. An example that couldn't run (it needs a file, the
+ * network, a browser) is noted but isn't counted as wrong.
+ */
+export function outputCheck(runs: BlockRun[]): CheckResult {
+  const notes: string[] = [];
+  let wrong = 0;
+  let ran = 0;
+  for (const { block, printed, problem } of runs) {
+    if (printed === null) {
+      notes.push(`${block.label}: not run (${problem ?? "unknown"})`);
+      continue;
+    }
+    ran += 1;
+    if (!sameOutput(block.expected, printed)) {
+      wrong += 1;
+      notes.push(`${block.label}: says ${JSON.stringify(block.expected)}, prints ${JSON.stringify(printed.trim())}`);
+    }
+  }
+  return { check: "output", passed: ran === 0 ? null : wrong === 0, notes };
 }
 
 export type CheckSummary = { check: CheckId; label: string; passed: number; total: number };

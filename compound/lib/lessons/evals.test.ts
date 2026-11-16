@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { checkLesson, EVAL_CASES, EVAL_CHECKS, hasStrayBacktick, looksLikeCode, revealsOutput, summarise, type CheckId } from "./evals";
+import {
+  checkLesson,
+  EVAL_CASES,
+  EVAL_CHECKS,
+  hasStrayBacktick,
+  looksLikeCode,
+  outputCheck,
+  revealsOutput,
+  runnableBlocks,
+  sameOutput,
+  summarise,
+  type CheckId,
+} from "./evals";
 import { lessonPrompt } from "./prompts";
 
 const fence = "```";
@@ -43,8 +55,8 @@ describe("checkLesson", () => {
     });
   });
 
-  it("returns one result per check, in the table's order", () => {
-    expect(checkLesson(lesson(), skill).map((r) => r.check)).toEqual(EVAL_CHECKS.map((c) => c.id));
+  it("returns one result per check, in the table's order (output is checked by running code)", () => {
+    expect(checkLesson(lesson(), skill).map((r) => r.check)).toEqual(EVAL_CHECKS.map((c) => c.id).filter((id) => id !== "output"));
   });
 
   it("still reports on a lesson that isn't even an object", () => {
@@ -61,6 +73,9 @@ describe("checkLesson", () => {
 
   it("catches repeated choices and an answer that points nowhere", () => {
     expect(outcome(lesson({ exercises: [mc({ choices: ["Yes", " yes", "No"] }), mc(), open()] })).choices).toBe(false);
+    expect(outcome(lesson({ exercises: [mc({ choices: ["`x`", "`x` ", "`y`"] }), mc(), open()] })).choices).toBe(false);
+    // In code, case is a real difference.
+    expect(outcome(lesson({ exercises: [mc({ choices: ["`['ana']`", "`['ANA']`", "`[]`"] }), mc(), open()] })).choices).toBe(true);
     expect(outcome(lesson({ exercises: [mc({ answerIndex: 3 }), mc(), open()] })).choices).toBe(false);
   });
 
@@ -98,6 +113,8 @@ describe("checkLesson", () => {
     const withFigure = (figure: object) => lesson({ sections: [section({ figure }), section()] });
     expect(outcome(withFigure(steps)).figures).toBe(true);
     expect(outcome(withFigure({ ...steps, rows: [["Read"], ["read"]] })).figures).toBe(false);
+    // A round trip may name the same place twice, as long as the steps differ.
+    expect(outcome(withFigure({ ...steps, rows: [["Browser", "Sends"], ["Server", "Replies"], ["Browser", "Shows"]] })).figures).toBe(true);
     expect(outcome(withFigure({ ...steps, rows: [["Read"]] })).figures).toBe(false);
     const compare = { kind: "compare", caption: "Two keywords.", headers: ["let", "const"], rows: [["Can change", "Cannot change"]] };
     expect(outcome(withFigure(compare)).figures).toBe(true);
@@ -135,6 +152,46 @@ describe("helpers", () => {
     expect(revealsOutput("SELECT 1; -- returns one row")).toBe(true);
     expect(revealsOutput("total = price * 2  # double it")).toBe(false);
     expect(revealsOutput("print(x)")).toBe(false);
+  });
+});
+
+describe("checking printed output", () => {
+  const js = { language: "JavaScript", filename: null, code: "console.log(1 + 1)", output: "2", result: null };
+  const ts = { ...js, language: "ts", code: "const n: number = 3; console.log(n)", output: "3" };
+
+  it("picks the JavaScript and TypeScript examples that claim an output", () => {
+    const noOutput = { ...js, output: null, result: "Defines a function." };
+    const found = runnableBlocks(lesson({ sections: [section({ blocks: [block, js, noOutput] }), section({ blocks: [ts] })] }));
+    // The Python block and the one without output are left out.
+    expect(found).toEqual([
+      { label: "section 1 block 2", inputType: "module", code: js.code, expected: "2" },
+      { label: "section 2 block 1", inputType: "module-typescript", code: ts.code, expected: "3" },
+    ]);
+    expect(runnableBlocks("not a lesson")).toEqual([]);
+  });
+
+  it("ignores line endings and trailing spaces, but not real differences", () => {
+    expect(sameOutput("1\n2", "1\r\n2\r\n")).toBe(true);
+    expect(sameOutput("a  \nb", "a\nb")).toBe(true);
+    expect(sameOutput("4, 10, 16", "4,10,16")).toBe(false);
+    expect(sameOutput("  indented", "indented")).toBe(false);
+  });
+
+  it("passes when every example that ran printed what the lesson says", () => {
+    const [first] = runnableBlocks(lesson({ sections: [section({ blocks: [js] }), section()] }));
+    expect(outputCheck([{ block: first, printed: "2\n" }])).toEqual({ check: "output", passed: true, notes: [] });
+    const wrong = outputCheck([{ block: first, printed: "3\n" }]);
+    expect(wrong.passed).toBe(false);
+    expect(wrong.notes).toEqual(['section 1 block 1: says "2", prints "3"']);
+  });
+
+  it("doesn't count an example that couldn't run, and doesn't apply with nothing to run", () => {
+    const [first] = runnableBlocks(lesson({ sections: [section({ blocks: [js] }), section()] }));
+    const skipped = outputCheck([{ block: first, printed: null, problem: "timed out" }]);
+    expect(skipped).toEqual({ check: "output", passed: null, notes: ["section 1 block 1: not run (timed out)"] });
+    expect(outputCheck([]).passed).toBeNull();
+    // One ran and matched, one couldn't run: still a pass, with a note.
+    expect(outputCheck([{ block: first, printed: "2" }, { block: first, printed: null, problem: "needs a file" }]).passed).toBe(true);
   });
 });
 
