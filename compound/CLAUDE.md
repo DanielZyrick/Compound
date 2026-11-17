@@ -47,8 +47,10 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
   — one principle per user per day, generated once and cached
 - ai_calls (id, user_id, day, purpose, model, ok, input_tokens, output_tokens, created_at)
   — for the daily limit and cost tracking
-- goals (id, user_id, title, why, start_date, deadline, buffer_days, status, plan_source,
-  guide, target_cents, created_at, completed_at)
+- goals (id, user_id, title, why, details nullable, start_date, deadline, buffer_days, status,
+  plan_source, guide, target_cents, created_at, completed_at) — details: optional specifics
+  (≤ 500 chars: what done looks like, what they have, limits), passed in <details> tags to
+  the goal plan prompt; shown on the goal page
 - goal_milestones (id, goal_id, position, title, description, weight, planned_due)
 - goal_steps (id, milestone_id, position, title, done_on, created_at)
 - money_categories (id, user_id, kind: expense | income, name, icon, position, monthly_budget_cents (expense only, applies every month), archived_at) — budget left, over and pace in lib/money/budget.ts

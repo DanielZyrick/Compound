@@ -6,6 +6,7 @@ import { parseAmount } from "@/lib/money/amount";
 export const MAX_ACTIVE_GOALS = 5;
 export const MIN_GOAL_DAYS = 3;
 export const MAX_GOAL_DAYS = 730; // two years
+export const MAX_GOAL_DETAILS = 500;
 export const BUFFER_PERCENT_OPTIONS = [0, 5, 10, 15, 20, 25, 30] as const;
 
 export const newGoalSchema = z.object({
@@ -19,6 +20,13 @@ export const newGoalSchema = z.object({
     .trim()
     .min(10, { error: "Say a little about why this matters to you (at least 10 characters)." })
     .max(500, { error: "Keep the reason under 500 characters." }),
+  // Optional specifics: what done looks like, what they have, limits. Blank means none.
+  details: z
+    .string()
+    .trim()
+    .max(MAX_GOAL_DETAILS, { error: `Keep the details under ${MAX_GOAL_DETAILS} characters.` })
+    .optional()
+    .transform((text) => text || null),
   deadline: z.iso.date({ error: "Choose a deadline." }),
   bufferPercent: z
     .number()

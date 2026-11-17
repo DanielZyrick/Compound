@@ -55,6 +55,11 @@ async function GoalDetail({ params }: Pick<PageProps<"/goals/[id]">, "params">) 
           <GoalStatusBadge status={schedule.status} className="mt-1" />
         </div>
         <p className="mt-2 text-muted-foreground">{goal.why}</p>
+        {goal.details && (
+          <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
+            <span className="font-medium text-foreground">Details:</span> {goal.details}
+          </p>
+        )}
         <p className="mt-3 text-sm">
           Due {formatShortDate(goal.deadline, year)}
           {schedule.status !== "completed" && (

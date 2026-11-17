@@ -30,6 +30,12 @@ describe("goalPrompt", () => {
     expect(prompt).toContain("40 days");
     expect(prompt).not.toContain("<focus>");
   });
+
+  it("includes the details only when given", () => {
+    const base = { title: "Launch my site", why: "To get hired", days: 30, focus: null };
+    expect(goalPrompt({ ...base, details: "Next.js, 3 case studies" })).toContain("<details>Next.js, 3 case studies</details>");
+    expect(goalPrompt({ ...base, details: null })).not.toContain("<details>");
+  });
 });
 
 describe("newGoalSchema", () => {
@@ -42,6 +48,15 @@ describe("newGoalSchema", () => {
   it("rejects a bad date or a buffer that isn't offered", () => {
     expect(newGoalSchema.safeParse({ ...valid, deadline: "15/12/2026" }).success).toBe(false);
     expect(newGoalSchema.safeParse({ ...valid, bufferPercent: 12 }).success).toBe(false);
+  });
+
+  it("keeps details trimmed, turns blank details into null and caps their length", () => {
+    const parse = (details: unknown) => newGoalSchema.parse({ ...valid, details });
+    expect(parse("  Own domain  ")).toMatchObject({ details: "Own domain" });
+    expect(parse("   ")).toMatchObject({ details: null });
+    expect(parse(undefined)).toMatchObject({ details: null });
+    const tooLong = newGoalSchema.safeParse({ ...valid, details: "a".repeat(501) });
+    expect(tooLong.error?.issues.map((i) => i.message)).toContain("Keep the details under 500 characters.");
   });
 });
 

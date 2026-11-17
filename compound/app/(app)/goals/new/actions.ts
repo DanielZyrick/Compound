@@ -24,7 +24,7 @@ export async function createGoal(_previous: CreateGoalState, input: unknown): Pr
 
   const parsed = newGoalSchema.safeParse(input);
   if (!parsed.success) return { errors: [...new Set(parsed.error.issues.map((i) => i.message))] };
-  const { title, why, deadline, bufferPercent, target } = parsed.data;
+  const { title, why, details, deadline, bufferPercent, target } = parsed.data;
 
   // "Today" comes from the user's timezone on the server, not from the browser.
   const today = todayIn(user.timezone);
@@ -51,7 +51,7 @@ export async function createGoal(_previous: CreateGoalState, input: unknown): Pr
       tier: "smart",
       schema: goalPlanSchema,
       system: GOAL_SYSTEM_PROMPT,
-      prompt: goalPrompt({ title, why, days: daysBetween(today, workEnd) + 1, focus: focusText }),
+      prompt: goalPrompt({ title, why, details, days: daysBetween(today, workEnd) + 1, focus: focusText }),
       demo: () => demoGoalPlan(title),
     }));
   } catch (error) {
@@ -68,6 +68,7 @@ export async function createGoal(_previous: CreateGoalState, input: unknown): Pr
         user_id: user.id,
         title,
         why,
+        details,
         start_date: today,
         deadline,
         buffer_days: bufferDays,

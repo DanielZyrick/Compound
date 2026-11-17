@@ -12,6 +12,7 @@ import { bufferDaysFor, DEFAULT_BUFFER_PERCENT, workEndFor } from "@/lib/goals/s
 import {
   BUFFER_PERCENT_OPTIONS,
   deadlineError,
+  MAX_GOAL_DETAILS,
   MAX_GOAL_DAYS,
   MIN_GOAL_DAYS,
   newGoalSchema,
@@ -21,6 +22,7 @@ import { createGoal } from "./actions";
 export function NewGoalForm({ today, demoMode }: { today: CalendarDate; demoMode: boolean }) {
   const [title, setTitle] = useState("");
   const [why, setWhy] = useState("");
+  const [details, setDetails] = useState("");
   const [deadline, setDeadline] = useState("");
   const [bufferPercent, setBufferPercent] = useState<number>(DEFAULT_BUFFER_PERCENT);
   const [target, setTarget] = useState("");
@@ -28,7 +30,7 @@ export function NewGoalForm({ today, demoMode }: { today: CalendarDate; demoMode
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [state, submit, pending] = useActionState(createGoal, { errors: [] });
 
-  const input = { title, why, deadline, bufferPercent, target };
+  const input = { title, why, details, deadline, bufferPercent, target };
   const parsed = newGoalSchema.safeParse(input);
   const dateProblem = parsed.success ? deadlineError(today, deadline) : null;
   const clientErrors = parsed.success
@@ -71,6 +73,26 @@ export function NewGoalForm({ today, demoMode }: { today: CalendarDate; demoMode
           placeholder="e.g. So I can apply for developer jobs with real projects to show."
           maxLength={500}
         />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="goal-details">
+          Anything specific? <span className="font-normal text-muted-foreground">(optional)</span>
+        </Label>
+        <Textarea
+          id="goal-details"
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="e.g. Built with Next.js, 3 case studies, a contact form and my own domain. I already have the designs."
+          maxLength={MAX_GOAL_DETAILS}
+          aria-describedby="goal-details-hint"
+        />
+        <p id="goal-details-hint" className="flex justify-between gap-3 text-xs text-muted-foreground">
+          <span>What done looks like, what you already have, or limits like budget or tools.</span>
+          <span className="tabular-nums">
+            {details.length}/{MAX_GOAL_DETAILS}
+          </span>
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">

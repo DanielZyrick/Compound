@@ -10,6 +10,7 @@ test("create a goal, then tick, add, rename and delete steps", async ({ page, co
 
   await page.getByLabel("Your goal").fill("Launch my portfolio website");
   await page.getByLabel("Why it matters to you").fill("So I can apply for developer jobs with real projects.");
+  await page.getByLabel("Anything specific?").fill("Three case studies and my own domain.");
   const deadline = addDays(new Date().toISOString().slice(0, 10), 30);
   await page.getByLabel("Deadline").fill(deadline);
   await expect(page.getByText(/Plan to finish by/)).toBeVisible();
@@ -20,6 +21,7 @@ test("create a goal, then tick, add, rename and delete steps", async ({ page, co
   await expect(page).toHaveURL(/\/goals\/[0-9a-f-]{36}$/, { timeout: 20_000 });
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Launch my portfolio website");
+  await expect(page.getByText("Three case studies and my own domain.")).toBeVisible();
   await expect(page.getByText("On track", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Execution guide" })).toBeVisible();
 

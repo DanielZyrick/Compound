@@ -19,6 +19,7 @@ export type GoalWithSchedule = {
   id: string;
   title: string;
   why: string;
+  details: string | null;
   startDate: CalendarDate;
   deadline: CalendarDate;
   bufferDays: number;
@@ -40,7 +41,7 @@ export type GoalWithSchedule = {
 async function loadGoals(userId: string, today: CalendarDate, goalId?: string): Promise<GoalWithSchedule[]> {
   let query = db
     .selectFrom("goals")
-    .select(["id", "title", "why", "start_date", "deadline", "buffer_days", "status", "plan_source", "target_cents"])
+    .select(["id", "title", "why", "details", "start_date", "deadline", "buffer_days", "status", "plan_source", "target_cents"])
     .where("user_id", "=", userId)
     .where("status", "!=", "archived")
     .orderBy("deadline");
@@ -110,6 +111,7 @@ async function loadGoals(userId: string, today: CalendarDate, goalId?: string): 
       id: goal.id,
       title: goal.title,
       why: goal.why,
+      details: goal.details,
       startDate: goal.start_date,
       deadline: goal.deadline,
       bufferDays: goal.buffer_days,

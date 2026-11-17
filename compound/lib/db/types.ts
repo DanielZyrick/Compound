@@ -153,6 +153,9 @@ export interface GoalsTable {
   user_id: string;
   title: string;
   why: string; // the user's reason, in their own words
+  // Optional specifics in their words: what done looks like, what they already
+  // have, limits. Sent to the AI with the plan. Null for older goals.
+  details: ColumnType<string | null, string | null | undefined, string | null>;
   start_date: CalendarDate;
   deadline: CalendarDate;
   buffer_days: number; // days before the deadline kept free for setbacks
