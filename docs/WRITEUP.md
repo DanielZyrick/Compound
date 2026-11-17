@@ -12,17 +12,19 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 ## What it does
 
-**Learning & Habits.** You create habits with a weekly schedule and check them off on Today. Streaks and a 30-day history show your consistency. Forgot to tick the gym yesterday? The Habits page lets you fill in any day from the last week when the habit was due, with a nudge to be honest. You can start a learning track by describing what you want to learn, such as "SQL for data analysis". Claude drafts a 7, 14 or 30-day plan, and each day opens a short lesson with exercises. You go at your own pace: a day opens on its date, or as soon as you finish the one before, so a 30-day track can take a week. Multiple-choice answers are graded on the server. Written answers get AI feedback and a better version. Reading tracks, such as a Bible plan, follow a fixed plan, link to a real translation, and keep a reflection journal. A principle of the day adds one idea to think about.
+**Learning & Habits.** You create habits with a weekly schedule and check them off on Today. Streaks and a 30-day history show your consistency. Forgot to tick the gym yesterday? The Habits page lets you fill in any day from the last week when the habit was due, with a nudge to be honest. You can start a learning track by describing what you want to learn, such as "SQL for data analysis". Claude drafts a 7, 14 or 30-day plan, and each day opens a short lesson with exercises. You go at your own pace: a day opens on its date, or as soon as you finish the one before, so a 30-day track can take a week. Multiple-choice answers are graded on the server. Written answers get AI feedback and a better version. In coding tracks, examples are shown the way documentation shows them: coloured code with a copy button and the exact output underneath, and a lesson can add a small diagram (a flow, a comparison or a table) where a picture explains faster than words. Code answers are typed in a code box where Tab indents and Enter keeps the indentation. Reading tracks, such as a Bible plan, follow a fixed plan, link to a real translation, and keep a reflection journal. A principle of the day adds one idea to think about.
+
+![A lesson: a code example with its output, and a diagram comparing map and filter](screenshots/lesson.png)
 
 **Goals.** You describe a goal, why it matters and a deadline. The AI drafts milestones and steps, which you can edit before and after saving, plus a short execution guide. Each goal keeps buffer days before its deadline for setbacks. As you tick off steps, the app works out whether you're on track, behind and using buffer, or at risk. If you slip, the remaining dates move to fit. Goals that need attention get a dot in the navigation.
 
 ![A goal that's slipping, with its savings and adjusted dates](screenshots/goal.png)
 
-**Money.** You record an expense or income in a few taps: amount, category, done. The form stays open for the next one. A month view shows spent, income and what's left, spending by category, and a list grouped by day. You can manage your own categories. Income can go toward a goal's savings target, so the money module and the goals module tell one story.
+**Money.** You record an expense or income in a few taps: amount, category, done. The form stays open for the next one. A month view shows spent, income and what's left, spending by category, and a list grouped by day. You can manage your own categories and give any of them a monthly budget, which fills up as you spend. Income can go toward a goal's savings target, so the money module and the goals module tell one story.
 
 ![The Money page](screenshots/money.png)
 
-**Notes.** Quick notes and to-dos live on a board of sticky notes. You add one from Today in a second, tick it off, pin what matters, and give it a paper colour. Titles are in a handwriting font, and each note sits at a slight angle, fixed per note so the board never jumps around.
+**Notes.** Quick notes and to-dos live on a board of sticky notes. You add one from Today in a second, tick it off, pin what matters, give it a paper colour, and give a to-do a due date so it comes first on Today when it's due. Titles are in a handwriting font, and each note sits at a slight angle, fixed per note so the board never jumps around.
 
 ![The Notes page](screenshots/notes.png)
 
@@ -42,6 +44,10 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 **AI output is untrusted input.** Every Claude call runs on the server only, and the API key never reaches the browser. Each response must be JSON that passes a Zod schema. If it doesn't, the call retries once, then shows a clear error. Generated lessons and principles are cached in Postgres, so they are never paid for twice. Every call is logged, with token counts, and counts toward a daily limit of 20 per user. Model names come from environment variables, so switching models doesn't need a code change. Two rules exist because the content matters: the AI never writes scripture text, and the user's own focus description is only used for examples, so it can't pull a plan off-topic.
 
+**The AI writes words; the app draws.** Lesson diagrams could have been SVG or Mermaid written by the AI, but AI-written SVG is a security risk and uneven in quality, and one small Mermaid mistake breaks the whole picture. Instead the AI picks a kind (steps, compare or table) and fills in short labels, and Compound's own components draw it, so a diagram always matches the design and nothing the AI wrote is ever inserted as HTML. My first schema had one shape per kind, and the API refused it: added to the rest of the lesson, its grammar was too large for structured outputs. All three kinds now share one flat shape (a kind, a caption, headers and rows), with a check that the rows fit the kind. Code is coloured with Shiki on the server, so the browser gets plain HTML and no highlighting script.
+
+**Measuring the AI, not just validating it.** A schema proves a lesson has the right shape, not that it's right. `npm run eval:lessons` asks the real AI for eight fixed lessons through the app's own code and scores the first answer of each: exercise order, sound multiple choice, no stray backticks, code in blocks, diagrams that fit their kind, question code that doesn't give the answer away, and whether each example really prints what the lesson says. For that last check the AI's JavaScript and TypeScript run in a separate Node process with the permission model on: no files, no network, no other programs, none of the environment (so no API key), and five seconds. A unit test proves each of those is blocked. The evals cost a few cents, so they run when I ask, never in CI.
+
 **A demo mode that makes the app free to run.** With no API key, or with `AI_DEMO_MODE=1`, the app uses clearly labelled example content instead of calling Claude. Anyone can clone and run the full app without paying, and the end-to-end tests never spend credits or flake on nondeterministic output.
 
 **The goal schedule is pure functions, never stored.** Status, adjusted dates and buffer use are computed from the plan and the steps you've ticked, in [`lib/goals/schedule.ts`](../compound/lib/goals/schedule.ts). Nothing about the schedule is saved, so it can't drift out of sync, and it's easy to unit test. Testing caught a real design flaw. I first derived your pace from the current deadline, so extending a deadline *slowed* the expected pace, and an at-risk goal stayed at risk. The fix was to measure pace against the original plan, so extra time really is extra room. A test now pins that behaviour.
@@ -58,8 +64,9 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 ## Testing
 
-- **279 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, timezone-aware dates, which days can be filled in, which lesson days are open, the goal schedule, parsing and formatting money, verified sign-in emails, follow-up dates, token encryption, the calendar connect checks, placing events on days, and validating AI output.
-- **28 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits and filling in a missed day, lessons at your own pace, a reading, creating and editing goals, falling behind and catching up, recording money, managing categories, saving toward a goal, notes, About you and a resume, recommended tracks, contacts and follow-ups, and connecting a calendar. They sign in as a dedicated test user, run with a demo AI and a demo calendar, and clean up afterwards.
+- **393 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, timezone-aware dates, which days can be filled in, which lesson days are open, the goal schedule, parsing and formatting money, budgets, due dates, verified sign-in emails, follow-up dates, token encryption, the calendar connect checks, placing events on days, the code box's indenting, validating AI output, and the eval checks themselves.
+- **34 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits and filling in a missed day, lessons at your own pace (including code, diagrams and typing in the code box), a reading, creating and editing goals, falling behind and catching up, recording money, budgets, managing categories, saving toward a goal, notes and due dates, About you and a resume, recommended tracks, contacts and follow-ups, and connecting a calendar. They sign in as a dedicated test user, run with a demo AI and a demo calendar, and clean up afterwards.
+- **AI evals** score real lessons from the live prompts. The latest run on the fast model passed every check: 8 of 8 lessons fit the schema on the first try with exercises in the right order, all 8 diagrams fit their kind, and both examples that could be run printed exactly what the lesson said.
 
 ## What I learned
 
@@ -68,12 +75,13 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 - **Guardrails are cheaper than accidents.** Early on, a misconfigured environment variable pointed a migration at production. Nothing was lost, but it led directly to printing the host before every migration and to the e2e guard.
 - **Ship the schema first, every time.** Once, I pushed a feature before running its migration on production, and the Today page broke until the migration ran. Now every new migration runs on production before its code is pushed.
 - **Compare times from one clock.** Recommended tracks were regenerating on every reload. The profile's "last changed" time came from the database's clock and the suggestions' "made at" time from the app server's, and the two were a little apart. An end-to-end test caught it; both now use the database's clock.
+- **An eval can be wrong too.** The first real run flagged two lessons. Reading them, the AI was right both times: my check treated `['ana', 'ben']` and `['ANA', 'BEN']` as the same answer, and rejected a flow that goes Browser, Server, then back to the Browser. Saving every lesson to read afterwards is what made that visible, and both checks now have tests.
 - **AI features are mostly not about the prompt.** Schemas, retries, caching, limits, logging and a demo mode took more work than the prompts, and they're what make the AI parts dependable.
 
 ## What's next
 
-Monthly budgets per category, due dates on to-dos that show on Today and in Schedule, email reminders, a custom domain so Google can verify the Calendar connection, and evals to measure the quality of AI feedback and suggestions.
+Email reminders for habits and follow-ups, a custom domain so Google can verify the Calendar connection, and evals for the AI's feedback on answers and its track suggestions, the same way lessons are measured now.
 
 ## Stack
 
-Next.js 16 (App Router, Cache Components) · React 19 · TypeScript (strict) · PostgreSQL on Neon · Kysely · Auth.js (Google, GitHub) · Zod · Tailwind CSS 4 · shadcn/ui · Claude API · Vitest · Playwright · Vercel
+Next.js 16 (App Router, Cache Components) · React 19 · TypeScript (strict) · PostgreSQL on Neon · Kysely · Auth.js (Google, GitHub) · Zod · Tailwind CSS 4 · shadcn/ui · Shiki · Claude API · Vitest · Playwright · Vercel

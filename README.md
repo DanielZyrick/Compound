@@ -24,8 +24,10 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 
 ## Screenshots
 
-| A goal that's slipping | Money for the month |
+| A lesson: code, its real output, and a diagram | Answering in the code box |
 | --- | --- |
+| ![A lesson on map and filter: a code example with its expected output, and a diagram comparing the two methods](docs/screenshots/lesson.png) | ![An exercise answered in the dark code box, with indented JavaScript](docs/screenshots/lesson-answer.png) |
+| **A goal that's slipping** | **Money for the month** |
 | ![A goal page with its savings, progress and adjusted dates](docs/screenshots/goal.png) | ![The Money page with the add form and monthly totals](docs/screenshots/money.png) |
 | **Recommended for you** | **About you, with "fill in from your resume"** |
 | ![Learn: a track in progress and three recommended tracks, each with a reason](docs/screenshots/learn.png) | ![The About you form with the resume box and the time-per-day choice](docs/screenshots/profile.png) |
