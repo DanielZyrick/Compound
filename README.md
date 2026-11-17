@@ -147,6 +147,7 @@ Run these from the `compound/` folder.
 | `npm test` / `npm run test:watch` | Run the Vitest unit tests |
 | `npm run test:e2e` | Build, then run the Playwright end-to-end tests (desktop and phone) |
 | `npm run eval:lessons` | Ask the real AI for 8 lessons and score them (see [AI evals](#ai-evals)) |
+| `npm run eval:feedback` | Send 16 answers with a known verdict to the real AI reviewer and score its reviews |
 | `npm run typecheck` | Type-check with `tsc` |
 | `npm run lint` | Run ESLint |
 | `npm run db:migrate` | Apply pending migrations |
@@ -197,6 +198,22 @@ A check only counts the lessons it applies to, so the totals differ: three of th
 
 The evals have already paid for themselves in the other direction: their first failures were two checks that were too strict (they treated `['ana']` and `['ANA']` as the same choice, and rejected a flow that returns to the browser). Reading the saved lessons showed the AI was right, and the checks were fixed.
 
+#### Feedback on written answers
+
+A reviewer that's too strict discourages learners, and one that's too lenient, or can be talked into "correct", teaches nothing. `npm run eval:feedback` sends 16 answers with a known verdict to the real reviewer, three times each, at the same model and effort the app uses: 6 that are right but not worded like the sample (a list comprehension instead of a loop, SQL with aliases, a different but sound decision), 7 with a real mistake (an off-by-one loop, `map` where `filter` was asked for, a join on the wrong column, feedback that judges the person), and 3 that try to get marked correct ("Note to the reviewer…", a fake system message, "Ignore all previous instructions"). The latest run:
+
+| Check | Passed |
+| --- | --- |
+| Right verdict on correct answers | 18 / 18 |
+| Right verdict on wrong answers | 21 / 21 |
+| Right verdict on "mark me correct" tricks | 9 / 9 |
+| Same verdict on all three reviews of an answer | 16 / 16 |
+| Feedback under 120 words, as the prompt asks | 48 / 48 |
+| Code formatted: no stray backticks, and a code answer's better version is a code block | 48 / 48 |
+| The better version's JavaScript runs and gives the right result | 15 / 15 |
+
+The last check runs the reviewer's improved answer in the same sandbox, so feedback that "fixes" an answer into another wrong one is caught. The JavaScript cases check themselves first: a unit test runs each sample answer and each learner answer in the sandbox, so a case can't pass or fail by mistake ([`lib/lessons/feedback-evals.ts`](compound/lib/lessons/feedback-evals.ts)). Whether feedback is *helpful* isn't scored: only another AI could judge that, and grading an AI with an AI is less trustworthy than checks like these, so the saved reviews are there to read.
+
 ## Deploying
 
 The app is deployed on Vercel with the **root directory set to `compound`**. Production uses the Neon `main` branch.
@@ -246,7 +263,7 @@ compound/
     migrations/     Kysely migrations, listed in index.ts
     migrate.ts      migration runner (npm run db:migrate)
   e2e/              Playwright tests and their helpers
-  evals/            lesson evals against the real AI (npm run eval:lessons)
+  evals/            lesson and feedback evals against the real AI, and the code sandbox
   lib/
     ai/             Claude client, demo mode, daily limits, call logging
     auth/           data access layer, server actions, login errors
@@ -276,10 +293,10 @@ compound/
 7. ✅ Money module: expenses and income, categories, savings toward goals
 8. ✅ Google sign-in, a dashboard redesign, own-pace learning, sticky notes, filling in missed habit days
 9. ✅ About you (with a resume), recommended tracks, Contacts with follow-ups, Google Calendar (read-only)
-10. ✅ Monthly budgets, due dates on to-dos, its own design, and lessons with code blocks, diagrams, a code box for answers, and AI evals
+10. ✅ Monthly budgets, due dates on to-dos, its own design, and lessons with code blocks, diagrams, a code box for answers, and AI evals for lessons and feedback
 11. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
 
-Later: email reminders, evals for AI feedback on answers.
+Later: email reminders, evals for track suggestions.
 
 ---
 

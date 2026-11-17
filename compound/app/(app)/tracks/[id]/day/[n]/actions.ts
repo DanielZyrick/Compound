@@ -8,7 +8,13 @@ import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { db } from "@/lib/db";
 import { demoFeedback, demoLesson } from "@/lib/lessons/demo";
-import { FEEDBACK_SYSTEM_PROMPT, feedbackPrompt, LESSON_SYSTEM_PROMPT, lessonPrompt } from "@/lib/lessons/prompts";
+import {
+  FEEDBACK_SYSTEM_PROMPT,
+  feedbackPrompt,
+  feedbackQuestion,
+  LESSON_SYSTEM_PROMPT,
+  lessonPrompt,
+} from "@/lib/lessons/prompts";
 import { getOwnedLesson, parseLesson } from "@/lib/lessons/queries";
 import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE } from "@/lib/lessons/rules";
 import { feedbackSchema, lessonSchema } from "@/lib/lessons/schema";
@@ -184,9 +190,7 @@ export async function submitOpenAnswer(input: unknown): Promise<Result> {
       prompt: feedbackPrompt({
         type: lesson.type,
         level: lesson.level,
-        question: exercise.code
-          ? exercise.question + "\n```" + exercise.code.language + "\n" + exercise.code.code + "\n```"
-          : exercise.question,
+        question: feedbackQuestion(exercise),
         reference: exercise.sampleAnswer,
         answer,
       }),
