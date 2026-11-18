@@ -41,11 +41,11 @@ export default function NewTrackPage({ searchParams }: PageProps<"/tracks/new">)
 }
 
 async function FormGate({ searchParams }: Pick<PageProps<"/tracks/new">, "searchParams">) {
-  await requireOnboardedUser();
+  const user = await requireOnboardedUser();
   await connection(); // read the environment at request time, not at build
   const parsed = prefillSchema.safeParse(await searchParams);
   const prefill: TrackPrefill | null = parsed.success
     ? { topic: parsed.data.topic, type: parsed.data.type, level: parsed.data.level, totalDays: parsed.data.days }
     : null;
-  return <NewTrackForm demoMode={isDemoMode()} prefill={prefill} />;
+  return <NewTrackForm demoMode={isDemoMode() || user.is_demo} prefill={prefill} />;
 }

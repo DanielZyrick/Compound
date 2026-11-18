@@ -16,6 +16,11 @@ describe("loginErrorMessage", () => {
     expect(loginErrorMessage("OAuthCallbackError")).toMatch(/cancelled/);
   });
 
+  it("explains a busy demo, and stays generic for other demo failures", () => {
+    expect(loginErrorMessage("CredentialsSignin", "demo_busy")).toMatch(/trying the demo/);
+    expect(loginErrorMessage("CredentialsSignin", "credentials")).toMatch(/on our side/);
+  });
+
   it("explains an expired sign-in form", () => {
     expect(loginErrorMessage("MissingCSRF")).toMatch(/expired/);
   });

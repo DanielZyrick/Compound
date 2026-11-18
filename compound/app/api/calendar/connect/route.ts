@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   const user = await requireOnboardedUser();
   const settings = new URL("/settings", request.url);
 
-  if (isCalendarDemo()) {
-    // End-to-end tests: a demo connection, no Google involved.
+  if (isCalendarDemo() || user.is_demo) {
+    // End-to-end tests and demo users: a demo connection, no Google involved.
     await db
       .insertInto("calendar_connections")
       .values({ user_id: user.id, google_email: "demo@example.com", refresh_token: "demo" })

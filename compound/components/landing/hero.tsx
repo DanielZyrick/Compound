@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TryDemoButton } from "@/components/try-demo-button";
 import { buttonVariants } from "@/components/ui/button";
 import { GrowthChart } from "./growth-chart";
 
@@ -19,11 +20,9 @@ export function Hero() {
             <Link href="/today" className={buttonVariants({ className: "h-11 px-5 text-base" })}>
               Get started, it&apos;s free
             </Link>
-            <a href="#how-it-works" className={buttonVariants({ variant: "outline", className: "h-11 px-5 text-base" })}>
-              See how it works
-            </a>
+            <TryDemoButton className="h-11 px-5 text-base" />
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">Sign in with Google or GitHub. No credit card.</p>
+          <p className="mt-4 text-sm text-muted-foreground">Sign in with Google or GitHub, or look around a demo first. No credit card.</p>
         </div>
 
         <GrowthChart />

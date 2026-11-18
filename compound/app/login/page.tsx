@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { SignInWithGitHub, SignInWithGoogle } from "@/components/auth-buttons";
+import { TryDemoButton } from "@/components/try-demo-button";
 import { LogoMark } from "@/components/logo";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { loginErrorMessage } from "@/lib/auth/login-errors";
@@ -30,6 +31,15 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
             <SignInWithGoogle />
             <SignInWithGitHub />
           </div>
+          <div className="mt-6 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <div className="mt-6 flex flex-col">
+            <TryDemoButton variant="ghost" className="h-11 w-full text-base" />
+            <p className="mt-1 text-xs text-muted-foreground">Look around with sample data. No account needed.</p>
+          </div>
           <p className="mt-4 text-xs text-muted-foreground">
             New here? Signing in creates your account. See how your data is used in our{" "}
             <Link href="/privacy" className="underline hover:text-foreground">
@@ -54,7 +64,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 async function LoginNotice({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   if (await getCurrentUser()) redirect("/today");
 
-  const message = loginErrorMessage((await searchParams).error);
+  const params = await searchParams;
+  const message = loginErrorMessage(params.error, params.code);
   if (!message) return null;
 
   return (

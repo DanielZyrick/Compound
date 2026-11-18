@@ -110,7 +110,7 @@ async function Lesson({ params }: Pick<PageProps<"/tracks/[id]/day/[n]">, "param
             />
           </div>
         ) : !page.lesson || !page.lessonId ? (
-          <StartLesson trackId={trackId} dayNumber={dayNumber} demoMode={isDemoMode()} />
+          <StartLesson trackId={trackId} dayNumber={dayNumber} demoMode={isDemoMode() || user.is_demo} />
         ) : (
           <div className="flex flex-col gap-8">
             <LessonBody lesson={page.lesson} lessonId={page.lessonId} attempts={page.attempts} />

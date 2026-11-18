@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { TryDemoButton } from "@/components/try-demo-button";
 import { buttonVariants } from "@/components/ui/button";
 
 export function SiteHeader() {
@@ -19,6 +20,7 @@ export function SiteHeader() {
       </nav>
 
       <div className="flex items-center gap-2">
+        <TryDemoButton variant="ghost" className="hidden h-9 sm:inline-flex" />
         <Link href="/login" className={buttonVariants({ variant: "ghost", size: "lg" })}>
           Sign in
         </Link>

@@ -7,7 +7,8 @@ import { AiError } from "./errors";
 import { generateJson } from "./generate";
 
 type RunOptions<Schema extends z.ZodType> = {
-  user: { id: string; timezone: string };
+  /** Demo users ("Try the demo") always get the example output, even with an API key. */
+  user: { id: string; timezone: string; is_demo: boolean };
   /** What the call is for, e.g. "track_plan". Stored in the log. */
   purpose: string;
   tier: ModelTier;
@@ -37,14 +38,14 @@ export async function aiCallsToday(userId: string, timezone: string) {
 /**
  * Runs one AI task for a user: checks their daily limit, calls the model
  * (with one retry on invalid output), and logs every attempt. Throws AiError.
- * In demo mode it returns the task's example output instead, without a call.
+ * In demo mode, or for a demo user, it returns the task's example output instead, without a call.
  */
 export async function runAiTask<Schema extends z.ZodType>(
   options: RunOptions<Schema>,
 ): Promise<AiResult<z.infer<Schema>>> {
   const { user, purpose, tier, demo, ...request } = options;
 
-  if (isDemoMode()) {
+  if (isDemoMode() || user.is_demo) {
     return { data: request.schema.parse(demo()), source: "demo" };
   }
 

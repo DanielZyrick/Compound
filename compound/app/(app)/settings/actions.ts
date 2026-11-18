@@ -54,7 +54,7 @@ export async function updateCurrency(input: unknown): Promise<SettingsResult> {
 /** Disconnects Google Calendar: revokes access at Google and deletes the stored tokens. */
 export async function disconnectCalendar(): Promise<SettingsResult> {
   const user = await requireOnboardedUser();
-  await disconnect(user.id);
+  await disconnect(user);
   refresh();
   return { errors: [] };
 }

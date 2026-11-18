@@ -19,11 +19,12 @@ export type ScheduleResult =
  * problem never breaks the page around it.
  */
 export async function getSchedule(
-  user: { id: string; timezone: string },
+  user: { id: string; timezone: string; is_demo: boolean },
   from: CalendarDate,
   days: number,
 ): Promise<ScheduleResult> {
-  if (isCalendarDemo()) {
+  // Tests and demo users get example events and never reach Google.
+  if (isCalendarDemo() || user.is_demo) {
     const connected = await db
       .selectFrom("calendar_connections")
       .select("user_id")

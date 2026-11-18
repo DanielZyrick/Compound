@@ -19,7 +19,7 @@ export async function ScheduleCard({
   today,
   lesson = null,
 }: {
-  user: { id: string; timezone: string };
+  user: { id: string; timezone: string; is_demo: boolean };
   today: CalendarDate;
   lesson?: NextLesson;
 }) {

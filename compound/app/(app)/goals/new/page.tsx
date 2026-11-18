@@ -33,5 +33,5 @@ async function FormGate() {
   const user = await requireOnboardedUser();
   await connection(); // demo mode reads the environment at request time
   // The form uses the user's own "today" for the deadline picker and preview.
-  return <NewGoalForm today={todayIn(user.timezone)} demoMode={isDemoMode()} />;
+  return <NewGoalForm today={todayIn(user.timezone)} demoMode={isDemoMode() || user.is_demo} />;
 }

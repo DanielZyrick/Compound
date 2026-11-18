@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  if (!googleClient()) return done("unavailable");
+  if (!googleClient() || user.is_demo) return done("unavailable"); // demo users never connect a real calendar
   if (!statesMatch(params.get("state"), request.cookies.get(STATE_COOKIE)?.value)) return done("failed");
   if (params.get("error")) return done("denied"); // they pressed Cancel
   const code = params.get("code");

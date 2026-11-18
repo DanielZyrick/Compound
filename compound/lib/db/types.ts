@@ -26,6 +26,8 @@ export interface UsersTable {
   created_at: CreatedAt;
   onboarded_at: Timestamp | null; // null until onboarding is finished
   currency: ColumnType<string, string | undefined, string>; // ISO code, e.g. "PHP"
+  // A throwaway "Try the demo" account: never calls the AI or Google, deleted after 24 hours.
+  is_demo: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
 export interface FocusAreasTable {

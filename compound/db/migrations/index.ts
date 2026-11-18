@@ -19,6 +19,7 @@ import * as m017 from "./017_category_budgets";
 import * as m018 from "./018_note_due_on";
 import * as m019 from "./019_track_details";
 import * as m020 from "./020_goal_details";
+import * as m021 from "./021_demo_users";
 
 // Every migration, listed by name. Kysely runs them in name order and records
 // which ones are done in the kysely_migration table.
@@ -44,4 +45,5 @@ export const migrations: Record<string, Migration> = {
   "018_note_due_on": m018,
   "019_track_details": m019,
   "020_goal_details": m020,
+  "021_demo_users": m021,
 };

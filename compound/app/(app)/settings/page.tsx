@@ -26,7 +26,7 @@ export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
 
 async function SettingsContent({ searchParams }: Pick<PageProps<"/settings">, "searchParams">) {
   const user = await requireOnboardedUser();
-  const [calendar, params] = await Promise.all([getConnection(user.id), searchParams]);
+  const [calendar, params] = await Promise.all([getConnection(user), searchParams]);
   const displayName = user.name ?? user.email;
 
   return (

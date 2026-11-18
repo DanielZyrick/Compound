@@ -117,7 +117,7 @@ export async function getAccessToken(userId: string): Promise<string | null> {
 }
 
 /** Disconnects: revokes access at Google (best effort), then deletes the stored tokens. */
-export async function disconnect(userId: string) {
+export async function disconnect({ id: userId, is_demo }: { id: string; is_demo: boolean }) {
   const row = await db
     .selectFrom("calendar_connections")
     .select("refresh_token")
@@ -125,7 +125,7 @@ export async function disconnect(userId: string) {
     .executeTakeFirst();
   if (!row) return;
 
-  if (!isCalendarDemo()) {
+  if (!isCalendarDemo() && !is_demo) {
     try {
       await fetch(REVOKE_URL, {
         method: "POST",
@@ -142,11 +142,11 @@ export async function disconnect(userId: string) {
 }
 
 /** For Settings: whether Calendar can be offered, and the connected account if any. */
-export async function getConnection(userId: string) {
+export async function getConnection({ id: userId, is_demo }: { id: string; is_demo: boolean }) {
   const row = await db
     .selectFrom("calendar_connections")
     .select(["google_email", "connected_at"])
     .where("user_id", "=", userId)
     .executeTakeFirst();
-  return { available: googleClient() !== null || isCalendarDemo(), connection: row ?? null };
+  return { available: googleClient() !== null || isCalendarDemo() || is_demo, connection: row ?? null };
 }

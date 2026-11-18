@@ -1,10 +1,36 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { db } from "@/lib/db";
 import { fetchGitHubEmails, isVerifiedGitHubEmail } from "@/lib/auth/verified-email";
+import { createDemoUser, DemoBusyError } from "@/lib/demo/create";
+
+/** Shown on /login as ?error=CredentialsSignin&code=demo_busy. */
+class DemoBusy extends CredentialsSignin {
+  code = "demo_busy";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  providers: [
+    ...authConfig.providers,
+    // "Try the demo": every sign-in creates a brand-new demo account, so it
+    // can never be used to sign in as someone else. Only the browser's
+    // timezone is accepted from the form.
+    Credentials({
+      id: "demo",
+      name: "Demo",
+      credentials: { timezone: {} },
+      async authorize({ timezone }) {
+        try {
+          return await createDemoUser(timezone);
+        } catch (error) {
+          if (error instanceof DemoBusyError) throw new DemoBusy();
+          throw error;
+        }
+      },
+    }),
+  ],
   callbacks: {
     ...authConfig.callbacks,
 
@@ -13,6 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // their own account and sign in as you. A refusal shows ?error=AccessDenied.
     async signIn({ user, account, profile }) {
       if (!user.email) return false;
+      if (account?.provider === "demo") return true; // created by createDemoUser just now
       if (account?.provider === "google") return profile?.email_verified === true;
       if (account?.provider === "github" && account.access_token) {
         return isVerifiedGitHubEmail(await fetchGitHubEmails(account.access_token), user.email);

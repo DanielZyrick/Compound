@@ -29,7 +29,8 @@ This is my portfolio project. I am the developer; you are my pair programmer.
 
 ## Database tables
 Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `index.ts`).
-- users (id, email, name, image, timezone, currency, created_at, onboarded_at)
+- users (id, email, name, image, timezone, currency, created_at, onboarded_at, is_demo)
+  — is_demo: a "Try the demo" account (see Pages: Try the demo)
 - focus_areas (id, user_id, goal, custom_label, description, created_at) — chosen during
   onboarding: career, business, faith, health, or custom
 - habits (id, user_id, name, schedule, created_at, archived_at)
@@ -95,6 +96,12 @@ Rules:
 - /progress — overall stats and habit history
 - /profile — "About you" form; Today shows a prompt until it has an answer. Learn shows "Recommended for you" (3 AI track ideas saved in profiles.recommendations, rewritten when the profile changes or on "Suggest others"; "Start this" opens /tracks/new filled in)
 - /schedule — a Monday–Sunday week grid from Google Calendar (`?week=YYYY-MM-DD`; primary calendar, read-only, fetched live by lib/calendar/queries.ts). Positions, overlaps, visible hours and colours come from lib/calendar/week.ts; phones get a day view. Today shows a Schedule card (a list) in its own Suspense once connected; both point out the longest free block left today (lib/calendar/free.ts: from now to 9 PM, at least 30 minutes, only on days with events), and Today links it to the first lesson not done; errors become a status (revoked → Reconnect), never a broken page.
+- Try the demo — a button on the landing page, header and /login (components/try-demo-button.tsx). The Auth.js
+  "demo" Credentials provider (auth.ts) creates a brand-new demo user per click (lib/demo/create.ts) filled with
+  three weeks of sample data (lib/demo/data.ts, pure and tested), in the browser's timezone. Demo users never call
+  the AI (runAiTask) or Google (lib/calendar); old demos (24 h) are deleted whenever a demo starts, at most 50 start
+  per hour (?error=CredentialsSignin&code=demo_busy), and a banner on every page offers "Sign in to start your
+  own", which deletes the demo account at once.
 - /settings — display name, About you link, Google Calendar connect/disconnect (/api/calendar/connect and /callback, state cookie, lib/calendar), timezone, currency, sign out. CALENDAR_DEMO_MODE=1 (e2e) never calls Google.
 - /explore — AI-recommended tracks (version 2)
 
@@ -128,7 +135,7 @@ Rules:
   retry once, then show a clear error.
 - Never regenerate content that is already cached (lessons, daily principles). Lessons saved in the older shape (one plain `code` string per section) are upgraded on read by `upgradeLesson` in `lib/lessons/schema.ts`.
 - A per-user daily limit on AI calls (`lib/ai/config.ts`), logged in ai_calls.
-- Demo mode: with no ANTHROPIC_API_KEY, or AI_DEMO_MODE=1, use labelled example content
+- Demo mode: with no ANTHROPIC_API_KEY, or AI_DEMO_MODE=1, or for a demo user (users.is_demo), use labelled example content
   instead of calling Claude. The e2e tests always run in demo mode.
 - The user's focus text is context for examples only; it must not pull a plan off-topic.
 - For Bible reading, never let the AI generate scripture text. Use a fixed reading
