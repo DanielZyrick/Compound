@@ -13,6 +13,10 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
+  // Double Playwright's defaults (30s a test, 5s an expect): creating a track or
+  // goal saves a whole plan, and slower machines took longer than the defaults.
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   globalTeardown: "./e2e/global-teardown.ts",
   use: {

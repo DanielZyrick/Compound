@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { RunnableBlock } from "../lib/lessons/evals";
-import { runBlock } from "./run-code";
+import { runBlock, SANDBOXED } from "./run-code";
 
 // These start real (locked-down) Node processes, so there are only a few.
+// The sandbox needs Node 25 or newer; on older Node only the refusal is tested.
 
 const js = (code: string): RunnableBlock => ({ label: "block", inputType: "module", code, expected: "" });
 
-describe("runBlock", () => {
+describe.runIf(!SANDBOXED)("runBlock without the full sandbox (Node 24 or older)", () => {
+  it("refuses to run the code at all", () => {
+    expect(runBlock(js('console.log("hi")'))).toMatchObject({
+      printed: null,
+      problem: "running examples needs Node 25 or newer",
+    });
+  });
+});
+
+describe.skipIf(!SANDBOXED)("runBlock", () => {
   it("returns what JavaScript and TypeScript print", () => {
     expect(runBlock(js('console.log([2, 5, 8].map((p) => p * 2).join(", "))')).printed).toBe("4, 10, 16\n");
     const ts: RunnableBlock = { ...js("const n: number = 3;\nconsole.log(n + 1);"), inputType: "module-typescript" };

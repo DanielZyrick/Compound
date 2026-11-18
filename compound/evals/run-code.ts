@@ -16,7 +16,7 @@ const TIMEOUT_MS = 5000;
 const NEEDS_MORE = /ERR_ACCESS_DENIED|\b(document|window|navigator|localStorage|require|module|__dirname|alert|prompt) is not defined|Cannot find (module|package)/;
 
 /** The permission model only blocks the network from Node 25 on. */
-const SANDBOXED = Number(process.versions.node.split(".")[0]) >= 25;
+export const SANDBOXED =Number(process.versions.node.split(".")[0]) >= 25;
 
 export function runBlock(block: RunnableBlock): BlockRun {
   // Without the full sandbox, untrusted code isn't run at all.
