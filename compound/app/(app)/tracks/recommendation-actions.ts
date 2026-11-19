@@ -13,6 +13,7 @@ import {
   RECOMMEND_SYSTEM_PROMPT,
   recommendationsSchema,
   recommendPrompt,
+  SUGGESTION_EFFORT,
   type StoredRecommendations,
 } from "@/lib/recommendations/recommend";
 
@@ -49,7 +50,7 @@ export async function loadRecommendations(input?: unknown): Promise<LoadRecommen
       schema: recommendationsSchema,
       system: RECOMMEND_SYSTEM_PROMPT,
       prompt: recommendPrompt({ learner: learner ?? "", current: tracks.map((t) => t.topic), avoid }),
-      effort: "low",
+      effort: SUGGESTION_EFFORT,
       demo: () => demoRecommendations(avoid),
     });
     const saved: StoredRecommendations = { ...data, source };

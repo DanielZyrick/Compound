@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { demoRecommendations, needsRecommendations, recommendationsSchema, recommendPrompt } from "./recommend";
+import { demoRecommendations, needsRecommendations, RECOMMEND_SYSTEM_PROMPT, recommendationsSchema, recommendPrompt } from "./recommend";
 
 describe("recommendationsSchema", () => {
   it("accepts the demo suggestions", () => {
@@ -11,6 +11,26 @@ describe("recommendationsSchema", () => {
     expect(recommendationsSchema.safeParse({ tracks: [first, first] }).success).toBe(false);
     expect(recommendationsSchema.safeParse({ tracks: [first, first, { ...first, totalDays: 10 }] }).success).toBe(false);
     expect(recommendationsSchema.safeParse({ tracks: [first, first, { ...first, type: "reading" }] }).success).toBe(false);
+  });
+});
+
+describe("reason length", () => {
+  const [first] = demoRecommendations().tracks;
+  const withReason = (reason: string) => recommendationsSchema.safeParse({ tracks: [first, first, { ...first, reason }] }).success;
+
+  it("keeps an answer whose reason runs a little past the 25 words asked for", () => {
+    // 170 characters, like the reasons the AI wrote: the old 160 limit threw the whole answer away.
+    expect(
+      withReason("Because they already know JavaScript and React, and backend work starts with the server code their frontend calls, so this connects what they know to what they want next."),
+    ).toBe(true);
+  });
+
+  it("still rejects a paragraph", () => {
+    expect(withReason(`Because ${"it builds on what they know ".repeat(10)}`)).toBe(false);
+  });
+
+  it("asks for under 25 words in the prompt, since the API doesn't pass length limits to the model", () => {
+    expect(RECOMMEND_SYSTEM_PROMPT).toContain("under 25 words");
   });
 });
 

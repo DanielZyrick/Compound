@@ -15,7 +15,8 @@
     "test:e2e": "next build && playwright test",
     "demo:seed": "tsx db/seed-demo.ts",
     "eval:lessons": "tsx evals/lessons.mts",
-    "eval:feedback": "tsx evals/feedback.mts"
+    "eval:feedback": "tsx evals/feedback.mts",
+    "eval:suggestions": "tsx evals/suggestions.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
