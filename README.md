@@ -4,7 +4,7 @@
 
 Compound is a web app for getting 1% better every day. You track daily habits, follow short AI-generated learning tracks picked for you, break big goals into steps you can take today, keep in touch with the people in your network, see your Google Calendar next to it all, jot down quick notes, and write down every peso you spend.
 
-**Live:** [compound-nine-chi.vercel.app](https://compound-nine-chi.vercel.app)
+**Live:** [compound-nine-chi.vercel.app](https://compound-nine-chi.vercel.app). Press **Try the demo** to look around a sample account with three weeks of data, no sign-in needed.
 
 > This is my portfolio project, built in small, deployable steps.
 
@@ -63,6 +63,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **Typed database.** The table types are in [`lib/db/types.ts`](compound/lib/db/types.ts), so Kysely catches mistakes in queries at compile time. Constraints such as allowed values and unique check-ins are enforced in Postgres as well.
 - **Streaks are calculated, never stored.** They're always derived from the check-in history, so they can't drift out of sync. Filling in a missed day follows one pure rule ([`lib/habits/fill-in.ts`](compound/lib/habits/fill-in.ts)), shared by the page and the server action: only the last 7 days, only days the habit was due, and never a habit that finishing a lesson checks off.
 - **AI is treated as untrusted input.** Every AI response must be JSON that passes a Zod schema. Generated content is cached so it's never regenerated. Model names come from environment variables, and the AI never writes scripture text.
+- **A demo anyone can open, that can't cost anything.** "Try the demo" creates a brand-new account per click, filled with three weeks of sample data in the visitor's timezone ([`lib/demo/data.ts`](compound/lib/demo/data.ts), pure and tested), so no visitor ever sees another's changes and the button can't be used to sign in as anyone. Demo accounts never call the AI or Google, so they spend no credits. They're deleted after 24 hours, at most 50 can start in an hour, and a banner on every page offers "Sign in to start your own".
 - **Demo mode.** Without an API key (or with `AI_DEMO_MODE=1`), the app uses clearly labelled example content instead of calling Claude, so it runs end to end for free.
 - **Goal schedules are pure functions.** [`lib/goals/schedule.ts`](compound/lib/goals/schedule.ts) works out the status, adjusted dates and buffer use from the plan and the steps you've ticked. Nothing about the schedule is stored, and it's covered by unit tests. The pace comes from the original plan, so extending a deadline really gives you more room.
 - **Money in integer cents.** Amounts are parsed and stored as whole cents, never floats, so totals don't pick up rounding errors. They're formatted with `Intl` in the currency you choose in Settings.
