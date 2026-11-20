@@ -248,7 +248,18 @@ export function reviewWeekFor(param: unknown, today: CalendarDate, firstDay: Cal
   return wanted;
 }
 
-export type UpcomingItem = { kind: "milestone" | "todo" | "follow-up"; title: string; detail: string | null; href: string; due: CalendarDate };
+/**
+ * The Week in review card on Today: on Sundays it looks back on this week, on
+ * Mondays on last week. Other days have no card.
+ */
+export function reviewCardFor(today: CalendarDate): { week: CalendarDate; title: string } | null {
+  const weekday = weekdayOf(today);
+  if (weekday === 0) return { week: weekStart(today), title: "Your week so far" };
+  if (weekday === 1) return { week: addDays(today, -7), title: "Last week, looking back" };
+  return null;
+}
+
+export type UpcomingItem ={ kind: "milestone" | "todo" | "follow-up"; title: string; detail: string | null; href: string; due: CalendarDate };
 
 /** What's due in the 7 days after today, soonest first. */
 export function upcoming(items: UpcomingItem[], today: CalendarDate): UpcomingItem[] {

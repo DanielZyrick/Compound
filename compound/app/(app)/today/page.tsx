@@ -24,6 +24,7 @@ import { PrincipleCard } from "./principle-card";
 import { ScheduleCard } from "./schedule-card";
 import { StatsPill } from "./stats-pill";
 import { TodayLessons } from "./today-lessons";
+import { WeekReviewCard } from "./week-review-card";
 
 export const metadata: Metadata = { title: "Today" };
 
@@ -102,6 +103,10 @@ async function TodayContent() {
       </div>
 
       <div className="mt-6 flex flex-col gap-6">
+        {/* Sundays and Mondays only, and streamed on its own so it never holds up the page. */}
+        <Suspense fallback={null}>
+          <WeekReviewCard user={user} today={today} />
+        </Suspense>
         {isProfileEmpty(profile) && (
           <section
             aria-label="About you"

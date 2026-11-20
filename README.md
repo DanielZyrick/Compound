@@ -21,6 +21,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 | **Schedule** | Connect Google Calendar (read-only) to see today's events on Today and the week ahead on a Schedule page. Events are fetched live and never stored. | Done |
 | **Notes** | Quick notes and to-dos on a board of sticky notes: add one from Today in a second, tick it off, pin what matters, pick a paper colour. | Done |
 | **Money** | Record expenses and income in a few taps. Monthly totals, spending by category, and your own categories. Income can go toward a goal's savings target. | Done |
+| **Week in review** | One week across the whole app: a sentence about it, the days you showed up, numbers compared with the week before, each habit's week, what you got done, where the money went and what's coming up. Today links to it on Sundays and Mondays. | Done |
 
 ## Screenshots
 
@@ -35,8 +36,8 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 | ![A contact page: follow-up date, last contacted, where you met, notes and touchpoints](docs/screenshots/contact.png) | ![The Schedule page: a week grid of calendar events, with each day's load under its date](docs/screenshots/schedule.png) |
 | **Sticky notes** | **Habits, with the last week to fill in** |
 | ![The Notes page: a board of coloured sticky notes, one pinned](docs/screenshots/notes.png) | ![The Habits page: each habit with streaks and a row of the last seven days](docs/screenshots/habits.png) |
-| **Progress** | **Landing page** |
-| ![Habit history over the last 30 days](docs/screenshots/progress.png) | ![The landing page](docs/screenshots/landing.png) |
+| **Week in review** | **Landing page** |
+| ![Week in review: a sentence about the week, a dot for each day showed up, four numbers compared with last week, and each habit's week](docs/screenshots/review.png) | ![The landing page](docs/screenshots/landing.png) |
 
 <p>
   <img src="docs/screenshots/today-phone.png" alt="Today on a phone" width="260">
@@ -70,6 +71,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **One place for what the AI knows about you.** [`getLearnerContext`](compound/lib/profile/queries.ts) combines your focus areas and About you answers into a few plain lines. Principles, track plans, goal plans and recommendations all use it, inside tags the prompts treat only as a description. A resume PDF is sent to Claude once to draft the answers, then dropped; contact details are left out.
 - **Google Calendar without an SDK.** Read-only access through Google's OAuth and REST API with plain `fetch`. A random state cookie protects the connect flow, tokens are encrypted with AES-256-GCM before they're stored ([`lib/calendar/crypto.ts`](compound/lib/calendar/crypto.ts)), and events are fetched live, so the database never holds anyone's calendar. Each event lands on the right day in your timezone, including on daylight-saving days.
 - **Calculated, not stored, again.** A contact's "last contacted" date comes from their touchpoints, the same way streaks come from check-ins.
+- **A weekly review without the AI.** [`lib/review/week.ts`](compound/lib/review/week.ts) turns two weeks of plain rows into the week's numbers and its sentence, so it's free, instant and unit tested. A week in progress is compared with the same days of last week, so a Wednesday isn't measured against a whole week. Times like "lesson finished at" are turned into your local date first, so a lesson done late on Sunday in Manila counts for Sunday.
 
 ## Running it locally
 
@@ -165,7 +167,7 @@ rm .env.migrate-main
 
 ### End-to-end tests
 
-The 35 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
+The 37 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, the week in review, and settings. Then they delete the test user. Each test runs on desktop and on a phone. They:
 
 - **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
 - force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;
@@ -273,7 +275,7 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 docs/screenshots/   images for this README
 compound/
   app/
-    (app)/          signed-in pages: today, schedule, habits, tracks, goals, money, notes, contacts, progress, profile, settings
+    (app)/          signed-in pages: today, schedule, habits, tracks, goals, money, notes, contacts, progress, review, profile, settings
     api/calendar/   Google Calendar connect and callback routes
     onboarding/     first-run setup: focus areas, first habits, timezone
     login/          Google and GitHub sign-in, error messages
@@ -300,6 +302,7 @@ compound/
     notes/          note queries, paper colours
     profile/        About you, the learner context for prompts, reading a resume
     recommendations/  "Recommended for you" tracks
+    review/         Week in review: one week's numbers, compared with the week before
     tracks/, lessons/, reading/, principles/, progress/
     validation/     Zod schemas
   auth.ts           Auth.js setup
@@ -318,7 +321,8 @@ compound/
 8. ✅ Google sign-in, a dashboard redesign, own-pace learning, sticky notes, filling in missed habit days
 9. ✅ About you (with a resume), recommended tracks, Contacts with follow-ups, Google Calendar (read-only)
 10. ✅ Monthly budgets, due dates on to-dos, its own design, and lessons with code blocks, diagrams, a code box for answers, and AI evals for lessons, feedback and track suggestions
-11. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
+11. ✅ Week in review, with a card on Today on Sundays and Mondays
+12. Demo video (the write-up is done: [docs/WRITEUP.md](docs/WRITEUP.md))
 
 Later: email reminders.
 

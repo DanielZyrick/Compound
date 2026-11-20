@@ -1,8 +1,26 @@
 import { expect, test } from "@playwright/test";
 import { sql } from "kysely";
-import { addDays } from "../lib/dates/calendar";
+import { addDays, todayIn } from "../lib/dates/calendar";
 import { weekStart } from "../lib/habits/week";
-import { db, open, seedGoal, signInFreshUser } from "./support";
+import { reviewCardFor } from "../lib/review/week";
+import { db, open, seedGoal, signInFreshUser, TEST_TIMEZONE } from "./support";
+
+test("Today shows the week in review card on Sundays and Mondays only", async ({ page, context }) => {
+  await signInFreshUser(context, { habits: [{ name: "Drink water" }] });
+  await open(page, "/today");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const card = reviewCardFor(todayIn(TEST_TIMEZONE));
+  const region = page.getByRole("region", { name: "Week in review" });
+  if (!card) {
+    await expect(region).toHaveCount(0);
+    return;
+  }
+  await expect(region).toContainText(card.title);
+  await region.getByRole("link", { name: "Week in review" }).click();
+  await expect(page).toHaveURL(new RegExp(`/review\\?week=${card.week}$`));
+  await expect(page.getByRole("heading", { level: 1, name: "Week in review" })).toBeVisible();
+});
 
 // Week in review: one week across habits, goals, to-dos and money, with the
 // week before one click away.

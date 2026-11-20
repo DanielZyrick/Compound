@@ -38,6 +38,10 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 **Schedule.** You can connect Google Calendar, read-only. Today shows today's events with the next one highlighted, and a Schedule page shows the week ahead, all in your timezone.
 
+**Week in review.** One page answers "how did this week go?" across the whole app. It opens with a sentence, such as *"You showed up 5 of 6 days so far, finished 2 goal steps and did 4 lessons,"* and a dot for each day you did something. Four numbers (check-ins, lessons, goal steps, spending) are compared with the week before. A week in progress is compared with the same days of last week, so a Wednesday isn't measured against a whole week. Below that are each habit's week, what you got done, where the money went and what's due in the next 7 days. The sentence is written by code, not the AI, so it's free and instant. On Sundays and Mondays, Today shows it with a link to the full page.
+
+![Week in review](screenshots/review.png)
+
 **Sign-in.** You sign in with Google or GitHub. Accounts are matched by email, so both open the same account, and sign-in only accepts an address the provider has verified. A public privacy page explains what's stored.
 
 ## Key technical decisions
@@ -66,8 +70,8 @@ Self-improvement usually lives in four apps: a habit tracker, a course platform,
 
 ## Testing
 
-- **464 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, timezone-aware dates, which days can be filled in, which lesson days are open, the goal schedule, parsing and formatting money, budgets, due dates, verified sign-in emails, follow-up dates, token encryption, the calendar connect checks, placing events on days, the code box's indenting, validating AI output, and the eval checks themselves.
-- **35 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits and filling in a missed day, lessons at your own pace (including code, diagrams and typing in the code box), a reading, creating and editing goals, falling behind and catching up, recording money, budgets, managing categories, saving toward a goal, notes and due dates, About you and a resume, recommended tracks, contacts and follow-ups, and connecting a calendar. They sign in as a dedicated test user, run with a demo AI and a demo calendar, and clean up afterwards.
+- **488 unit tests** (Vitest) cover the logic that's easy to get subtly wrong: streaks, the week in review, timezone-aware dates, which days can be filled in, which lesson days are open, the goal schedule, parsing and formatting money, budgets, due dates, verified sign-in emails, follow-up dates, token encryption, the calendar connect checks, placing events on days, the code box's indenting, validating AI output, and the eval checks themselves.
+- **37 end-to-end flows** (Playwright) run on both a desktop browser and a phone viewport. They cover onboarding, habits and filling in a missed day, lessons at your own pace (including code, diagrams and typing in the code box), a reading, creating and editing goals, falling behind and catching up, recording money, budgets, managing categories, saving toward a goal, notes and due dates, About you and a resume, recommended tracks, contacts and follow-ups, connecting a calendar, and the week in review. They sign in as a dedicated test user, run with a demo AI and a demo calendar, and clean up afterwards.
 - **AI evals** score real lessons from the live prompts. The latest run on the fast model passed every check: 8 of 8 lessons fit the schema on the first try with exercises in the right order, all 8 diagrams fit their kind, and both examples that could be run printed exactly what the lesson said. The feedback evals gave the right verdict on all 48 reviews, including all 9 attempts to get a wrong answer marked correct, the same verdict on every repeat, and every improved JavaScript answer ran and gave the right result. The suggestion evals found two real problems, described below; after the fixes, 24 of 24 answers fit the schema and none repeated a track the person had.
 
 ## What I learned

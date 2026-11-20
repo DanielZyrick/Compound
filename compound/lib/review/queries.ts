@@ -23,7 +23,7 @@ function padded(from: CalendarDate, to: CalendarDate) {
  * opens: that week and the one before it (to compare), in the same few
  * queries however much there is, plus what's coming up when it's a recent week.
  */
-export async function getWeekReview(user: User, weekParam: unknown) {
+export async function getWeekReview(user: User, weekParam: unknown, { withUpcoming = true } = {}) {
   const today = todayIn(user.timezone);
   const local = (date: Date) => todayIn(user.timezone, date);
 
@@ -43,7 +43,7 @@ export async function getWeekReview(user: User, weekParam: unknown) {
   const to = addDays(monday, 6);
   const { after, before } = padded(from, to);
   // "Coming up" belongs on this week and last week (which opens on Mondays), not on old weeks.
-  const recent = monday >= addDays(weekStart(today), -7);
+  const recent = withUpcoming && monday >= addDays(weekStart(today), -7);
 
   const [checkins, lessons, steps, todos, touchpoints, expenses, upcomingItems] = await Promise.all([
     habitRows.length

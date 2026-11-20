@@ -3,6 +3,7 @@ import type { Weekday } from "@/lib/db/types";
 import {
   change,
   habitDayStatus,
+  reviewCardFor,
   reviewWeek,
   reviewWeekFor,
   upcoming,
@@ -269,6 +270,19 @@ describe("reviewWeekFor", () => {
   it("ignores a value that isn't a date", () => {
     expect(reviewWeekFor("next", "2026-11-19", joined)).toBe("2026-11-16");
     expect(reviewWeekFor("2026-13-45", "2026-11-19", joined)).toBe("2026-11-16");
+  });
+});
+
+describe("reviewCardFor", () => {
+  it("looks back on this week on a Sunday and last week on a Monday", () => {
+    expect(reviewCardFor("2026-11-22")).toEqual({ week: "2026-11-16", title: "Your week so far" });
+    expect(reviewCardFor("2026-11-23")).toEqual({ week: "2026-11-16", title: "Last week, looking back" });
+  });
+
+  it("shows no card the rest of the week", () => {
+    for (const day of ["2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21"]) {
+      expect(reviewCardFor(day)).toBeNull();
+    }
   });
 });
 
