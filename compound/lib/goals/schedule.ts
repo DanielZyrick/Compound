@@ -110,7 +110,9 @@ export function scheduleGoal({ startDate, deadline, bufferDays, today, milestone
   const pace = totalWork / planDays;
   // Work can't start before the goal does.
   const from = today < startDate ? startDate : today;
-  const daysNeeded = Math.ceil((totalWork - doneWork) / pace - 1e-9);
+  // No milestones means no work left (and a pace of 0, which can't be divided by).
+  // The app never saves such a goal, but a request can see one while it's being deleted.
+  const daysNeeded = totalWork > 0 ? Math.ceil((totalWork - doneWork) / pace - 1e-9) : 0;
   const projectedEnd = addDays(from, Math.max(daysNeeded, 1) - 1);
 
   // Each unfinished milestone ends when the remaining work up to it is done.

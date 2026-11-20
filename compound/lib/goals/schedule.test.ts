@@ -131,6 +131,11 @@ describe("scheduleGoal", () => {
     expect(scheduleGoal(input).progress).toBe(0.25);
   });
 
+  it("doesn't break on a goal with no milestones", () => {
+    const schedule = scheduleGoal({ startDate: START, deadline: DEADLINE, bufferDays: BUFFER, today: "2026-11-05", milestones: [] });
+    expect(schedule).toMatchObject({ status: "on_track", progress: 0, projectedEnd: "2026-11-05", bufferUsed: 0, milestones: [] });
+  });
+
   it("treats a milestone with no steps as not started", () => {
     const input: ScheduleInput = {
       startDate: START,
