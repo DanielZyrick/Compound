@@ -13,8 +13,15 @@ export const metadata: Metadata = { title: "Progress" };
 export default function ProgressPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-8 md:py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
-      <p className="mt-1 text-muted-foreground">Small steps, added up.</p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
+          <p className="mt-1 text-muted-foreground">Small steps, added up.</p>
+        </div>
+        <Link href="/review" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          Week in review
+        </Link>
+      </header>
 
       <Suspense fallback={<div aria-hidden className="mt-8 h-96 animate-pulse rounded-2xl bg-muted" />}>
         <ProgressContent />

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 // Each status has its own shape, not just its own colour: green and red are
 // hard to tell apart with red-green colour blindness.
-const CELL: Record<DayStatus, string> = {
+export const CELL: Record<DayStatus, string> = {
   done: "bg-success",
   missed: "border-2 border-destructive/70",
   pending: "border-2 border-dashed border-primary",
