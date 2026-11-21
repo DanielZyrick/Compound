@@ -152,12 +152,12 @@ Run these from the `compound/` folder.
 | `npm run eval:lessons` | Ask the real AI for 8 lessons and score them (see [AI evals](#ai-evals)) |
 | `npm run eval:feedback` | Send 16 answers with a known verdict to the real AI reviewer and score its reviews |
 | `npm run eval:suggestions` | Ask the real AI for "Recommended for you" tracks for 8 made-up people and score them |
-| `npm run typecheck` | Type-check with `tsc` |
+| `npm run typecheck` | Generate route types (`next typegen`), then type-check with `tsc` |
 | `npm run lint` | Run ESLint |
 | `npm run db:migrate` | Apply pending migrations |
 | `npm run db:rollback` | Undo the most recent migration |
 
-`db:migrate` uses `DATABASE_URL_UNPOOLED` from `.env.local`. To migrate a different branch, put that branch's direct connection string in a temporary, gitignored env file and pass it to the runner. Variables from the file take priority over `.env.local`:
+`db:migrate` uses `DATABASE_URL_UNPOOLED` from `.env.local`. Production is migrated by each Vercel deploy (see [Deploying](#deploying)). To migrate another branch by hand, put that branch's direct connection string in a temporary, gitignored env file and pass it to the runner. Variables from the file take priority over `.env.local`:
 
 ```bash
 # .env.migrate-main contains: DATABASE_URL_UNPOOLED=<direct connection string>
@@ -244,10 +244,16 @@ Relevance and the overlap check use keywords, so they can be wrong both ways; a 
 
 The app is deployed on Vercel with the **root directory set to `compound`**. Production uses the Neon `main` branch.
 
-When a change includes a new migration:
+Pushing to `main` deploys it. Vercel's build command comes from [`compound/vercel.json`](compound/vercel.json): `npm run build:vercel`, which runs [`db/migrate-deploy.ts`](compound/db/migrate-deploy.ts) and then `next build`. On a production deploy (`VERCEL_ENV=production`) that applies any new migrations to `main` first and prints the host; if one fails, the build fails and the current deployment stays live. Preview deploys never migrate.
 
-1. Run the migration against `main`, using the command above.
-2. Push to `main`. Vercel builds and deploys it.
+### Continuous integration
+
+[GitHub Actions](.github/workflows/ci.yml) checks every push and pull request:
+
+- **Typecheck, lint and unit tests** on Node 25, so the sandboxed code-example evals run too.
+- **End-to-end tests** against a throwaway Postgres that exists only for the run. It uses no real secrets: dummy sign-in values, AI and calendar demo mode, and `E2E_DB_HOST=localhost`. If a test fails, the Playwright report is attached to the run.
+
+CI never touches Neon. It runs alongside the Vercel deploy and doesn't hold it back, so still run the checks locally before pushing.
 
 Migrations add to the schema before the code that uses it ships. A migration that renames or removes something can break the live site until the new code is deployed, so plan those deploys separately.
 

@@ -158,8 +158,13 @@ Rules:
 - `.env.local` points BOTH DATABASE_URL and DATABASE_URL_UNPOOLED at the Neon `dev`
   branch. Production is the `main` branch. `db/migrate.ts` prints the host it uses: check it.
 - Don't run `vercel env pull` (it overwrites `.env.local`).
-- A new migration runs on production BEFORE the code that uses it is pushed, via a
-  temporary gitignored `.env.migrate-main` (see README). Delete that file afterwards.
+- Production migrations run automatically at the start of each production Vercel build
+  (`vercel.json` → `npm run build:vercel` → `db/migrate-deploy.ts`, only when
+  VERCEL_ENV=production); a failed migration fails the build. No manual step. A migration that
+  renames or drops something still needs its own deploy plan (old code runs during the build).
+- CI (`.github/workflows/ci.yml`, repo root) runs typecheck, lint, unit tests and e2e on every
+  push and PR, e2e against a throwaway Postgres service with dummy secrets (E2E_DB_HOST=localhost).
+  It never touches Neon. `npm run typecheck` runs `next typegen` first, so route types exist.
 - Never print secret values. When inspecting env files, show variable names and hostnames only.
 - E2E tests refuse to run unless DATABASE_URL's host equals E2E_DB_HOST (the dev host).
 

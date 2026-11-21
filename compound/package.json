@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "tsx db/migrate-deploy.ts && next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "db:migrate": "tsx db/migrate.ts up",
     "db:rollback": "tsx db/migrate.ts down",
     "test": "vitest run",

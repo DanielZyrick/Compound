@@ -1,0 +1,96 @@
+# Checks every push and pull request: typecheck, lint and unit tests, then the
+# end-to-end tests against a throwaway Postgres that lives only for the run.
+# No real secrets are used: AI and Google Calendar run in demo mode, and the
+# sign-in values below are dummies that only this run ever sees.
+# Production migrations are not run here; Vercel runs them before each
+# production build (compound/vercel.json → db/migrate-deploy.ts).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch cancels the run that's still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: compound
+
+jobs:
+  checks:
+    name: Typecheck, lint, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Node 25, so the sandboxed code-example evals run instead of skipping.
+          node-version: 25
+          cache: npm
+          cache-dependency-path: compound/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: compound
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/compound
+      DATABASE_URL_UNPOOLED: postgres://postgres:postgres@localhost:5432/compound
+      # e2e/support.ts refuses any database whose host isn't this one.
+      E2E_DB_HOST: localhost
+      AUTH_SECRET: ci-only-auth-secret-not-used-anywhere-else
+      AUTH_GOOGLE_ID: ci-dummy
+      AUTH_GOOGLE_SECRET: ci-dummy
+      AUTH_GITHUB_ID: ci-dummy
+      AUTH_GITHUB_SECRET: ci-dummy
+      # 32 zero bytes, base64: a dummy key for the (demo-mode) calendar tokens.
+      CALENDAR_TOKEN_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      MODEL_FAST: ci-dummy
+      MODEL_SMART: ci-dummy
+      AI_DEMO_MODE: "1"
+      CALENDAR_DEMO_MODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: npm
+          cache-dependency-path: compound/package-lock.json
+      - run: npm ci
+      # The tests use Microsoft Edge. GitHub's Ubuntu runners usually have it;
+      # install it only if this one doesn't.
+      - name: Make sure Microsoft Edge is installed
+        run: command -v microsoft-edge-stable || npx playwright install --with-deps msedge
+      - run: npm run db:migrate
+      - run: npm run test:e2e
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            compound/playwright-report/
+            compound/test-results/
+          retention-days: 7
