@@ -20,13 +20,20 @@ export class DemoBusyError extends Error {}
 /** A date as a timestamp at midday UTC, for "done at" columns seeded from a calendar date. */
 const middayOf = (date: CalendarDate) => new Date(`${date}T12:00:00Z`);
 
-/** Deletes demo accounts older than their lifetime. Everything they own goes with them. */
+/**
+ * Deletes demo accounts older than their lifetime. Everything they own goes
+ * with them; transactions first, as in deleteUserData (lib/account/queries.ts).
+ */
 export async function deleteExpiredDemoUsers() {
-  await db
-    .deleteFrom("users")
-    .where("is_demo", "=", true)
-    .where("created_at", "<", sql<Date>`now() - ${`${DEMO_LIFETIME_HOURS} hours`}::interval`)
-    .execute();
+  await db.transaction().execute(async (trx) => {
+    const expired = trx
+      .selectFrom("users")
+      .select("id")
+      .where("is_demo", "=", true)
+      .where("created_at", "<", sql<Date>`now() - ${`${DEMO_LIFETIME_HOURS} hours`}::interval`);
+    await trx.deleteFrom("transactions").where("user_id", "in", expired).execute();
+    await trx.deleteFrom("users").where("id", "in", expired).execute();
+  });
 }
 
 /** Creates a demo user with sample data, in the visitor's timezone if it's a valid one. */

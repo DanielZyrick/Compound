@@ -65,6 +65,15 @@ async function LoginNotice({ searchParams }: Pick<PageProps<"/login">, "searchPa
   if (await getCurrentUser()) redirect("/today");
 
   const params = await searchParams;
+  // After "Delete my account" in Settings.
+  if (params.deleted === "1") {
+    return (
+      <p role="status" className="mt-6 rounded-lg border bg-muted p-3 text-left text-sm">
+        Your account and all its data were deleted. You can sign in again any time to start fresh.
+      </p>
+    );
+  }
+
   const message = loginErrorMessage(params.error, params.code);
   if (!message) return null;
 

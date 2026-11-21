@@ -104,6 +104,12 @@ Rules:
   per hour (?error=CredentialsSignin&code=demo_busy), and a banner on every page offers "Sign in to start your
   own", which deletes the demo account at once.
 - /settings — display name, About you link, Google Calendar connect/disconnect (/api/calendar/connect and /callback, state cookie, lib/calendar), timezone, currency, sign out. CALENDAR_DEMO_MODE=1 (e2e) never calls Google.
+  "Your data" (hidden for demo users): "Download my data" (GET /api/account/export: one JSON file; rows from
+  `loadExportRows` in lib/account/queries.ts with every column listed so tokens never leak, shaped by the pure
+  `buildExport` in lib/account/export.ts: no internal ids, money as amount + cents) and "Delete my account" (type
+  "delete"; revokes Google Calendar, then `deleteUserData`, then signs out to /login?deleted=1).
+  Deleting a user always goes through `deleteUserData` (or the same order): transactions first, because
+  transactions.category_id is `on delete restrict`; everything else cascades from users.
 - /explore — AI-recommended tracks (version 2)
 
 ## Track types

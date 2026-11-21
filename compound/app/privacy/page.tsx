@@ -111,9 +111,13 @@ export default function PrivacyPage() {
           <h2>Your choices</h2>
           <p>
             You can change your name, timezone and currency in Settings, and edit or delete your habits, goals, steps and
-            transactions at any time. To get a copy of your data or have your account and everything in it deleted,
-            email <a href={`mailto:${CONTACT}`} className="text-primary hover:underline">{CONTACT}</a>. Requests are
-            handled within 30 days.
+            transactions at any time. Under Settings → Your data you can download a copy of everything as a JSON file,
+            and delete your account, which removes it and everything in it straight away and disconnects Google
+            Calendar. For anything else, email{" "}
+            <a href={`mailto:${CONTACT}`} className="text-primary hover:underline">
+              {CONTACT}
+            </a>
+            . Requests are handled within 30 days.
           </p>
         </section>
 

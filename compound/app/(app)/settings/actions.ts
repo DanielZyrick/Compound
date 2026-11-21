@@ -1,10 +1,17 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { signOut } from "@/auth";
+import { deleteAccount } from "@/lib/account/queries";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { disconnect } from "@/lib/calendar/google";
 import { db } from "@/lib/db";
-import { currencySettingSchema, displayNameSchema, timezoneSettingSchema } from "@/lib/validation/settings";
+import {
+  currencySettingSchema,
+  deleteAccountSchema,
+  displayNameSchema,
+  timezoneSettingSchema,
+} from "@/lib/validation/settings";
 
 export type SettingsResult = { errors: string[] };
 
@@ -56,5 +63,21 @@ export async function disconnectCalendar(): Promise<SettingsResult> {
   const user = await requireOnboardedUser();
   await disconnect(user);
   refresh();
+  return { errors: [] };
+}
+
+/**
+ * "Delete my account": after the user types "delete", revokes Google Calendar
+ * access, deletes the account and everything in it, and signs them out to
+ * /login, which says it's done. Demo accounts leave from the demo banner instead.
+ */
+export async function deleteMyAccount(_previous: SettingsResult, formData: FormData): Promise<SettingsResult> {
+  const user = await requireOnboardedUser();
+  if (user.is_demo) return { errors: ["This is a demo account. Use “Sign in to start your own” to leave it."] };
+  const parsed = deleteAccountSchema.safeParse({ confirm: formData.get("confirm") ?? "" });
+  if (!parsed.success) return { errors: messages(parsed.error.issues) };
+
+  await deleteAccount(user);
+  await signOut({ redirectTo: "/login?deleted=1" });
   return { errors: [] };
 }

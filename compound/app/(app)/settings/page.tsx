@@ -8,6 +8,7 @@ import { requireOnboardedUser } from "@/lib/auth/dal";
 import { signOutAction } from "@/lib/auth/actions";
 import { getConnection } from "@/lib/calendar/google";
 import { CalendarSection } from "./calendar-section";
+import { DataSection } from "./data-section";
 import { CurrencyForm, DisplayNameForm, TimezoneForm } from "./settings-forms";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -74,6 +75,13 @@ async function SettingsContent({ searchParams }: Pick<PageProps<"/settings">, "s
       <Section title="Money">
         <CurrencyForm initial={user.currency} />
       </Section>
+
+      {/* Demo accounts are deleted from the demo banner, and their data is only samples. */}
+      {!user.is_demo && (
+        <Section title="Your data">
+          <DataSection />
+        </Section>
+      )}
 
       <Section title="Session">
         <form action={signOutAction}>
