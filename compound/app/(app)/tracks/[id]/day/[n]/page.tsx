@@ -14,6 +14,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/ai/config";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { formatLongDate, todayIn } from "@/lib/dates/calendar";
+import { isCorrectChoice } from "@/lib/lessons/choices";
 import { answerLanguage } from "@/lib/lessons/code-editing";
 import { getLessonPage, getReflection, type LessonAttempt } from "@/lib/lessons/queries";
 import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE, unlockDate } from "@/lib/lessons/rules";
@@ -191,11 +192,16 @@ function LessonBody({
           if (exercise.type === "multiple_choice") {
             const first = mine[0];
             // The correct answer and explanation are only sent once answered.
+            // Graded again here rather than read from the attempt, so a pick
+            // that looks exactly like the right answer shows as right, even
+            // on an answer saved before look-alikes counted (isCorrectChoice).
+            const chosen = Number(first?.answer);
+            const isCorrect = first ? isCorrectChoice(exercise.choices, chosen, exercise.answerIndex) : false;
             const result = first
               ? {
-                  chosen: Number(first.answer),
-                  correctIndex: exercise.answerIndex,
-                  isCorrect: first.is_correct === true,
+                  chosen,
+                  correctIndex: isCorrect ? chosen : exercise.answerIndex,
+                  isCorrect,
                   explanation: exercise.explanation,
                 }
               : null;

@@ -17,7 +17,8 @@ import {
 } from "@/lib/lessons/prompts";
 import { getOwnedLesson, parseLesson } from "@/lib/lessons/queries";
 import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE } from "@/lib/lessons/rules";
-import { feedbackSchema, lessonSchema } from "@/lib/lessons/schema";
+import { isCorrectChoice } from "@/lib/lessons/choices";
+import { feedbackSchema, generatedLessonSchema } from "@/lib/lessons/schema";
 import { completeTrackDay } from "@/lib/tracks/complete";
 import { currentTrackDay } from "@/lib/tracks/progress";
 import { completedDayNumbers } from "@/lib/tracks/queries";
@@ -73,7 +74,7 @@ export async function startLesson(input: unknown): Promise<Result> {
       user,
       purpose: "lesson",
       tier: "smart",
-      schema: lessonSchema(track.type),
+      schema: generatedLessonSchema(track.type),
       system: LESSON_SYSTEM_PROMPT,
       prompt: lessonPrompt({
         trackTitle: track.title,
@@ -134,7 +135,7 @@ export async function answerMultipleChoice(input: unknown): Promise<Result> {
         user_id: user.id,
         exercise_index: exerciseIndex,
         answer: String(choiceIndex),
-        is_correct: choiceIndex === exercise.answerIndex,
+        is_correct: isCorrectChoice(exercise.choices, choiceIndex, exercise.answerIndex),
         feedback: exercise.explanation,
         better_version: null,
         source: "auto",

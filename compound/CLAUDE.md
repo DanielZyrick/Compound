@@ -141,6 +141,10 @@ Rules:
 - Every AI response must be JSON, validated with a Zod schema. On invalid output,
   retry once, then show a clear error.
 - Never regenerate content that is already cached (lessons, daily principles). Lessons saved in the older shape (one plain `code` string per section) are upgraded on read by `upgradeLesson` in `lib/lessons/schema.ts`.
+- New lessons must pass `generatedLessonSchema` (lessonSchema plus `lib/lessons/choices.ts`): no two choices that
+  look the same once shown (spaces collapse, backticks drop), and at most one code block in a sampleAnswer (one
+  code box). Saved lessons are read with `lessonSchema` only, so old ones still open; a pick that looks exactly like
+  the right answer counts as right (`isCorrectChoice`, used when grading and when showing the result).
 - A per-user daily limit on AI calls (`lib/ai/config.ts`), logged in ai_calls.
 - Demo mode: with no ANTHROPIC_API_KEY, or AI_DEMO_MODE=1, or for a demo user (users.is_demo), use labelled example content
   instead of calling Claude. The e2e tests always run in demo mode.

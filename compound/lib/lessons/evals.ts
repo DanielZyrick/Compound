@@ -1,6 +1,7 @@
 import type { TrackLevel } from "@/lib/db/types";
 import { parseInline, parseRich } from "./rich-text";
-import { EXERCISE_MIX, figureSchema, lessonSchema } from "./schema";
+import { hasLookalikeChoices } from "./choices";
+import { EXERCISE_MIX, figureSchema, generatedLessonSchema } from "./schema";
 
 // Evals: checks on the quality of a lesson the AI wrote, beyond "it fits the
 // schema". Pure functions over the raw JSON, so they are unit-tested with
@@ -71,8 +72,8 @@ export function checkLesson(raw: unknown, testCase: Pick<EvalCase, "type" | "cod
     notes,
   });
 
-  // 1. The schema, exactly as the app checks it.
-  const parsed = lessonSchema(testCase.type).safeParse(raw);
+  // 1. The schema, exactly as the app checks a new lesson.
+  const parsed = generatedLessonSchema(testCase.type).safeParse(raw);
   const valid = result(
     "valid",
     parsed.success ? [] : parsed.error.issues.slice(0, 5).map((issue) => `${issue.path.join(".") || "lesson"}: ${issue.message}`),
@@ -87,9 +88,9 @@ export function checkLesson(raw: unknown, testCase: Pick<EvalCase, "type" | "cod
   const multipleChoice = exercises.filter((exercise) => exercise.type === "multiple_choice");
   const choiceNotes: string[] = [];
   multipleChoice.forEach((exercise, i) => {
-    // In code, `['ana']` and `['ANA']` are different answers; in prose, "Yes" and "yes" are not.
-    const choices = strings(exercise.choices).map((choice) => (choice.includes("`") ? choice.trim() : choice.trim().toLowerCase()));
-    if (new Set(choices).size !== choices.length) choiceNotes.push(`multiple choice ${i + 1}: two choices are the same`);
+    // Compared as the learner sees them (choiceKey): `"  Hello"` and `"Hello"` look the same on the page.
+    const choices = strings(exercise.choices);
+    if (hasLookalikeChoices(choices)) choiceNotes.push(`multiple choice ${i + 1}: two choices look the same`);
     const answer = exercise.answerIndex;
     if (typeof answer !== "number" || answer < 0 || answer >= choices.length) {
       choiceNotes.push(`multiple choice ${i + 1}: answerIndex doesn't point at a choice`);

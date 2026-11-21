@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { TrackType } from "@/lib/db/types";
+import { hasLookalikeChoices, isAnswerableSample } from "./choices";
 
 // A daily lesson: a short explanation plus 3 exercises. This is what the AI
 // must return, what's stored in lessons.content, and what's checked again
@@ -130,6 +131,23 @@ export function lessonSchema(trackType: Exclude<TrackType, "reading">) {
 }
 
 export type LessonContent = z.infer<ReturnType<typeof lessonSchema>>;
+
+/**
+ * What a newly generated lesson must pass: the lesson schema plus rules that
+ * keep exercises answerable. A failure makes the AI try again. Saved lessons
+ * are read with lessonSchema alone, so older lessons that break these rules
+ * still open (grading handles look-alike choices; see isCorrectChoice).
+ */
+export function generatedLessonSchema(trackType: Exclude<TrackType, "reading">) {
+  return lessonSchema(trackType)
+    .refine(
+      (lesson) => lesson.exercises.every((e) => e.type !== "multiple_choice" || !hasLookalikeChoices(e.choices)),
+      { error: "Two choices look the same once shown. Every choice must read differently; if spaces matter, say so in words." },
+    )
+    .refine((lesson) => lesson.exercises.every((e) => e.type !== "open" || isAnswerableSample(e.sampleAnswer)), {
+      error: "A sampleAnswer holds at most one fenced code block: the learner answers in a single code box.",
+    });
+}
 
 /**
  * Lessons saved before code blocks had a language and output kept one plain
