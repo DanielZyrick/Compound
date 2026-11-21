@@ -164,6 +164,12 @@ Rules:
 - Unit tests sit next to the code (`*.test.ts`). E2E tests live in `e2e/`.
 - The `shadcn` package is not installed: its base styles are copied into `app/shadcn.css` (from 4.22.1), and components are added with `npx shadcn@<version> add`. `package.json` overrides `minimatch` to 11 for the ESLint TypeScript tooling (an audit fix); remove the override once typescript-eslint asks for 11 itself.
 
+## Security headers
+- `lib/security/headers.ts` builds them; `next.config.ts` sends them on every response (`poweredByHeader: false` too).
+  The CSP has no nonce: Partial Prerendering (cacheComponents) can't carry one, so inline scripts and styles are
+  allowed and everything else is 'self'. A new outside source (an image host, a browser-side fetch, a sign-in
+  provider) must be added there, or the browser blocks it. `e2e/security.spec.ts` fails on any CSP console error.
+
 ## Database and deploy safety
 - `.env.local` points BOTH DATABASE_URL and DATABASE_URL_UNPOOLED at the Neon `dev`
   branch. Production is the `main` branch. `db/migrate.ts` prints the host it uses: check it.
