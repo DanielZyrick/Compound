@@ -183,6 +183,9 @@ Rules:
   It never touches Neon. `npm run typecheck` runs `next typegen` first, so route types exist.
 - Never print secret values. When inspecting env files, show variable names and hostnames only.
 - E2E tests refuse to run unless DATABASE_URL's host equals E2E_DB_HOST (the dev host).
+- E2E tests run in parallel (`fullyParallel`; 4 workers on CI, 2 locally, where Neon latency and the pool of 5 limit it). Each worker has its own user, `TEST_EMAIL` =
+  e2e-test-<TEST_PARALLEL_INDEX>@compound.local (e2e/support.ts). A test must only touch its own user's data;
+  to find an account it didn't create itself (e.g. a demo), read the session with `signedInUserId`.
 
 ## How to work with me
 - Work in small steps. Before writing code for a new feature, briefly explain your

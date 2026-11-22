@@ -169,7 +169,7 @@ rm .env.migrate-main
 
 ### End-to-end tests
 
-The 40 Playwright tests in `e2e/` sign in as a dedicated test user and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, the week in review, settings, and downloading your data and deleting the account, and the security headers. Then they delete the test user. Each test runs on desktop and on a phone. They:
+The 40 Playwright tests in `e2e/` run side by side (2 workers locally, 4 on CI), each worker signed in as its own dedicated test user (`e2e-test-<n>@compound.local`), and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, the week in review, settings, and downloading your data and deleting the account, and the security headers. Then they delete the test users. Each test runs on desktop and on a phone; a full local run against Neon takes about 12 to 15 minutes. They:
 
 - **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
 - force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;

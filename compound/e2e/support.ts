@@ -1,13 +1,13 @@
 import type { BrowserContext, Page } from "@playwright/test";
-import { encode } from "next-auth/jwt";
+import { decode, encode } from "next-auth/jwt";
 import { createDb } from "../lib/db/create-db";
 import { addDays, todayIn } from "../lib/dates/calendar";
 import type { Weekday } from "../lib/db/types";
 import { plannedDueDates } from "../lib/goals/schedule";
 
-// Shared helpers for the end-to-end tests. Every test works with one
-// dedicated test user, which is deleted and recreated as needed, so tests
-// never see each other's data or anyone else's.
+// Shared helpers for the end-to-end tests. Tests run side by side, one per
+// worker, and each worker has its own dedicated test user, which is deleted
+// and recreated as needed, so tests never see each other's data or anyone else's.
 
 try {
   process.loadEnvFile(".env.local");
@@ -15,7 +15,12 @@ try {
   // CI: the environment is provided directly.
 }
 
-export const TEST_EMAIL = "e2e-test@compound.local";
+/**
+ * This worker's test user. Playwright numbers the workers running at once
+ * 0 … workers-1 (TEST_PARALLEL_INDEX), so two tests running side by side
+ * never share a user. Outside a worker (the global teardown) it's worker 0's.
+ */
+export const TEST_EMAIL = `e2e-test-${process.env.TEST_PARALLEL_INDEX ?? 0}@compound.local`;
 export const TEST_TIMEZONE = "Asia/Manila";
 
 /**
@@ -52,9 +57,26 @@ export function alerts(page: Page) {
   return page.locator('[role="alert"]:not(#__next-route-announcer__)');
 }
 
-/** Deletes the test user and everything they own (every table cascades from users). */
+/** Deletes this worker's test user and everything they own (every table cascades from users). */
 export async function deleteTestUser() {
   await db.deleteFrom("users").where("email", "=", TEST_EMAIL).execute();
+}
+
+/** After the whole run: every worker's test user (and the single one from before workers had their own). */
+export async function deleteAllTestUsers() {
+  await db
+    .deleteFrom("users")
+    .where((eb) => eb.or([eb("email", "like", "e2e-test-%@compound.local"), eb("email", "=", "e2e-test@compound.local")]))
+    .execute();
+}
+
+/** The id of the user this browser is signed in as, read from the Auth.js session cookie. */
+export async function signedInUserId(context: BrowserContext): Promise<string | null> {
+  const salt = "authjs.session-token";
+  const cookie = (await context.cookies()).find((c) => c.name === salt);
+  if (!cookie) return null;
+  const token = await decode({ token: cookie.value, secret: process.env.AUTH_SECRET!, salt });
+  return typeof token?.userId === "string" ? token.userId : null;
 }
 
 type UserSetup = {
