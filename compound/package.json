@@ -11,6 +11,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "db:migrate": "tsx db/migrate.ts up",
     "db:rollback": "tsx db/migrate.ts down",
+    "db:migrate:e2e": "tsx --env-file=.env.e2e db/migrate.ts up",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "next build && playwright test",

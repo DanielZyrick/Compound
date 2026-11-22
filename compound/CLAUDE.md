@@ -182,8 +182,12 @@ Rules:
   push and PR, e2e against a throwaway Postgres service with dummy secrets (E2E_DB_HOST=localhost).
   It never touches Neon. `npm run typecheck` runs `next typegen` first, so route types exist.
 - Never print secret values. When inspecting env files, show variable names and hostnames only.
-- E2E tests refuse to run unless DATABASE_URL's host equals E2E_DB_HOST (the dev host).
-- E2E tests run in parallel (`fullyParallel`; 4 workers on CI, 2 locally, where Neon latency and the pool of 5 limit it). Each worker has its own user, `TEST_EMAIL` =
+- E2E tests refuse to run unless DATABASE_URL's host equals E2E_DB_HOST (the dev host, or localhost).
+- Locally, e2e tests use a local Postgres when `compound/.env.e2e` exists (gitignored; `playwright.config.ts` loads it
+  before .env.local): PostgreSQL 17 in C:\laragon\bin\postgresql\postgresql-17.12, data in
+  C:\laragon\data\postgresql-17, database compound_e2e, trust auth. Start it with Laragon or `pg_ctl start`; after a
+  new migration run `npm run db:migrate:e2e`. Without the file they use the Neon dev branch (slow from the laptop).
+- E2E tests run in parallel (`fullyParallel`; 4 workers with a local database or on CI, 2 against Neon, where latency and the pool of 5 limit it). Each worker has its own user, `TEST_EMAIL` =
   e2e-test-<TEST_PARALLEL_INDEX>@compound.local (e2e/support.ts). A test must only touch its own user's data;
   to find an account it didn't create itself (e.g. a demo), read the session with `signedInUserId`.
 

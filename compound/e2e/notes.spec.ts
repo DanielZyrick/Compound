@@ -13,12 +13,18 @@ test("write, tick, pin, edit and delete notes", async ({ page, context }) => {
   await add.press("Enter");
   await expect(card.getByRole("checkbox", { name: "Call the bank" })).toBeVisible();
   await expect(add).toHaveValue("");
+  // Wait for this save too: otherwise the tick below could be matched with
+  // this response, and the reload would come before the tick is saved.
+  const posted = (r: { request(): { method(): string }; url(): string }) =>
+    r.request().method() === "POST" && r.url().endsWith("/today");
+  const added = page.waitForResponse(posted);
   await add.fill("Buy running shoes");
   await add.press("Enter");
+  await added;
 
   // Tick one off; it stays ticked after a reload.
   const shoes = card.getByRole("checkbox", { name: "Buy running shoes" });
-  const saved = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/today"));
+  const saved = page.waitForResponse(posted);
   await shoes.click();
   await expect(shoes).toHaveAttribute("aria-checked", "true");
   await saved;
@@ -88,11 +94,15 @@ test("to-dos with a due date: what's due comes first on Today, and dates can be 
     await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: /^Notes/ })).toContainText("(needs attention)");
   }
 
-  // Ticking them off clears the count.
-  for (const title of ["Renew passport", "Pay rent"]) {
+  // Ticking them off clears the count. A ticked note moves to the end of the
+  // card once the server answers, so wait for the count (from the server)
+  // before the next click: clicking while the list moves can hit another note.
+  for (const [title, left] of [["Renew passport", "1 due"], ["Pay rent", null]] as const) {
     const saved = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/today"));
     await card.getByRole("checkbox", { name: title }).click();
     await saved;
+    await expect(card.getByRole("checkbox", { name: title })).toBeChecked();
+    if (left) await expect(card.getByRole("heading", { level: 2 })).toContainText(left);
   }
   await page.reload();
   await page.waitForLoadState("networkidle");

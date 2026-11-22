@@ -158,6 +158,7 @@ Run these from the `compound/` folder.
 | `npm run lint` | Run ESLint |
 | `npm run db:migrate` | Apply pending migrations |
 | `npm run db:rollback` | Undo the most recent migration |
+| `npm run db:migrate:e2e` | Apply pending migrations to the local test database (`.env.e2e`) |
 
 `db:migrate` uses `DATABASE_URL_UNPOOLED` from `.env.local`. Production is migrated by each Vercel deploy (see [Deploying](#deploying)). To migrate another branch by hand, put that branch's direct connection string in a temporary, gitignored env file and pass it to the runner. Variables from the file take priority over `.env.local`:
 
@@ -169,12 +170,31 @@ rm .env.migrate-main
 
 ### End-to-end tests
 
-The 40 Playwright tests in `e2e/` run side by side (2 workers locally, 4 on CI), each worker signed in as its own dedicated test user (`e2e-test-<n>@compound.local`), and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, the week in review, settings, and downloading your data and deleting the account, and the security headers. Then they delete the test users. Each test runs on desktop and on a phone; a full local run against Neon takes about 12 to 15 minutes. They:
+The 40 Playwright tests in `e2e/` run side by side (4 workers, or 2 against Neon), each worker signed in as its own dedicated test user (`e2e-test-<n>@compound.local`), and walk through onboarding, habits (including filling in a missed day), lessons at your own pace, a reading, goals (creating, editing steps, falling behind and catching up), money (adding, editing, categories, saving toward a goal), notes, About you (including a resume), recommended tracks, contacts and follow-ups, Google Calendar, the week in review, settings, and downloading your data and deleting the account, and the security headers. Then they delete the test users. Each test runs on desktop and on a phone. They:
 
 - **refuse to run** unless `DATABASE_URL` points at the host in `E2E_DB_HOST`, so they can't touch production;
 - force AI **demo mode** (`AI_DEMO_MODE=1`), so they never spend API credits;
 - use a **demo calendar** (`CALENDAR_DEMO_MODE=1`), so they never call Google;
 - use your installed **Microsoft Edge**, so no browser download is needed.
+
+**A local test database (recommended).** Against Neon every query crosses the internet, so a full run takes 12 to 50 minutes and slow steps can miss their timeouts. With PostgreSQL on your machine it takes about 6 minutes, and Neon's dev branch is left alone. CI does the same with its own Postgres.
+
+1. Install PostgreSQL 17. With Laragon: unzip the [Windows binaries](https://www.enterprisedb.com/download-postgresql-binaries) into `C:laragoninpostgresqlpostgresql-17.12`, then from that folder:
+   ```bash
+   bin/initdb -D C:/laragon/data/postgresql-17 -U postgres --auth=trust -E UTF8 --locale=C
+   bin/pg_ctl -D C:/laragon/data/postgresql-17 -l C:/laragon/data/postgresql-17/server.log start
+   bin/createdb -U postgres -h localhost compound_e2e
+   ```
+   Laragon can start and stop it afterwards (Menu → PostgreSQL). Only local connections are accepted, so no password is needed.
+2. Create `compound/.env.e2e` (gitignored):
+   ```bash
+   DATABASE_URL=postgres://postgres@localhost:5432/compound_e2e
+   DATABASE_URL_UNPOOLED=postgres://postgres@localhost:5432/compound_e2e
+   E2E_DB_HOST=localhost
+   ```
+3. `npm run db:migrate:e2e`, and again after pulling a new migration.
+
+`playwright.config.ts` loads `.env.e2e` when it exists, before `.env.local`, so the tests and their server use it. Remove the file to test against Neon again.
 
 Running `npm start` locally also needs `AUTH_TRUST_HOST=true`. Vercel sets it automatically, and `npm run dev` doesn't need it.
 

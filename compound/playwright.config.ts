@@ -1,20 +1,27 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 // End-to-end tests: run with `npm run test:e2e` (builds first).
-// They use a dedicated test user in the DEV database (see e2e/support.ts,
+// They use dedicated test users in a test database (see e2e/support.ts,
 // which refuses any other database) and force AI demo mode, so they never
 // touch production data or spend API credits.
+
+// A local Postgres, if set up (README: "End-to-end tests"). Loaded before
+// anything else, so it wins over .env.local for the tests and the test
+// server. Without the file the tests use the Neon dev branch from .env.local.
+const LOCAL_DB = existsSync(".env.e2e");
+if (LOCAL_DB) process.loadEnvFile(".env.e2e");
 
 const PORT = 3100;
 
 export default defineConfig({
   testDir: "./e2e",
   // Each worker has its own test user (e2e/support.ts), so tests run side by
-  // side. CI has Postgres on the same machine, so 4 at once is fine there.
-  // Locally every query crosses the internet to Neon and the server keeps at
-  // most 5 connections (lib/db/create-db.ts); more than 2 at once made pages
-  // queue for a connection and miss their timeouts.
-  workers: process.env.CI ? 4 : 2,
+  // side. With Postgres on the same machine (CI, or .env.e2e), 4 at once is
+  // fine. Against Neon every query crosses the internet and the server keeps
+  // at most 5 connections (lib/db/create-db.ts), so more than 2 at once made
+  // pages queue for a connection and miss their timeouts.
+  workers: process.env.CI || LOCAL_DB ? 4 : 2,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // Double Playwright's defaults (30s a test, 5s an expect): creating a track or
