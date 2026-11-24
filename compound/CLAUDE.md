@@ -170,6 +170,16 @@ Rules:
   allowed and everything else is 'self'. A new outside source (an image host, a browser-side fetch, a sign-in
   provider) must be added there, or the browser blocks it. `e2e/security.spec.ts` fails on any CSP console error.
 
+## Error tracking (Sentry)
+- `@sentry/nextjs` v11. Off unless NEXT_PUBLIC_SENTRY_DSN is set (dev, e2e and CI send nothing). Errors only: no
+  tracing, no replay. Shared options and the privacy scrubbing (`scrubEvent`, `scrubBreadcrumb`) are in
+  `lib/monitoring/options.ts`; only the user's internal id and a `demo` tag are attached (`getCurrentUser` in dal.ts).
+- Server: `instrumentation.ts` (`onRequestError`). Browser: `instrumentation-client.ts`, sending through
+  `/api/monitoring` (so the CSP stays 'self'); error pages report only errors without a digest (server ones were
+  already reported). `withSentryConfig` comes from `@sentry/nextjs/config` (not the main entry in v11) and uploads
+  source maps when SENTRY_AUTH_TOKEN/ORG/PROJECT are set. `/api/monitoring-check` throws a test error in dev only.
+- Errors the app handles itself (AiError, form errors) are not reported. Never attach emails, names or user text.
+
 ## Database and deploy safety
 - `.env.local` points BOTH DATABASE_URL and DATABASE_URL_UNPOOLED at the Neon `dev`
   branch. Production is the `main` branch. `db/migrate.ts` prints the host it uses: check it.

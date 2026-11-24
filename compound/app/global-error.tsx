@@ -1,9 +1,18 @@
 "use client"; // error boundaries must be Client Components
 
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
+import { shouldReportFromBrowser } from "@/lib/monitoring/options";
+
 // The last resort: it replaces the root layout when that layout itself fails,
 // so it brings its own <html> and <body> and doesn't get the app's stylesheet.
 // That's why it uses a few inline styles instead of Tailwind classes.
-export default function GlobalError({ retry }: { error: unknown; retry: () => void }) {
+export default function GlobalError({ error, retry }: { error: unknown; retry: () => void }) {
+  // Browser errors go to Sentry from here; server ones were reported on the server.
+  useEffect(() => {
+    if (shouldReportFromBrowser(error)) Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body

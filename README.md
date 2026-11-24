@@ -73,6 +73,7 @@ Compound is a web app for getting 1% better every day. You track daily habits, f
 - **Calculated, not stored, again.** A contact's "last contacted" date comes from their touchpoints, the same way streaks come from check-ins.
 - **Your data is yours.** Settings → Your data downloads everything as one readable JSON file and deletes the account on the spot. The export lists every column it reads, so the encrypted calendar tokens can't slip in, and a pure, tested function ([`lib/account/export.ts`](compound/lib/account/export.ts)) nests rows under their parents and drops internal ids. Deleting revokes Google Calendar access first, then removes transactions before the user row, because a transaction's category is protected by `on delete restrict`.
 - **Security headers on every response.** A Content Security Policy keeps scripts, styles, images and requests on the site itself (avatars and the sign-in redirects are the only outside sources), and stops other sites from framing it. With Partial Prerendering a per-request nonce isn't possible, so inline scripts are allowed; HSTS, `nosniff`, a strict referrer policy and a Permissions-Policy come with it ([`lib/security/headers.ts`](compound/lib/security/headers.ts)). An end-to-end test walks the app and fails on any policy violation.
+- **Error tracking that respects privacy.** Unhandled errors on the server and in the browser go to [Sentry](https://sentry.io), with only the account's internal id attached. Request data, cookies, query strings, console output and long messages are stripped before sending ([`lib/monitoring/options.ts`](compound/lib/monitoring/options.ts), unit tested), and browser reports go through Compound's own `/api/monitoring`, so the Content Security Policy stays locked to the site. It's off unless `NEXT_PUBLIC_SENTRY_DSN` is set.
 - **A weekly review without the AI.** [`lib/review/week.ts`](compound/lib/review/week.ts) turns two weeks of plain rows into the week's numbers and its sentence, so it's free, instant and unit tested. A week in progress is compared with the same days of last week, so a Wednesday isn't measured against a whole week. Times like "lesson finished at" are turned into your local date first, so a lesson done late on Sunday in Manila counts for Sunday.
 
 ## Running it locally
@@ -293,6 +294,8 @@ Migrations add to the schema before the code that uses it ships. A migration tha
 | `AI_DEMO_MODE` | Optional. `1` uses example content instead of calling Claude |
 | `CALENDAR_TOKEN_KEY` | Optional. Encrypts Google Calendar tokens (32 bytes, base64); without it, Calendar isn't offered |
 | `CALENDAR_DEMO_MODE` | End-to-end tests only. `1` uses a demo calendar instead of calling Google |
+| `NEXT_PUBLIC_SENTRY_DSN` | Optional. Turns on error tracking with Sentry; without it nothing is sent |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Optional, on Vercel. Uploads source maps at build time, so errors show the real file and line |
 | `E2E_DB_HOST` | End-to-end tests only: the dev database host they're allowed to use |
 
 `.env.local` is gitignored. Only `.env.example` is committed, with empty values.

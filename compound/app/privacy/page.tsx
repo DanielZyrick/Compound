@@ -75,6 +75,11 @@ export default function PrivacyPage() {
             <li>
               <strong>Google</strong> or <strong>GitHub</strong> handle sign-in.
             </li>
+            <li>
+              <strong>Sentry</strong> receives error reports when something breaks: the error, the page it happened on
+              (without anything after a &quot;?&quot; in the address) and your account&apos;s internal ID. Never your
+              email, name, IP address, cookies or anything you&apos;ve written.
+            </li>
           </ul>
         </section>
 

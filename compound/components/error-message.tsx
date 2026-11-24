@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { RotateCw } from "lucide-react";
 import { StatusMessage } from "@/components/status-message";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { shouldReportFromBrowser } from "@/lib/monitoring/options";
 
 /**
  * The body of the error pages. Server errors arrive with a generic message
@@ -16,6 +18,8 @@ export function ErrorMessage({ error, retry, homeHref }: { error: unknown; retry
 
   useEffect(() => {
     console.error(error);
+    // Browser errors go to Sentry from here; server ones were reported on the server.
+    if (shouldReportFromBrowser(error)) Sentry.captureException(error);
   }, [error]);
 
   return (

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { securityHeaders } from "./lib/security/headers";
 
 const nextConfig: NextConfig = {
@@ -25,4 +26,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry (lib/monitoring/options.ts). With SENTRY_AUTH_TOKEN, SENTRY_ORG and
+// SENTRY_PROJECT set (on Vercel), the build uploads source maps so errors show
+// the real file and line; without them it builds as before.
+export default withSentryConfig(nextConfig, {
+  silent: !process.env.CI,
+  telemetry: false,
+});

@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 
@@ -29,6 +30,12 @@ export const getCurrentUser = cache(async () => {
     .where("id", "=", userId)
     .executeTakeFirst();
 
+  // Error reports from this request say which account hit them, by internal
+  // id only (lib/monitoring/options.ts strips anything else).
+  if (user) {
+    Sentry.setUser({ id: user.id });
+    Sentry.setTag("demo", user.is_demo);
+  }
   return user ?? null;
 });
 
