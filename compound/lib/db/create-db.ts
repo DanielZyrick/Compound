@@ -14,10 +14,23 @@ function withStrictSsl(connectionString: string) {
   return connectionString.replace(/sslmode=(prefer|require|verify-ca)\b/, "sslmode=verify-full");
 }
 
+/**
+ * The connection pool. When a connection sitting idle in the pool drops (the
+ * network blips, or Neon closes it), pg emits an "error" event on the pool.
+ * Node treats an "error" event nobody listens to as an uncaught exception,
+ * which can stop the server. Logging it is enough: the pool has already
+ * thrown that connection away and opens a fresh one for the next query.
+ */
+export function createPool(connectionString: string) {
+  const pool = new pg.Pool({ connectionString: withStrictSsl(connectionString), max: 5 });
+  pool.on("error", (error: Error & { code?: string }) => {
+    console.error(`[db] an idle connection closed: ${error.code ?? error.message}`);
+  });
+  return pool;
+}
+
 export function createDb(connectionString: string) {
   return new Kysely<Database>({
-    dialect: new PostgresDialect({
-      pool: new pg.Pool({ connectionString: withStrictSsl(connectionString), max: 5 }),
-    }),
+    dialect: new PostgresDialect({ pool: createPool(connectionString) }),
   });
 }
