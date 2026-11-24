@@ -101,7 +101,8 @@ test("to-dos with a due date: what's due comes first on Today, and dates can be 
     const saved = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/today"));
     await card.getByRole("checkbox", { name: title }).click();
     await saved;
-    await expect(card.getByRole("checkbox", { name: title })).toBeChecked();
+    // Ticked, or gone: a full card can push a ticked note off the end.
+    await expect(card.getByRole("checkbox", { name: title, checked: false })).toHaveCount(0);
     if (left) await expect(card.getByRole("heading", { level: 2 })).toContainText(left);
   }
   await page.reload();

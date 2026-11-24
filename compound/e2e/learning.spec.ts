@@ -18,7 +18,8 @@ test("create a skill track and finish its first lesson", async ({ page, context 
 
   // The plan: 7 days, today's open, the rest locked, and the details kept.
   await expect(page).toHaveURL(/\/tracks\/[0-9a-f-]{36}$/);
-  await expect(page.getByText("Monthly sales reports, skip the basics of SELECT.")).toBeVisible();
+  // The track page's own line: the form can stay in the page, hidden, after navigating.
+  await expect(page.getByText(/^Your focus: Monthly sales reports, skip the basics of SELECT\.$/)).toBeVisible();
   await expect(page.getByText("Example plan", { exact: true })).toBeVisible();
   const days = page.getByRole("main").getByRole("listitem");
   await expect(days).toHaveCount(7);
