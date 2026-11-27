@@ -86,6 +86,7 @@ Rules:
 - /today — habits, today's lessons, goal steps due, spent today, principle of the day
 - /habits — manage habits, see streaks, fill in missed days from the last week
 - /tracks, /tracks/new, /tracks/[id], /tracks/[id]/day/[n] — learning tracks and lessons. One active track per topic and type (lib/tracks/duplicate.ts; checked before the AI call and again under a per-user advisory lock when saving). Tracks can be archived from the track page or the ⋯ menu on a Learn card (their habit too, unless shared) and restored from Learn's Archived list.
+  /tracks/[id]/mistakes lists mistakes to review (`?show=all`): exercises whose first answer was wrong, worked out from attempts and never stored (`collectMistakes` in lib/mistakes/collect.ts; a later right try marks one "fixed later"; ungraded demo answers never count). The track page shows a count card once there is one.
 - /goals, /goals/new, /goals/[id] — goals, the AI plan, step editing, savings
 - /money — quick add (`?add=expense|income`; after a budgeted expense it says what's left in that category), month view (`?month=YYYY-MM`) with a Budget summary and budget bars. Today's stats pill shows what's left this month.
 - /money/categories — add, rename, change icon, set a monthly budget (expenses), archive, restore categories

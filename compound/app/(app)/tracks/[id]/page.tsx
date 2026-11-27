@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft, ArrowRight, Check, Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleAlert, Lock } from "lucide-react";
 import { z } from "zod";
 import { buttonVariants } from "@/components/ui/button";
 import { requireOnboardedUser } from "@/lib/auth/dal";
 import { todayIn } from "@/lib/dates/calendar";
 import { isDayOpen } from "@/lib/lessons/rules";
+import { mistakesToReview } from "@/lib/mistakes/collect";
+import { getTrackMistakes } from "@/lib/mistakes/queries";
 import { getTrack } from "@/lib/tracks/queries";
 import { cn } from "@/lib/utils";
 import { ArchiveTrack, RestoreTrack } from "../archive-track";
@@ -36,7 +38,10 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
   if (!z.uuid().safeParse(id).success) notFound();
 
   const user = await requireOnboardedUser();
-  const track = await getTrack(user.id, id, todayIn(user.timezone));
+  const [track, mistakes] = await Promise.all([
+    getTrack(user.id, id, todayIn(user.timezone)),
+    getTrackMistakes(user.id, id),
+  ]);
   if (!track) notFound();
   const archived = track.status === "archived";
 
@@ -88,6 +93,10 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
           This is an example plan, made without AI because no API key is set. Tracks created after
           AI is connected get a plan written for your topic and goal.
         </p>
+      )}
+
+      {mistakes && mistakes.mistakes.length > 0 && (
+        <MistakesLink trackId={track.id} total={mistakes.mistakes.length} toReview={mistakesToReview(mistakes.mistakes).length} />
       )}
 
       <ol className="mt-8 flex flex-col gap-2">
@@ -144,5 +153,28 @@ async function TrackPlan({ params }: Pick<PageProps<"/tracks/[id]">, "params">) 
         </div>
       )}
     </>
+  );
+}
+
+/** Shown once the track has a mistake: how many are left to review. */
+function MistakesLink({ trackId, total, toReview }: { trackId: string; total: number; toReview: number }) {
+  return (
+    <Link
+      href={toReview > 0 ? `/tracks/${trackId}/mistakes` : `/tracks/${trackId}/mistakes?show=all`}
+      className="mt-6 flex items-center gap-3 rounded-xl border p-4 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <CircleAlert className="size-5 shrink-0 text-primary" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block font-medium tabular-nums">
+          {toReview > 0 ? `Mistakes to review · ${toReview}` : "Mistakes: all fixed"}
+        </span>
+        <span className="block text-sm text-muted-foreground">
+          {toReview > 0
+            ? "Questions you got wrong the first time, with the right answer and why."
+            : `You fixed all ${total} on a later try. See them again any time.`}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+    </Link>
   );
 }

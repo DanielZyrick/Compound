@@ -4,6 +4,7 @@ import { currentStreak } from "@/lib/habits/streaks";
 import { goalPlanSchema } from "@/lib/goals/plan";
 import { scheduleGoal } from "@/lib/goals/schedule";
 import { lessonSchema } from "@/lib/lessons/schema";
+import { collectMistakes } from "@/lib/mistakes/collect";
 import { DEFAULT_CATEGORIES } from "@/lib/money/categories";
 import { demoData } from "./data";
 
@@ -42,6 +43,32 @@ describe.each(TODAYS)("demoData on %s", (today) => {
     expect(data.skillTrack.days[4]).toMatchObject({ day: 5, completedOn: null, lesson: null });
     const learn = data.habits.find((h) => h.linkedToTrack)!;
     expect(learn.checkins).toEqual(done.map((d) => d.completedOn));
+  });
+
+  it("got two multiple-choice questions wrong, so Mistakes to review has something to show", () => {
+    const done = data.skillTrack.days.filter((d) => d.lesson);
+    const days = done.map((d) => ({ dayNumber: d.day, dayTitle: d.title, lesson: d.lesson! }));
+    // The same answers lib/demo/create.ts saves for multiple choice.
+    const attempts = done.flatMap((d) =>
+      d.lesson!.exercises.flatMap((exercise, index) =>
+        exercise.type === "multiple_choice"
+          ? [
+              {
+                dayNumber: d.day,
+                exerciseIndex: index,
+                answer: String(d.missed?.exercise === index ? d.missed.choice : exercise.answerIndex),
+                isCorrect: d.missed?.exercise !== index,
+                feedback: exercise.explanation,
+                betterVersion: null,
+              },
+            ]
+          : [],
+      ),
+    );
+    expect(collectMistakes(days, attempts).map((m) => [m.dayNumber, m.exerciseIndex])).toEqual([
+      [4, 0],
+      [2, 1],
+    ]);
   });
 
   it("has a goal plan that passes the AI schema and is on track", () => {

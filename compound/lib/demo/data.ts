@@ -31,6 +31,12 @@ export function demoData(today: CalendarDate) {
   const topic = "Python for automating everyday tasks";
   const plan = demoPlan({ topic, type: "skill", level: "beginner", totalDays: 14 });
   const trackStart = ago(4);
+  // Two wrong multiple-choice picks (exercise index, choice index), so
+  // "Mistakes to review" has something to show.
+  const misses: Record<number, { exercise: number; choice: number }> = {
+    2: { exercise: 1, choice: 1 },
+    4: { exercise: 0, choice: 3 },
+  };
   const skillTrack = {
     title: plan.title,
     topic,
@@ -40,6 +46,7 @@ export function demoData(today: CalendarDate) {
     days: plan.days.map((d) => ({
       ...d,
       completedOn: d.day <= 4 ? addDays(trackStart, d.day - 1) : null,
+      missed: misses[d.day] ?? null,
       lesson:
         d.day <= 4
           ? (demoLesson({ type: "skill", topic, dayTitle: d.title, daySummary: d.summary }) satisfies LessonContent)
