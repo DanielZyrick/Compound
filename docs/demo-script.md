@@ -37,7 +37,7 @@ About 3 minutes. A screen recording with voice-over. Say the lines naturally; th
 | 2:22 | **Notes**: type "Buy running socks", Enter | "And quick notes for everything else, on a board of sticky notes." |
 | 2:28 | **About you**: point at "Fill in from your resume" | "All of this is personal because of a short profile. I can even fill it in from my resume; the file isn't stored." |
 | 2:38 | Resize the window narrow, or switch to the phone recording; tap through Today and Schedule | "It's built for the phone too." |
-| 2:45 | GitHub README | "Under the hood: Next.js 16, Postgres, TypeScript and the Claude API, with over 300 unit tests and end-to-end tests on desktop and mobile. The links are below. Thanks for watching." |
+| 2:45 | GitHub README | "Under the hood: Next.js 16, Postgres, TypeScript and the Claude API, with over 500 unit tests and end-to-end tests on desktop and mobile, run on every push. The links are below. Thanks for watching." |
 
 ## After recording
 
