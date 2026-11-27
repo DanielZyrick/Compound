@@ -35,6 +35,7 @@ export function buildExport(rows: ExportRows, exportedAt: Date) {
   const daysOf = groupBy(rows.trackDays, (d) => d.track_id);
   const lessonOf = groupBy(rows.lessons, (l) => l.track_day_id);
   const attemptsOf = groupBy(rows.attempts, (a) => a.lesson_id);
+  const practiceOf = groupBy(rows.practice, (p) => p.lesson_id);
   const reflectionOf = groupBy(rows.reflections, (r) => r.track_day_id);
   const milestonesOf = groupBy(rows.milestones, (m) => m.goal_id);
   const stepsOf = groupBy(rows.steps, (s) => s.milestone_id);
@@ -101,6 +102,17 @@ export function buildExport(rows: ExportRows, exportedAt: Date) {
             feedback: a.feedback,
             betterVersion: a.better_version,
             createdAt: a.created_at,
+          })),
+          // Fresh exercises the AI wrote for mistakes in this lesson.
+          practice: (lesson ? practiceOf(lesson.id) : []).map((p) => ({
+            forExercise: p.exercise_index + 1,
+            exercise: p.content,
+            answer: p.answer,
+            isCorrect: p.is_correct,
+            feedback: p.feedback,
+            betterVersion: p.better_version,
+            answeredAt: p.answered_at,
+            createdAt: p.created_at,
           })),
           reflection: reflectionOf(d.id)[0]?.text ?? null,
         };

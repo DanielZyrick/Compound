@@ -3,10 +3,14 @@ import type { Exercise, LessonContent } from "@/lib/lessons/schema";
 
 // Mistakes are worked out from saved answers (attempts), never stored, like
 // streaks. A mistake is an exercise whose FIRST answer was wrong. A later try
-// that got it right (open answers allow up to 3) marks it "fixed later".
-// Ungraded answers (demo mode, is_correct null) never count.
+// that got it right (open answers allow up to 3) marks it "fixed later"; a
+// practice exercise answered right (lib/mistakes/practice.ts) marks it "fixed
+// in practice". Ungraded answers (demo mode, is_correct null) never count.
 
-export type MistakeDay = { dayNumber: number; dayTitle: string; lesson: LessonContent };
+export type MistakeDay = { lessonId: string; dayNumber: number; dayTitle: string; lesson: LessonContent };
+
+/** A practice exercise's result, for the mistake (lesson and exercise) it belongs to. */
+export type PracticeResult = { lessonId: string; exerciseIndex: number; isCorrect: boolean | null };
 
 export type MistakeAttempt = {
   dayNumber: number;
@@ -18,6 +22,7 @@ export type MistakeAttempt = {
 };
 
 export type Mistake = {
+  lessonId: string;
   dayNumber: number;
   dayTitle: string;
   exerciseIndex: number;
@@ -31,13 +36,18 @@ export type Mistake = {
   why: string | null;
   betterVersion: string | null;
   fixedLater: boolean;
+  fixedInPractice: boolean;
 };
 
 /**
  * Every mistake in a track, newest day first, then in exercise order.
  * Attempts must be in the order they were made.
  */
-export function collectMistakes(days: MistakeDay[], attempts: MistakeAttempt[]): Mistake[] {
+export function collectMistakes(
+  days: MistakeDay[],
+  attempts: MistakeAttempt[],
+  practice: PracticeResult[] = [],
+): Mistake[] {
   const mistakes: Mistake[] = [];
   const newestFirst = [...days].sort((a, b) => b.dayNumber - a.dayNumber);
 
@@ -47,12 +57,16 @@ export function collectMistakes(days: MistakeDay[], attempts: MistakeAttempt[]):
       const first = mine[0];
       if (!first) return;
       const base = {
+        lessonId: day.lessonId,
         dayNumber: day.dayNumber,
         dayTitle: day.dayTitle,
         exerciseIndex,
         type: exercise.type,
         question: exercise.question,
         code: exercise.code,
+        fixedInPractice: practice.some(
+          (p) => p.lessonId === day.lessonId && p.exerciseIndex === exerciseIndex && p.isCorrect === true,
+        ),
       };
 
       if (exercise.type === "multiple_choice") {
@@ -85,7 +99,7 @@ export function collectMistakes(days: MistakeDay[], attempts: MistakeAttempt[]):
   return mistakes;
 }
 
-/** The mistakes still worth reviewing: not fixed by a later try. */
+/** The mistakes still worth reviewing: not fixed by a later try or in practice. */
 export function mistakesToReview(mistakes: Mistake[]): Mistake[] {
-  return mistakes.filter((m) => !m.fixedLater);
+  return mistakes.filter((m) => !m.fixedLater && !m.fixedInPractice);
 }

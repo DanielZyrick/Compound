@@ -47,7 +47,7 @@ describe.each(TODAYS)("demoData on %s", (today) => {
 
   it("got two multiple-choice questions wrong, so Mistakes to review has something to show", () => {
     const done = data.skillTrack.days.filter((d) => d.lesson);
-    const days = done.map((d) => ({ dayNumber: d.day, dayTitle: d.title, lesson: d.lesson! }));
+    const days = done.map((d) => ({ lessonId: `lesson-${d.day}`, dayNumber: d.day, dayTitle: d.title, lesson: d.lesson! }));
     // The same answers lib/demo/create.ts saves for multiple choice.
     const attempts = done.flatMap((d) =>
       d.lesson!.exercises.flatMap((exercise, index) =>

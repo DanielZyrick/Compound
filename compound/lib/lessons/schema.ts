@@ -103,7 +103,8 @@ const openSchema = z.object({
   sampleAnswer: z.string().trim().min(10).max(800).describe("A strong example answer"),
 });
 
-const exerciseSchema = z.discriminatedUnion("type", [multipleChoiceSchema, openSchema]);
+/** One exercise. Also how practice exercises for mistakes are stored (lib/mistakes/practice.ts). */
+export const exerciseSchema = z.discriminatedUnion("type", [multipleChoiceSchema, openSchema]);
 
 /** The order of exercise types for each kind of track. */
 export const EXERCISE_MIX: Record<Exclude<TrackType, "reading">, Exercise["type"][]> = {

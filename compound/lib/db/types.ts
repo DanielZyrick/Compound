@@ -114,6 +114,23 @@ export interface AttemptsTable {
   created_at: CreatedAt;
 }
 
+/** A fresh exercise for a mistake (an exercise in a lesson), and the answer once given. */
+export interface PracticeExercisesTable {
+  id: Generated<string>;
+  user_id: string;
+  lesson_id: string;
+  exercise_index: number;
+  // One exercise as JSON, written once; read as unknown and validated with Zod.
+  content: ColumnType<unknown, string, never>;
+  source: "ai" | "demo";
+  answer: string | null;
+  is_correct: boolean | null; // null until answered, or when not graded (demo mode)
+  feedback: string | null;
+  better_version: string | null;
+  answered_at: Timestamp | null;
+  created_at: CreatedAt;
+}
+
 export interface AiCallsTable {
   id: Generated<string>;
   user_id: string;
@@ -289,6 +306,7 @@ export interface Database {
   ai_calls: AiCallsTable;
   lessons: LessonsTable;
   attempts: AttemptsTable;
+  practice_exercises: PracticeExercisesTable;
   daily_principles: DailyPrinciplesTable;
   reflections: ReflectionsTable;
   goals: GoalsTable;

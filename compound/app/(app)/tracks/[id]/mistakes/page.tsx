@@ -9,10 +9,12 @@ import { InlineText } from "@/components/inline-text";
 import { RichText } from "@/components/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { requireOnboardedUser } from "@/lib/auth/dal";
+import { todayIn } from "@/lib/dates/calendar";
 import { answerLanguage } from "@/lib/lessons/code-editing";
 import { mistakesToReview, type Mistake } from "@/lib/mistakes/collect";
-import { getTrackMistakes } from "@/lib/mistakes/queries";
+import { getTrackMistakes, type PracticeRow } from "@/lib/mistakes/queries";
 import { cn } from "@/lib/utils";
+import { Practice } from "./practice";
 
 export const metadata: Metadata = { title: "Mistakes to review" };
 
@@ -38,11 +40,25 @@ async function Mistakes({ params, searchParams }: Pick<PageProps<"/tracks/[id]/m
   const user = await requireOnboardedUser();
   const result = await getTrackMistakes(user.id, id);
   if (!result) notFound();
-  const { track, mistakes } = result;
+  const { track, mistakes, practice } = result;
 
   const filter = (await searchParams).show === "all" ? "all" : "review";
   const toReview = mistakesToReview(mistakes);
-  const shown = filter === "all" ? mistakes : toReview;
+  // One fixed in practice today stays in the list until tomorrow, so the
+  // learner sees their right answer instead of the card vanishing; the
+  // counts leave it out straight away.
+  const today = todayIn(user.timezone);
+  const fixedToday = (m: Mistake) =>
+    practice.some(
+      (p) =>
+        p.lessonId === m.lessonId &&
+        p.exerciseIndex === m.exerciseIndex &&
+        p.isCorrect === true &&
+        p.answeredAt !== null &&
+        todayIn(user.timezone, p.answeredAt) === today,
+    );
+  const shown =
+    filter === "all" ? mistakes : mistakes.filter((m) => toReview.includes(m) || (!m.fixedLater && fixedToday(m)));
 
   return (
     <>
@@ -55,8 +71,8 @@ async function Mistakes({ params, searchParams }: Pick<PageProps<"/tracks/[id]/m
       </Link>
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">Mistakes to review</h1>
       <p className="mt-1 text-muted-foreground">
-        Questions you got wrong the first time, with the right answer and why. Going over them is one of the fastest
-        ways to learn.
+        Questions you got wrong the first time, with the right answer and why. Practise one to get a fresh question on
+        the same idea: answer it right and it&apos;s fixed.
       </p>
 
       <nav aria-label="Show" className="mt-6 flex gap-1">
@@ -79,13 +95,19 @@ async function Mistakes({ params, searchParams }: Pick<PageProps<"/tracks/[id]/m
         <p className="mt-4 rounded-2xl border border-dashed p-8 text-center text-muted-foreground">
           {mistakes.length === 0
             ? "No mistakes yet. Wrong answers from your lessons will show up here."
-            : "Nothing left to review: you fixed every one on a later try."}
+            : "Nothing left to review: you fixed every one."}
         </p>
       ) : (
         <ol className="mt-4 flex flex-col gap-4">
           {shown.map((mistake) => (
             <li key={`${mistake.dayNumber}-${mistake.exerciseIndex}`}>
-              <MistakeCard trackId={track.id} mistake={mistake} />
+              <MistakeCard
+                trackId={track.id}
+                mistake={mistake}
+                practice={practice.filter(
+                  (p) => p.lessonId === mistake.lessonId && p.exerciseIndex === mistake.exerciseIndex,
+                )}
+              />
             </li>
           ))}
         </ol>
@@ -94,7 +116,7 @@ async function Mistakes({ params, searchParams }: Pick<PageProps<"/tracks/[id]/m
   );
 }
 
-function MistakeCard({ trackId, mistake }: { trackId: string; mistake: Mistake }) {
+function MistakeCard({ trackId, mistake, practice }: { trackId: string; mistake: Mistake; practice: PracticeRow[] }) {
   const open = mistake.type === "open";
   // A code answer is shown as code, like on the lesson page.
   const language = open ? answerLanguage(mistake.rightAnswer) : null;
@@ -105,10 +127,10 @@ function MistakeCard({ trackId, mistake }: { trackId: string; mistake: Mistake }
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           Day {mistake.dayNumber} · Exercise {mistake.exerciseIndex + 1}
         </p>
-        {mistake.fixedLater && (
+        {(mistake.fixedLater || mistake.fixedInPractice) && (
           <Badge variant="secondary">
             <Check />
-            Fixed later
+            {mistake.fixedLater ? "Fixed later" : "Fixed in practice"}
           </Badge>
         )}
       </div>
@@ -143,6 +165,8 @@ function MistakeCard({ trackId, mistake }: { trackId: string; mistake: Mistake }
           )}
         </div>
       )}
+
+      <Practice mistake={mistake} practice={practice} />
 
       <Link
         href={`/tracks/${trackId}/day/${mistake.dayNumber}`}

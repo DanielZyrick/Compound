@@ -43,6 +43,9 @@ Types live in `lib/db/types.ts`; migrations in `db/migrations/` (listed in `inde
 - lessons (id, track_day_id, content, source, created_at)
 - attempts (id, lesson_id, user_id, exercise_index, answer, is_correct, feedback,
   better_version, source, created_at)
+- practice_exercises (id, user_id, lesson_id, exercise_index, content, source, answer, is_correct, feedback,
+  better_version, answered_at, created_at) — a fresh exercise the AI wrote for a mistake; at most one unanswered per
+  mistake (partial unique index), 3 per mistake (`MAX_PRACTICE_PER_MISTAKE`)
 - reflections (id, user_id, track_day_id, text, created_at, updated_at)
 - daily_principles (id, user_id, date, content, source, reflection, created_at)
   — one principle per user per day, generated once and cached
@@ -87,6 +90,7 @@ Rules:
 - /habits — manage habits, see streaks, fill in missed days from the last week
 - /tracks, /tracks/new, /tracks/[id], /tracks/[id]/day/[n] — learning tracks and lessons. One active track per topic and type (lib/tracks/duplicate.ts; checked before the AI call and again under a per-user advisory lock when saving). Tracks can be archived from the track page or the ⋯ menu on a Learn card (their habit too, unless shared) and restored from Learn's Archived list.
   /tracks/[id]/mistakes lists mistakes to review (`?show=all`): exercises whose first answer was wrong, worked out from attempts and never stored (`collectMistakes` in lib/mistakes/collect.ts; a later right try marks one "fixed later"; ungraded demo answers never count). The track page shows a count card once there is one.
+  "Practice this" (app/(app)/tracks/[id]/mistakes/actions.ts, lib/mistakes/practice.ts): the fast model writes one fresh exercise of the same type on the same idea; a right answer marks the mistake "fixed in practice" (it stays on To review until tomorrow so the result shows, but stops counting). Lessons and practice share the exercise components in app/(app)/tracks/exercises.tsx.
 - /goals, /goals/new, /goals/[id] — goals, the AI plan, step editing, savings
 - /money — quick add (`?add=expense|income`; after a budgeted expense it says what's left in that category), month view (`?month=YYYY-MM`) with a Budget summary and budget bars. Today's stats pill shows what's left this month.
 - /money/categories — add, rename, change icon, set a monthly budget (expenses), archive, restore categories
@@ -134,6 +138,8 @@ Rules:
 5. Goal plan: from a goal, why and deadline, return milestones with weights and steps,
    plus an execution guide. The user can edit it before and after saving.
 6. Recommendations (version 2): suggest 3 tracks based on focus areas and tracks.
+7. Practice: from a mistake (the original exercise, the right answer and the learner's wrong one, in tags), one
+   fresh exercise of the same type, validated by `practiceSchema` (no repeat of the original or earlier practice).
 
 ## AI rules
 - Never expose the API key to the browser. Read it from env (ANTHROPIC_API_KEY).

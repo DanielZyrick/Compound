@@ -21,7 +21,7 @@ import { canComplete, isDayOpen, MAX_FEEDBACK_PER_EXERCISE, unlockDate } from "@
 import type { LessonContent } from "@/lib/lessons/schema";
 import { BIBLE_VERSION, bibleGatewayUrl, reflectionPrompt } from "@/lib/reading/plans";
 import { CompleteLesson } from "./complete-lesson";
-import { MultipleChoiceExercise, OpenExercise } from "./exercises";
+import { MultipleChoiceExercise, OpenExercise } from "../../../exercises";
 import { ReadingReflection } from "./reading-reflection";
 import { StartLesson } from "./start-lesson";
 
@@ -208,8 +208,8 @@ function LessonBody({
             return (
               <MultipleChoiceExercise
                 key={index}
-                lessonId={lessonId}
-                index={index}
+                target={{ lessonId, index }}
+                label={`Exercise ${index + 1}`}
                 question={exercise.question}
                 code={questionCode(exercise)}
                 choices={exercise.choices}
@@ -223,8 +223,8 @@ function LessonBody({
           return (
             <OpenExercise
               key={index}
-              lessonId={lessonId}
-              index={index}
+              target={{ lessonId, index }}
+              label={`Exercise ${index + 1}`}
               question={exercise.question}
               code={questionCode(exercise)}
               hint={exercise.hint}

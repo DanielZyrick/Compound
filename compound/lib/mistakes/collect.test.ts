@@ -8,6 +8,7 @@ import { collectMistakes, mistakesToReview, type MistakeAttempt, type MistakeDay
 const lesson = (dayTitle: string) =>
   demoLesson({ type: "skill", topic: "Python", dayTitle, daySummary: `Learn ${dayTitle}` });
 const day = (dayNumber: number, content: LessonContent = lesson(`Day ${dayNumber}`)): MistakeDay => ({
+  lessonId: `lesson-${dayNumber}`,
   dayNumber,
   dayTitle: `Day ${dayNumber}`,
   lesson: content,
@@ -98,6 +99,24 @@ describe("collectMistakes", () => {
 });
 
 describe("mistakesToReview", () => {
+  it("leaves out the ones fixed in practice, but only by a right answer", () => {
+    const mistakes = collectMistakes(
+      [day(1), day(2)],
+      [attempt(1, 0, "1", false), attempt(2, 0, "1", false)],
+      [
+        { lessonId: "lesson-1", exerciseIndex: 0, isCorrect: false },
+        { lessonId: "lesson-1", exerciseIndex: 0, isCorrect: true },
+        { lessonId: "lesson-2", exerciseIndex: 0, isCorrect: null },
+        { lessonId: "lesson-2", exerciseIndex: 1, isCorrect: true },
+      ],
+    );
+    expect(mistakes.map((m) => [m.dayNumber, m.fixedInPractice])).toEqual([
+      [2, false],
+      [1, true],
+    ]);
+    expect(mistakesToReview(mistakes).map((m) => m.dayNumber)).toEqual([2]);
+  });
+
   it("leaves out the ones fixed later", () => {
     const mistakes = collectMistakes(
       [day(1)],

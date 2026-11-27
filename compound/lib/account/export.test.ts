@@ -60,6 +60,19 @@ function rows(): ExportRows {
         created_at: at,
       },
     ],
+    practice: [
+      {
+        lesson_id: "l1",
+        exercise_index: 0,
+        content: { type: "multiple_choice", question: "What is `x`?" },
+        answer: "1",
+        is_correct: true,
+        feedback: "Right.",
+        better_version: null,
+        answered_at: at,
+        created_at: at,
+      },
+    ],
     reflections: [{ track_day_id: "d1", text: "Easier than I thought", created_at: at, updated_at: at }],
     principles: [{ date: "2026-11-20", content: { title: "Start small" }, reflection: null }],
     goals: [
@@ -172,9 +185,10 @@ describe("buildExport", () => {
       day: 1,
       lesson: { title: "Variables" },
       answers: [{ exercise: 1, answer: "x = 1", isCorrect: true }],
+      practice: [{ forExercise: 1, exercise: { question: "What is `x`?" }, answer: "1", isCorrect: true }],
       reflection: "Easier than I thought",
     });
-    expect(day2).toMatchObject({ day: 2, lesson: null, answers: [], reflection: null });
+    expect(day2).toMatchObject({ day: 2, lesson: null, answers: [], practice: [], reflection: null });
     expect(data.goals[0].milestones[0].steps).toEqual([{ title: "Pick colours", doneOn: "2026-11-05" }]);
     expect(data.contacts[0].touchpoints).toEqual([{ date: "2026-11-10", note: "Coffee chat" }]);
   });
@@ -207,6 +221,7 @@ describe("buildExport", () => {
       trackDays: [],
       lessons: [],
       attempts: [],
+      practice: [],
       reflections: [],
       principles: [],
       goals: [],

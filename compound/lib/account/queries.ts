@@ -20,6 +20,7 @@ export async function loadExportRows(userId: string) {
     trackDays,
     lessons,
     attempts,
+    practice,
     reflections,
     principles,
     goals,
@@ -104,6 +105,22 @@ export async function loadExportRows(userId: string) {
     db
       .selectFrom("attempts")
       .select(["lesson_id", "exercise_index", "answer", "is_correct", "feedback", "better_version", "created_at"])
+      .where("user_id", "=", userId)
+      .orderBy("created_at")
+      .execute(),
+    db
+      .selectFrom("practice_exercises")
+      .select([
+        "lesson_id",
+        "exercise_index",
+        "content",
+        "answer",
+        "is_correct",
+        "feedback",
+        "better_version",
+        "answered_at",
+        "created_at",
+      ])
       .where("user_id", "=", userId)
       .orderBy("created_at")
       .execute(),
@@ -230,6 +247,7 @@ export async function loadExportRows(userId: string) {
     trackDays,
     lessons,
     attempts,
+    practice,
     reflections,
     principles,
     goals,

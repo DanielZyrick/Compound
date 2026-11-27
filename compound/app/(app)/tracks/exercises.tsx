@@ -9,17 +9,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { plainText } from "@/lib/lessons/rich-text";
 import { cn } from "@/lib/utils";
-import { answerMultipleChoice, submitOpenAnswer } from "./actions";
+import { answerMultipleChoice, submitOpenAnswer } from "./[id]/day/[n]/actions";
+import { answerPracticeChoice, submitPracticeAnswer } from "./[id]/mistakes/actions";
 
+// Exercises in a lesson, and practice exercises for mistakes: the same
+// components, sending the answer to the right action (see ExerciseTarget).
 // The exercise props only ever contain what the learner may see: answers,
 // explanations and sample answers arrive from the server after an attempt.
 // Text may hold `inline code`, shown by <InlineText>. Anything that can hold a
 // whole code block (the question's code, feedback, sample answers) arrives as
 // a node the server has already rendered and coloured.
 
+/** Where an answer goes: an exercise in a lesson, or a practice exercise. */
+export type ExerciseTarget = { lessonId: string; index: number } | { practiceId: string };
+
+const targetKey = (target: ExerciseTarget) =>
+  "practiceId" in target ? `practice-${target.practiceId}` : `exercise-${target.index}`;
+
 export type MultipleChoiceProps = {
-  lessonId: string;
-  index: number;
+  target: ExerciseTarget;
+  /** The card's small heading, e.g. "Exercise 1". */
+  label: string;
   question: string;
   /** The code the question is about, already rendered. */
   code?: React.ReactNode;
@@ -27,23 +37,26 @@ export type MultipleChoiceProps = {
   result: { chosen: number; correctIndex: number; isCorrect: boolean; explanation: string } | null;
 };
 
-export function MultipleChoiceExercise({ lessonId, index, question, code, choices, result }: MultipleChoiceProps) {
+export function MultipleChoiceExercise({ target, label, question, code, choices, result }: MultipleChoiceProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
-  const name = `exercise-${index}`;
+  const name = targetKey(target);
 
   function check() {
     if (selected === null) return setErrors(["Choose an answer first."]);
     setErrors([]);
     startTransition(async () => {
-      const response = await answerMultipleChoice({ lessonId, exerciseIndex: index, choiceIndex: selected });
+      const response =
+        "practiceId" in target
+          ? await answerPracticeChoice({ practiceId: target.practiceId, choiceIndex: selected })
+          : await answerMultipleChoice({ lessonId: target.lessonId, exerciseIndex: target.index, choiceIndex: selected });
       setErrors(response.errors);
     });
   }
 
   return (
-    <ExerciseCard index={index} question={question} code={code}>
+    <ExerciseCard label={label} question={question} code={code}>
       <fieldset disabled={result !== null || pending} className="flex flex-col gap-2">
         <legend className="sr-only">{plainText(question)}</legend>
         {choices.map((choice, i) => {
@@ -131,8 +144,9 @@ export type OpenAttempt = {
 };
 
 export type OpenProps = {
-  lessonId: string;
-  index: number;
+  target: ExerciseTarget;
+  /** The card's small heading, e.g. "Exercise 3". */
+  label: string;
   question: string;
   /** The code the question is about, already rendered. */
   code?: React.ReactNode;
@@ -143,11 +157,13 @@ export type OpenProps = {
   remaining: number;
   /** Revealed by the server after the first attempt, already rendered. */
   sampleAnswer: React.ReactNode;
+  /** Shown when no tries are left; null shows nothing. */
+  usedUpText?: string | null;
 };
 
 export function OpenExercise({
-  lessonId,
-  index,
+  target,
+  label,
   question,
   code,
   hint,
@@ -155,22 +171,26 @@ export function OpenExercise({
   attempts,
   remaining,
   sampleAnswer,
+  usedUpText = "You've used all reviews for this exercise.",
 }: OpenProps) {
   const [answer, setAnswer] = useState(attempts.at(-1)?.answer ?? "");
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
-  const id = `answer-${index}`;
+  const id = `answer-${targetKey(target)}`;
 
   function submit() {
     setErrors([]);
     startTransition(async () => {
-      const response = await submitOpenAnswer({ lessonId, exerciseIndex: index, answer });
+      const response =
+        "practiceId" in target
+          ? await submitPracticeAnswer({ practiceId: target.practiceId, answer })
+          : await submitOpenAnswer({ lessonId: target.lessonId, exerciseIndex: target.index, answer });
       setErrors(response.errors);
     });
   }
 
   return (
-    <ExerciseCard index={index} question={question} code={code}>
+    <ExerciseCard label={label} question={question} code={code}>
       {hint && (
         <p className="-mt-1 mb-3 text-sm text-muted-foreground">
           Hint: <InlineText text={hint} />
@@ -234,7 +254,7 @@ export function OpenExercise({
           </div>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">You&apos;ve used all reviews for this exercise.</p>
+        usedUpText && <p className="text-xs text-muted-foreground">{usedUpText}</p>
       )}
       <Errors errors={errors} />
     </ExerciseCard>
@@ -242,19 +262,19 @@ export function OpenExercise({
 }
 
 function ExerciseCard({
-  index,
+  label,
   question,
   code,
   children,
 }: {
-  index: number;
+  label: string;
   question: string;
   code?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex min-w-0 flex-col rounded-2xl border p-5">
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Exercise {index + 1}</p>
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
       <h3 className="mt-1 mb-4 font-medium whitespace-pre-line">
         <InlineText text={question} />
       </h3>

@@ -48,7 +48,33 @@ test("a wrong answer shows up in Mistakes to review, with the right answer", asy
   await expect(mistake).toContainText("Small daily lessons focus on one clear step");
   await expect(page.getByRole("link", { name: "All (1)" })).toBeVisible();
 
+  // Practice: a fresh exercise on the same idea (a labelled example in demo
+  // mode). The demo's wrong choices are known; the right one is the other one.
+  const wrongChoices = /Memorise every detail|Skip practice and only read|Wait until you feel ready/;
+  await mistake.getByRole("button", { name: "Practice this" }).click();
+  const practice1 = mistake.locator("section").filter({ hasText: "Practice 1 · example" });
+  await expect(practice1).toContainText("Example practice 1 (AI isn't connected)");
+  await expect(mistake.getByRole("button", { name: /Practice (this|again)/ })).toBeHidden(); // one at a time
+  await practice1.locator("label").filter({ hasText: wrongChoices }).first().click();
+  await practice1.getByRole("button", { name: "Check answer" }).click();
+  await expect(practice1.getByText(/^Not quite$/)).toBeVisible();
+
+  // Wrong again: another try, then the right answer fixes it.
+  await mistake.getByRole("button", { name: "Practice again" }).click();
+  const practice2 = mistake.locator("section").filter({ hasText: "Practice 2 · example" });
+  await practice2.locator("label").filter({ hasNotText: wrongChoices }).click();
+  await practice2.getByRole("button", { name: "Check answer" }).click();
+  await expect(practice2.getByText(/^Correct$/)).toBeVisible();
+  await expect(mistake.getByText("Fixed in practice")).toBeVisible();
+  await expect(mistake.getByRole("button", { name: /Practice/ })).toBeHidden();
+  // It stays in view today, but no longer counts.
+  await expect(page.getByRole("link", { name: "To review (0)" })).toBeVisible();
+
   // It links back to its lesson.
   await mistake.getByRole("link", { name: /Open the lesson/ }).click();
   await expect(page).toHaveURL(/\/day\/1$/);
+
+  // The track page says they're all fixed.
+  await open(page, trackUrl.replace(/^https?:\/\/[^/]+/, ""));
+  await expect(page.getByRole("link", { name: /Mistakes: all fixed/ })).toBeVisible();
 });
