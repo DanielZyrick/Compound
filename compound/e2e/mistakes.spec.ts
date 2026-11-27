@@ -32,6 +32,15 @@ test("a wrong answer shows up in Mistakes to review, with the right answer", asy
   await second.getByRole("button", { name: "Check answer" }).click();
   await expect(second.getByText(/^Correct$/)).toBeVisible();
 
+  // Today counts it under Today's learning, and so does Week in review.
+  await open(page, "/today");
+  const todayLine = page.getByRole("list", { name: "Mistakes to review" }).getByRole("link");
+  await expect(todayLine).toHaveCount(1);
+  await expect(todayLine).toContainText("1 mistake to review");
+  await expect(todayLine).toContainText("Spanish for travel");
+  await open(page, "/review");
+  await expect(page.getByRole("region", { name: "Mistakes to review" })).toContainText("1 mistake");
+
   // The track page counts it and links to the list.
   await open(page, trackUrl.replace(/^https?:\/\/[^/]+/, ""));
   await page.getByRole("link", { name: /Mistakes to review · 1/ }).click();
@@ -77,4 +86,12 @@ test("a wrong answer shows up in Mistakes to review, with the right answer", asy
   // The track page says they're all fixed.
   await open(page, trackUrl.replace(/^https?:\/\/[^/]+/, ""));
   await expect(page.getByRole("link", { name: /Mistakes: all fixed/ })).toBeVisible();
+
+  // Today has nothing left to review; Week in review lists the fix.
+  await open(page, "/today");
+  await expect(page.getByRole("heading", { name: "Today's learning" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Mistakes to review" })).toBeHidden();
+  await open(page, "/review");
+  await expect(page.getByRole("region", { name: "Mistakes fixed in practice" })).toContainText("Day 1 · ");
+  await expect(page.getByRole("region", { name: "Mistakes to review" })).toBeHidden();
 });

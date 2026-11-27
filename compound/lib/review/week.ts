@@ -25,6 +25,15 @@ export type ReviewLesson = {
 export type ReviewStep = { goalId: string; goalTitle: string; title: string; doneOn: CalendarDate };
 export type ReviewTodo = { id: string; title: string; doneOn: CalendarDate };
 export type ReviewTouchpoint = { contactId: string; name: string; happenedOn: CalendarDate };
+/** A practice exercise for a mistake, answered on answeredOn. A right answer fixes the mistake. */
+export type ReviewPractice = {
+  trackId: string;
+  trackTitle: string;
+  dayNumber: number;
+  dayTitle: string;
+  isCorrect: boolean | null;
+  answeredOn: CalendarDate;
+};
 export type ReviewExpense = { categoryId: string; categoryName: string; amountCents: number; occurredOn: CalendarDate };
 
 export type ReviewInput = {
@@ -36,6 +45,7 @@ export type ReviewInput = {
   steps: ReviewStep[];
   todos: ReviewTodo[];
   touchpoints: ReviewTouchpoint[];
+  practice: ReviewPractice[];
   expenses: ReviewExpense[];
 };
 
@@ -65,7 +75,14 @@ export type WeekReview = {
   totals: Totals;
   previous: Totals;
   habits: { id: string; name: string; days: { date: CalendarDate; status: HabitDayStatus }[]; done: number; due: number }[];
-  done: { steps: ReviewStep[]; lessons: ReviewLesson[]; todos: ReviewTodo[]; touchpoints: ReviewTouchpoint[] };
+  done: {
+    steps: ReviewStep[];
+    lessons: ReviewLesson[];
+    todos: ReviewTodo[];
+    touchpoints: ReviewTouchpoint[];
+    /** Mistakes fixed in practice: practice exercises answered right. */
+    fixes: ReviewPractice[];
+  };
   /** Spending by category, biggest first. */
   categories: { categoryId: string; name: string; cents: number }[];
   sentence: string;
@@ -119,6 +136,8 @@ function activeDates(input: ReviewInput): Set<CalendarDate> {
     ...input.steps.map((s) => s.doneOn),
     ...input.todos.map((t) => t.doneOn),
     ...input.touchpoints.map((t) => t.happenedOn),
+    // Answering a practice exercise counts, right or wrong.
+    ...input.practice.map((p) => p.answeredOn),
   ]);
 }
 
@@ -172,6 +191,10 @@ export function reviewWeek(input: ReviewInput): WeekReview {
       lessons: week(input.lessons, (l) => l.doneOn),
       todos: week(input.todos, (t) => t.doneOn),
       touchpoints: week(input.touchpoints, (t) => t.happenedOn),
+      fixes: week(
+        input.practice.filter((p) => p.isCorrect === true),
+        (p) => p.answeredOn,
+      ),
     },
     categories: [...byCategory.values()].sort((a, b) => b.cents - a.cents),
   };

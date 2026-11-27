@@ -19,6 +19,7 @@ import { getProfile } from "@/lib/profile/queries";
 import { GoalsTable, type GoalRow } from "./goals-table";
 import { FollowUpsCard } from "./follow-ups-card";
 import { HabitChecklist } from "./habit-checklist";
+import { MistakesToReview } from "./mistakes-to-review";
 import { NotesCard } from "./notes-card";
 import { PrincipleCard } from "./principle-card";
 import { ScheduleCard } from "./schedule-card";
@@ -152,7 +153,14 @@ async function TodayContent() {
             <Suspense fallback={null}>
               <ScheduleCard user={user} today={today} lesson={nextLesson} />
             </Suspense>
-            <TodayLessons lessons={lessons} />
+            <TodayLessons
+              lessons={lessons}
+              mistakes={
+                <Suspense fallback={null}>
+                  <MistakesToReview userId={user.id} />
+                </Suspense>
+              }
+            />
             {followUps.total > 0 && (
               <FollowUpsCard contacts={followUps.contacts} total={followUps.total} today={today} />
             )}

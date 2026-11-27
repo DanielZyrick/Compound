@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import type { CalendarDate } from "@/lib/db/types";
 import { getGoals } from "@/lib/goals/queries";
 import { weekStart } from "@/lib/habits/week";
+import { getMistakeCounts } from "@/lib/mistakes/queries";
 import { firstWeek, reviewWeek, reviewWeekFor, upcoming, type UpcomingItem } from "./week";
 
 type User = { id: string; timezone: string; created_at: Date };
@@ -45,7 +46,7 @@ export async function getWeekReview(user: User, weekParam: unknown, { withUpcomi
   // "Coming up" belongs on this week and last week (which opens on Mondays), not on old weeks.
   const recent = withUpcoming && monday >= addDays(weekStart(today), -7);
 
-  const [checkins, lessons, steps, todos, touchpoints, expenses, upcomingItems] = await Promise.all([
+  const [checkins, lessons, steps, todos, touchpoints, practice, expenses, upcomingItems, mistakeCounts] = await Promise.all([
     habitRows.length
       ? db
           .selectFrom("habit_checkins")
@@ -89,6 +90,23 @@ export async function getWeekReview(user: User, weekParam: unknown, { withUpcomi
       .where("contact_touchpoints.happened_on", "<=", to)
       .execute(),
     db
+      .selectFrom("practice_exercises")
+      .innerJoin("lessons", "lessons.id", "practice_exercises.lesson_id")
+      .innerJoin("track_days", "track_days.id", "lessons.track_day_id")
+      .innerJoin("tracks", "tracks.id", "track_days.track_id")
+      .select([
+        "tracks.id as trackId",
+        "tracks.title as trackTitle",
+        "track_days.day_number",
+        "track_days.title",
+        "practice_exercises.is_correct",
+        "practice_exercises.answered_at",
+      ])
+      .where("practice_exercises.user_id", "=", user.id)
+      .where("practice_exercises.answered_at", ">", after)
+      .where("practice_exercises.answered_at", "<", before)
+      .execute(),
+    db
       .selectFrom("transactions")
       .innerJoin("money_categories", "money_categories.id", "transactions.category_id")
       .select(["transactions.category_id", "money_categories.name", "transactions.amount_cents", "transactions.occurred_on"])
@@ -98,6 +116,7 @@ export async function getWeekReview(user: User, weekParam: unknown, { withUpcomi
       .where("transactions.occurred_on", "<=", to)
       .execute(),
     recent ? getUpcoming(user.id, today) : Promise.resolve([]),
+    recent ? getMistakeCounts(user.id) : Promise.resolve([]),
   ]);
 
   const review = reviewWeek({
@@ -122,6 +141,14 @@ export async function getWeekReview(user: User, weekParam: unknown, { withUpcomi
     steps: steps.map((s) => ({ goalId: s.goalId, goalTitle: s.goalTitle, title: s.title, doneOn: s.done_on! })),
     todos: todos.map((t) => ({ id: t.id, title: t.title, doneOn: local(t.done_at!) })),
     touchpoints: touchpoints.map((t) => ({ contactId: t.contactId, name: t.name, happenedOn: t.happened_on })),
+    practice: practice.map((p) => ({
+      trackId: p.trackId,
+      trackTitle: p.trackTitle,
+      dayNumber: p.day_number,
+      dayTitle: p.title,
+      isCorrect: p.is_correct,
+      answeredOn: local(p.answered_at!),
+    })),
     expenses: expenses.map((e) => ({
       categoryId: e.category_id,
       categoryName: e.name,
@@ -135,6 +162,8 @@ export async function getWeekReview(user: User, weekParam: unknown, { withUpcomi
     today,
     earliest: firstWeek(today, firstDay),
     upcoming: upcoming(upcomingItems, today),
+    /** Mistakes left to review per track, on this week and last (like Coming up). */
+    mistakeCounts,
   };
 }
 

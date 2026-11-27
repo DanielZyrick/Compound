@@ -2,7 +2,14 @@ import "server-only";
 import { db } from "@/lib/db";
 import { parseLesson } from "@/lib/lessons/queries";
 import type { LessonContent } from "@/lib/lessons/schema";
-import { collectMistakes, type MistakeAttempt, type MistakeDay } from "./collect";
+import {
+  collectMistakes,
+  mistakesToReview,
+  type Mistake,
+  type MistakeAttempt,
+  type MistakeDay,
+  type PracticeResult,
+} from "./collect";
 import { parsePractice } from "./practice";
 
 /** Practice rows as the mistakes page and the actions read them, oldest first. */
@@ -47,6 +54,66 @@ function toPractice(row: Awaited<ReturnType<ReturnType<typeof practiceQuery>["ex
   };
 }
 
+/** Every answer the user gave, with its lesson and track, oldest first. */
+function attemptsQuery(userId: string) {
+  return db
+    .selectFrom("attempts")
+    .innerJoin("lessons", "lessons.id", "attempts.lesson_id")
+    .innerJoin("track_days", "track_days.id", "lessons.track_day_id")
+    .innerJoin("tracks", "tracks.id", "track_days.track_id")
+    .select([
+      "tracks.id as track_id",
+      "tracks.type",
+      "track_days.day_number",
+      "track_days.title as day_title",
+      "lessons.id as lesson_id",
+      "lessons.content",
+      "attempts.exercise_index",
+      "attempts.answer",
+      "attempts.is_correct",
+      "attempts.feedback",
+      "attempts.better_version",
+    ])
+    .where("tracks.user_id", "=", userId)
+    .where("attempts.user_id", "=", userId)
+    .orderBy("attempts.created_at")
+    .orderBy("attempts.id");
+}
+
+type AttemptRow = Awaited<ReturnType<ReturnType<typeof attemptsQuery>["execute"]>>[number];
+
+/**
+ * Each track's mistakes, from its answers (in order) and its practice
+ * results. Each lesson comes back once per answer: it's parsed once, and a
+ * lesson that fails validation is left out, with its answers.
+ */
+function mistakesByTrack(rows: AttemptRow[], practice: PracticeResult[]): Map<string, Mistake[]> {
+  const days = new Map<string, MistakeDay | null>();
+  const byTrack = new Map<string, { days: MistakeDay[]; attempts: MistakeAttempt[] }>();
+  for (const row of rows) {
+    if (!days.has(row.lesson_id)) {
+      const lesson: LessonContent | null = parseLesson(row.type, row.content);
+      const day = lesson && { lessonId: row.lesson_id, dayNumber: row.day_number, dayTitle: row.day_title, lesson };
+      days.set(row.lesson_id, day);
+      if (day) {
+        const track = byTrack.get(row.track_id) ?? { days: [], attempts: [] };
+        track.days.push(day);
+        byTrack.set(row.track_id, track);
+      }
+    }
+    if (!days.get(row.lesson_id)) continue;
+    byTrack.get(row.track_id)!.attempts.push({
+      dayNumber: row.day_number,
+      exerciseIndex: row.exercise_index,
+      answer: row.answer,
+      isCorrect: row.is_correct,
+      feedback: row.feedback,
+      betterVersion: row.better_version,
+    });
+  }
+  return new Map([...byTrack].map(([trackId, t]) => [trackId, collectMistakes(t.days, t.attempts, practice)]));
+}
+
 /**
  * A track's mistakes and their practice exercises, or undefined if it isn't
  * the user's track. Three queries side by side: the track, every answer the
@@ -60,29 +127,7 @@ export async function getTrackMistakes(userId: string, trackId: string) {
       .where("id", "=", trackId)
       .where("user_id", "=", userId)
       .executeTakeFirst(),
-    db
-      .selectFrom("attempts")
-      .innerJoin("lessons", "lessons.id", "attempts.lesson_id")
-      .innerJoin("track_days", "track_days.id", "lessons.track_day_id")
-      .innerJoin("tracks", "tracks.id", "track_days.track_id")
-      .select([
-        "tracks.type",
-        "track_days.day_number",
-        "track_days.title as day_title",
-        "lessons.id as lesson_id",
-        "lessons.content",
-        "attempts.exercise_index",
-        "attempts.answer",
-        "attempts.is_correct",
-        "attempts.feedback",
-        "attempts.better_version",
-      ])
-      .where("tracks.id", "=", trackId)
-      .where("tracks.user_id", "=", userId)
-      .where("attempts.user_id", "=", userId)
-      .orderBy("attempts.created_at")
-      .orderBy("attempts.id")
-      .execute(),
+    attemptsQuery(userId).where("tracks.id", "=", trackId).execute(),
     practiceQuery(userId)
       .innerJoin("lessons", "lessons.id", "practice_exercises.lesson_id")
       .innerJoin("track_days", "track_days.id", "lessons.track_day_id")
@@ -91,33 +136,52 @@ export async function getTrackMistakes(userId: string, trackId: string) {
   ]);
   if (!track) return undefined;
 
-  // Each lesson comes back once per answer: parse it once. A lesson that
-  // fails validation is left out, with its answers.
-  const days = new Map<string, MistakeDay | null>();
-  const attempts: MistakeAttempt[] = [];
-  for (const row of rows) {
-    if (!days.has(row.lesson_id)) {
-      const lesson: LessonContent | null = parseLesson(row.type, row.content);
-      days.set(row.lesson_id, lesson && { lessonId: row.lesson_id, dayNumber: row.day_number, dayTitle: row.day_title, lesson });
-    }
-    if (!days.get(row.lesson_id)) continue;
-    attempts.push({
-      dayNumber: row.day_number,
-      exerciseIndex: row.exercise_index,
-      answer: row.answer,
-      isCorrect: row.is_correct,
-      feedback: row.feedback,
-      betterVersion: row.better_version,
-    });
-  }
-
   const practice = practiceRows.map(toPractice).filter((p) => p !== null);
-  const mistakes = collectMistakes(
-    [...days.values()].filter((d) => d !== null),
-    attempts,
-    practice.filter((p) => p.answered),
-  );
+  const mistakes = mistakesByTrack(rows, practice.filter((p) => p.answered)).get(trackId) ?? [];
   return { track, mistakes, practice };
+}
+
+/**
+ * How many mistakes each active track has left to review, for Today and
+ * Week in review; tracks with none are left out. Only lessons with an answer
+ * saved as wrong are loaded (every mistake has one), so this stays cheap
+ * however many lessons the user has done.
+ */
+export async function getMistakeCounts(userId: string): Promise<{ trackId: string; trackTitle: string; count: number }[]> {
+  const withWrongAnswers = db
+    .selectFrom("attempts")
+    .select("lesson_id")
+    .where("user_id", "=", userId)
+    .where("is_correct", "=", false);
+  const [tracks, rows, fixed] = await Promise.all([
+    db
+      .selectFrom("tracks")
+      .select(["id", "title"])
+      .where("user_id", "=", userId)
+      .where("status", "=", "active")
+      .where("type", "!=", "reading")
+      .orderBy("created_at")
+      .execute(),
+    attemptsQuery(userId)
+      .where("tracks.status", "=", "active")
+      .where("lessons.id", "in", withWrongAnswers)
+      .execute(),
+    db
+      .selectFrom("practice_exercises")
+      .select(["lesson_id", "exercise_index", "is_correct"])
+      .where("user_id", "=", userId)
+      .where("is_correct", "=", true)
+      .execute(),
+  ]);
+
+  const mistakes = mistakesByTrack(
+    rows,
+    fixed.map((p) => ({ lessonId: p.lesson_id, exerciseIndex: p.exercise_index, isCorrect: p.is_correct })),
+  );
+  return tracks.flatMap((track) => {
+    const count = mistakesToReview(mistakes.get(track.id) ?? []).length;
+    return count > 0 ? [{ trackId: track.id, trackTitle: track.title, count }] : [];
+  });
 }
 
 /**

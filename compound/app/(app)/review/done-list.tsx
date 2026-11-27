@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, CheckSquare, Flag, Users } from "lucide-react";
+import { BookOpen, CheckSquare, Flag, Sparkles, Users } from "lucide-react";
 import { formatShortDate, weekdayOf } from "@/lib/dates/calendar";
 import type { WeekReview } from "@/lib/review/week";
 
@@ -46,6 +46,17 @@ export function DoneList({ done }: { done: WeekReview["done"] }) {
         title: t.name,
         detail: "Kept in touch",
         date: t.happenedOn,
+      })),
+    },
+    {
+      label: "Mistakes fixed in practice",
+      icon: Sparkles,
+      items: done.fixes.map((f, i): Item => ({
+        key: `${f.trackId}-${f.dayNumber}-${i}`,
+        href: `/tracks/${f.trackId}/mistakes?show=all`,
+        title: f.dayTitle,
+        detail: `Day ${f.dayNumber} · ${f.trackTitle}`,
+        date: f.answeredOn,
       })),
     },
   ].filter((group) => group.items.length > 0);

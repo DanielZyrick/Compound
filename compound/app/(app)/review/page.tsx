@@ -29,7 +29,7 @@ export default function ReviewPage({ searchParams }: PageProps<"/review">) {
 
 async function Review({ searchParams }: Pick<PageProps<"/review">, "searchParams">) {
   const user = await requireOnboardedUser();
-  const { review, today, earliest, upcoming } = await getWeekReview(user, (await searchParams).week);
+  const { review, today, earliest, upcoming, mistakeCounts } = await getWeekReview(user, (await searchParams).week);
   const current = weekStart(today);
 
   return (
@@ -66,6 +66,7 @@ async function Review({ searchParams }: Pick<PageProps<"/review">, "searchParams
 
         {review.categories.length > 0 && <Spending review={review} currency={user.currency} />}
         {upcoming.length > 0 && <ComingUp items={upcoming} today={today} />}
+        {mistakeCounts.length > 0 && <StillToReview counts={mistakeCounts} />}
       </div>
     </>
   );
@@ -159,6 +160,32 @@ function ComingUp({ items, today }: { items: UpcomingItem[]; today: string }) {
                   {UPCOMING_KIND[item.kind]}
                   {item.detail ? ` · ${item.detail}` : ""}
                 </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Mistakes left to review, per track: something to pick up next week. */
+function StillToReview({ counts }: { counts: { trackId: string; trackTitle: string; count: number }[] }) {
+  return (
+    <section aria-labelledby="review-mistakes-heading">
+      <h2 id="review-mistakes-heading" className="text-lg font-semibold">
+        Mistakes to review
+      </h2>
+      <ul className="mt-3 divide-y rounded-xl border">
+        {counts.map(({ trackId, trackTitle, count }) => (
+          <li key={trackId}>
+            <Link
+              href={`/tracks/${trackId}/mistakes`}
+              className="flex items-baseline gap-3 px-4 py-2.5 text-sm outline-none hover:bg-muted focus-visible:bg-muted"
+            >
+              <span className="min-w-0 flex-1 wrap-break-word">{trackTitle}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {count} {count === 1 ? "mistake" : "mistakes"}
               </span>
             </Link>
           </li>

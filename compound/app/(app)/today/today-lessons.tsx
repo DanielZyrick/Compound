@@ -14,7 +14,8 @@ type TodayLesson = {
   keepGoing: number | null;
 };
 
-export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
+/** `mistakes` goes under the lessons: the mistakes-to-review lines, streamed in on their own. */
+export function TodayLessons({ lessons, mistakes }: { lessons: TodayLesson[]; mistakes?: React.ReactNode }) {
   const doneCount = lessons.filter((l) => l.done).length;
 
   return (
@@ -83,6 +84,7 @@ export function TodayLessons({ lessons }: { lessons: TodayLesson[] }) {
           </li>
         ))}
       </ul>
+      {mistakes}
     </section>
   );
 }

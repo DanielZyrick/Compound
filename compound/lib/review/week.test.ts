@@ -40,6 +40,7 @@ function input(overrides: Partial<ReviewInput> = {}): ReviewInput {
     steps: [],
     todos: [],
     touchpoints: [],
+    practice: [],
     expenses: [],
     ...overrides,
   };
@@ -199,6 +200,29 @@ describe("reviewWeek", () => {
     expect(review.done.touchpoints).toHaveLength(1);
     expect(review.totals).toMatchObject({ todos: 2, contacts: 1 });
     expect(review.previous).toMatchObject({ todos: 1, contacts: 0 });
+  });
+
+  it("counts answering practice as showing up, and lists the mistakes fixed", () => {
+    const practice = (answeredOn: string, isCorrect: boolean | null) => ({
+      trackId: "t1",
+      trackTitle: "Python",
+      dayNumber: 2,
+      dayTitle: "Lists",
+      isCorrect,
+      answeredOn,
+    });
+    const review = reviewWeek(
+      input({
+        practice: [
+          practice("2026-11-17", false), // Tuesday: wrong, still a day showed up
+          practice("2026-11-19", true), // Thursday: fixed
+          practice("2026-11-20", null), // Friday: ungraded (demo), still a day showed up
+          practice("2026-11-10", true), // the week before
+        ],
+      }),
+    );
+    expect(review.days.filter((d) => d.active).map((d) => d.date)).toEqual(["2026-11-17", "2026-11-19", "2026-11-20"]);
+    expect(review.done.fixes.map((f) => f.answeredOn)).toEqual(["2026-11-19"]);
   });
 
   it("splits lessons from readings", () => {
